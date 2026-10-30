@@ -118,14 +118,28 @@ export default function ArchiveSection() {
                 className="retro-card rounded-2xl p-5 cursor-pointer hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[6px_6px_0px_#1E1E1E] transition-all flex flex-col justify-between bg-white border-2 border-[#1E1E1E] shadow-[4px_4px_0px_#1E1E1E] group"
               >
                 <div>
-                  {/* Selo do Mês de Leitura */}
+                  {/* Selo do Mês de Leitura e Status Concluído */}
                   <div className="flex items-center justify-between gap-2 mb-4">
-                    <span className="text-[10px] font-mono font-black uppercase tracking-wider px-2.5 py-0.5 rounded bg-[#FEF08A] text-[#141414] border border-[#1E1E1E] flex items-center gap-1 shadow-sm">
-                      <span>★</span> {book.readMonth}
-                    </span>
-                    <span className="text-[11px] font-mono text-[#57534E] font-bold">
-                      {book.pages} págs
-                    </span>
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      <span className="text-[10px] font-mono font-black uppercase tracking-wider px-2.5 py-0.5 rounded bg-[#FEF08A] text-[#141414] border border-[#1E1E1E] flex items-center gap-1 shadow-sm">
+                        <span>★</span> {book.readMonth}
+                      </span>
+                      {book.status && (
+                        <span className="text-[9px] font-mono font-black uppercase tracking-wider px-2 py-0.5 rounded bg-[#283618] text-[#FEF08A] border border-[#1E1E1E] shadow-sm">
+                          {book.status}
+                        </span>
+                      )}
+                    </div>
+                    <div className="text-right">
+                      <span className="text-[11px] font-mono text-[#57534E] font-bold block">
+                        {book.pages} págs
+                      </span>
+                      {book.assemblyDate && (
+                        <span className="text-[9px] font-mono text-[#9E2A2B] font-bold block">
+                          {book.assemblyDate}
+                        </span>
+                      )}
+                    </div>
                   </div>
 
                   {/* Capa e Dados */}

@@ -43,7 +43,7 @@ export default function EditCurrentReadingModal({ isOpen, onClose }) {
 
   if (!isOpen) return null;
 
-  // Processa o arquivo selecionado, converte em Base64 e comprime via Canvas para o localStorage
+  // Processa o arquivo selecionado, converte em Base64 e comprime via Canvas para salvar na nuvem (Firestore)
   const handleFileChange = (e) => {
     const file = e.target.files?.[0];
     if (!file) return;

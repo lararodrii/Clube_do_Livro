@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useClub } from '../../context/ClubContext';
 import EditMeetingModal from './EditMeetingModal';
+import Countdown from './Countdown';
 import { 
   Calendar, 
   Clock, 
@@ -9,46 +10,14 @@ import {
   Users, 
   CheckCircle, 
   ExternalLink,
-  Pencil,
-  Timer
+  Pencil
 } from 'lucide-react';
 
 export default function NextMeetingCard() {
   const { meeting, activeMember, members, toggleRsvp, triggerComradeConfetti } = useClub();
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   
-  // Cálculo do contador regressivo em tempo real
-  const [timeLeft, setTimeLeft] = useState({
-    days: 0,
-    hours: 0,
-    minutes: 0,
-    seconds: 0,
-    isPast: false
-  });
 
-  useEffect(() => {
-    function calculateTime() {
-      const target = new Date(meeting.dateTime).getTime();
-      const now = new Date().getTime();
-      const difference = target - now;
-
-      if (isNaN(target) || difference <= 0) {
-        setTimeLeft({ days: 0, hours: 0, minutes: 0, seconds: 0, isPast: true });
-        return;
-      }
-
-      const days = Math.floor(difference / (1000 * 60 * 60 * 24));
-      const hours = Math.floor((difference % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-      const minutes = Math.floor((difference % (1000 * 60 * 60)) / (1000 * 60));
-      const seconds = Math.floor((difference % (1000 * 60)) / 1000);
-
-      setTimeLeft({ days, hours, minutes, seconds, isPast: false });
-    }
-
-    calculateTime();
-    const interval = setInterval(calculateTime, 1000);
-    return () => clearInterval(interval);
-  }, [meeting.dateTime]);
 
   const isConfirmed = meeting.confirmedMembers?.includes(activeMember.id);
   const confirmedCount = meeting.confirmedMembers?.length || 0;
@@ -175,55 +144,8 @@ export default function NextMeetingCard() {
         </div>
 
         {/* CONTADOR REGRESSIVO DE ALTO CONTRASTE TOTALMENTE CONTIDO */}
-        <div className="w-full lg:col-span-6 bg-[#FAF7F0] p-3 sm:p-4 rounded-2xl border-2 border-[#1E1E1E] shadow-[4px_4px_0px_#1E1E1E] flex flex-col justify-center items-center overflow-hidden">
-          <div className="flex items-center justify-center gap-1.5 text-center text-xs font-mono font-black uppercase tracking-wider text-[#D62828] mb-3">
-            <Timer className="w-3.5 h-3.5 text-[#D62828]" />
-            <span>Contagem Regressiva para o Debate ★</span>
-          </div>
-
-          <div className="flex items-center justify-center gap-1.5 sm:gap-2 w-full max-w-xs sm:max-w-sm mx-auto">
-            
-            {/* Dias */}
-            <div className="flex-1 min-w-0 w-12 sm:w-14 bg-[#141414] text-[#FEF08A] py-2 px-1 rounded-xl border-2 border-[#1E1E1E] shadow-[2px_2px_0px_#BC6C25] flex flex-col items-center justify-center text-center">
-              <span className="font-mono text-xl sm:text-2xl font-bold block leading-none tabular-nums text-center">
-                {String(timeLeft.days).padStart(2, '0')}
-              </span>
-              <span className="text-[9px] sm:text-[10px] font-semibold tracking-normal text-stone-300 font-mono mt-0.5 leading-none text-center">
-                DIAS
-              </span>
-            </div>
-
-            {/* Hora */}
-            <div className="flex-1 min-w-0 w-12 sm:w-14 bg-[#141414] text-[#FEF08A] py-2 px-1 rounded-xl border-2 border-[#1E1E1E] shadow-[2px_2px_0px_#BC6C25] flex flex-col items-center justify-center text-center">
-              <span className="font-mono text-xl sm:text-2xl font-bold block leading-none tabular-nums text-center">
-                {String(timeLeft.hours).padStart(2, '0')}
-              </span>
-              <span className="text-[9px] sm:text-[10px] font-semibold tracking-normal text-stone-300 font-mono mt-0.5 leading-none text-center">
-                HORA
-              </span>
-            </div>
-
-            {/* Min */}
-            <div className="flex-1 min-w-0 w-12 sm:w-14 bg-[#141414] text-[#FEF08A] py-2 px-1 rounded-xl border-2 border-[#1E1E1E] shadow-[2px_2px_0px_#BC6C25] flex flex-col items-center justify-center text-center">
-              <span className="font-mono text-xl sm:text-2xl font-bold block leading-none tabular-nums text-center">
-                {String(timeLeft.minutes).padStart(2, '0')}
-              </span>
-              <span className="text-[9px] sm:text-[10px] font-semibold tracking-normal text-stone-300 font-mono mt-0.5 leading-none text-center">
-                MIN
-              </span>
-            </div>
-
-            {/* Seg */}
-            <div className="flex-1 min-w-0 w-12 sm:w-14 bg-[#141414] text-[#FEF08A] py-2 px-1 rounded-xl border-2 border-[#1E1E1E] shadow-[2px_2px_0px_#BC6C25] flex flex-col items-center justify-center text-center">
-              <span className="font-mono text-xl sm:text-2xl font-bold text-[#D62828] block leading-none tabular-nums text-center">
-                {String(timeLeft.seconds).padStart(2, '0')}
-              </span>
-              <span className="text-[9px] sm:text-[10px] font-semibold tracking-normal text-stone-300 font-mono mt-0.5 leading-none text-center">
-                SEG
-              </span>
-            </div>
-
-          </div>
+        <div className="w-full lg:col-span-6">
+          <Countdown targetDate={meeting.dateTime} />
         </div>
 
       </div>

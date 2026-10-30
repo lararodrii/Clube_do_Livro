@@ -18,20 +18,21 @@ const MODALITIES = [
 export default function EditMeetingModal({ isOpen, onClose }) {
   const { meeting, updateMeeting } = useClub();
 
-  // Converte data ISO para o formato 'YYYY-MM-DDTHH:mm' aceito pelo input datetime-local
-  const getFormattedDateTimeLocal = (isoString) => {
+  // Converte data ISO ou string para o formato 'YYYY-MM-DDTHH:mm' sem desvios de fuso horário
+  const getFormattedDateTimeLocal = (dateVal) => {
     try {
-      const d = new Date(isoString);
-      if (isNaN(d.getTime())) return '';
+      if (!dateVal) return '2026-11-25T20:00';
+      const d = new Date(dateVal);
+      if (isNaN(d.getTime())) return '2026-11-25T20:00';
       const pad = (n) => String(n).padStart(2, '0');
       return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
     } catch {
-      return '';
+      return '2026-11-25T20:00';
     }
   };
 
   const [dateTimeLocal, setDateTimeLocal] = useState('');
-  const [modality, setModality] = useState('Híbrida (Presencial + Google Meet)');
+  const [modality, setModality] = useState('Apenas Online (Google Meet)');
   const [virtualLink, setVirtualLink] = useState('');
   const [location, setLocation] = useState('');
   const [address, setAddress] = useState('');
@@ -39,8 +40,8 @@ export default function EditMeetingModal({ isOpen, onClose }) {
   useEffect(() => {
     if (meeting && isOpen) {
       setDateTimeLocal(getFormattedDateTimeLocal(meeting.dateTime));
-      setModality(meeting.modality || 'Híbrida (Presencial + Google Meet)');
-      setVirtualLink(meeting.virtualLink || 'https://meet.google.com/ex-libris-clube');
+      setModality(meeting.modality || 'Apenas Online (Google Meet)');
+      setVirtualLink(meeting.virtualLink || 'https://meet.google.com/exercito-da-paty');
       setLocation(meeting.location || '');
       setAddress(meeting.address || '');
     }
@@ -51,23 +52,33 @@ export default function EditMeetingModal({ isOpen, onClose }) {
   const handleSubmit = (e) => {
     e.preventDefault();
 
-    const dateObj = new Date(dateTimeLocal);
-    const validDate = isNaN(dateObj.getTime()) ? new Date() : dateObj;
+    if (!dateTimeLocal) return;
+
+    // Tratamento rigoroso de data e hora sem erro de fuso horário
+    const [datePart, timePart] = dateTimeLocal.split('T');
+    const [year, month, day] = datePart.split('-').map(Number);
+    const [hours, minutes] = (timePart || '20:00').split(':').map(Number);
+    const validDate = new Date(year, month - 1, day, hours, minutes, 0);
 
     const weekday = validDate.toLocaleDateString('pt-BR', { weekday: 'long' });
     const formattedDate = `${weekday.charAt(0).toUpperCase() + weekday.slice(1)}, ${validDate.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}`;
 
     const isOnlineOnly = modality.includes('Apenas Online');
 
-    updateMeeting({
+    const dadosAtualizados = {
+      ...(meeting || {}),
       dateTime: validDate.toISOString(),
       formattedDate,
       modality,
-      virtualLink: virtualLink.trim(),
-      location: isOnlineOnly ? 'Encontro 100% Online' : location.trim() || 'Livraria / Espaço Cultural',
+      virtualLink: virtualLink.trim() || 'https://meet.google.com/exercito-da-paty',
+      location: isOnlineOnly ? 'Encontro 100% Online via Google Meet' : location.trim() || 'Livraria / Espaço Cultural',
       address: isOnlineOnly ? 'Sala Virtual Google Meet' : address.trim() || 'Endereço a confirmar'
-    });
+    };
 
+    // Atualiza o encontro (sincroniza diretamente na nuvem via Firestore)
+    updateMeeting(dadosAtualizados);
+
+    // Fecha o modal imediatamente
     onClose();
   };
 

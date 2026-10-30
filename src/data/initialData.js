@@ -9,7 +9,7 @@ export const INITIAL_MEMBERS = [
     id: 'm1',
     name: 'Paty (Gatinha Líder)',
     nickname: 'Comandante Bigodinho',
-    avatar: 'https://images.unsplash.com/photo-1514888286974-6c03e2ca1dba?auto=format&fit=crop&w=400&q=80',
+    avatar: '/avatars/gato1.jpg',
     color: '#D62828',
     colorLight: '#FEF2F2',
     roleBadge: '★ Comandante Suprema Felina',
@@ -21,7 +21,7 @@ export const INITIAL_MEMBERS = [
     id: 'm2',
     name: 'Lara',
     nickname: 'Lara Patinha Vermelha',
-    avatar: 'https://images.unsplash.com/photo-1573865526739-10659fec78a5?auto=format&fit=crop&w=400&q=80',
+    avatar: '/avatars/gato2.jpg',
     color: '#9E2A2B',
     colorLight: '#FEF2F2',
     roleBadge: '★ Comissária dos Livros & Ronrons',
@@ -33,7 +33,7 @@ export const INITIAL_MEMBERS = [
     id: 'm3',
     name: 'Stephany',
     nickname: 'Stephany Guerrilheira Miau',
-    avatar: 'https://images.unsplash.com/photo-1533738363-b7f9aef128ce?auto=format&fit=crop&w=400&q=80',
+    avatar: '/avatars/gato3.jpg',
     color: '#283618',
     colorLight: '#FEF2F2',
     roleBadge: '★ Guarda de Honra Miau',
@@ -45,7 +45,7 @@ export const INITIAL_MEMBERS = [
     id: 'm4',
     name: 'Alana',
     nickname: 'Alana Pelugem Rebelde',
-    avatar: 'https://images.unsplash.com/photo-1543852786-1cf6624b9987?auto=format&fit=crop&w=400&q=80',
+    avatar: '/avatars/gato4.jpg',
     color: '#BC6C25',
     colorLight: '#FEF2F2',
     roleBadge: '★ Capitã da Teoria Crítica',
@@ -57,7 +57,7 @@ export const INITIAL_MEMBERS = [
     id: 'm5',
     name: 'Liz',
     nickname: 'Liz Patinha Afiada',
-    avatar: 'https://images.unsplash.com/photo-1507984211203-76701d7bb120?auto=format&fit=crop&w=400&q=80',
+    avatar: '/avatars/gato5.jpg',
     color: '#DDA15E',
     colorLight: '#FEF2F2',
     roleBadge: '★ Agitadora Cultural Felina',
@@ -69,7 +69,7 @@ export const INITIAL_MEMBERS = [
     id: 'm6',
     name: 'Priscila',
     nickname: 'Priscila Bigodes Livres',
-    avatar: 'https://images.unsplash.com/photo-1561948955-570b270e7c36?auto=format&fit=crop&w=400&q=80',
+    avatar: '/avatars/gato6.jpg',
     color: '#141414',
     colorLight: '#FEF2F2',
     roleBadge: '★ Estrategista do Politburo',
@@ -107,17 +107,16 @@ export const INITIAL_CURRENT_READING = {
   reviews: []
 };
 
-// Data da Próxima Reunião (Configurada para quarta-feira às 20:15)
+// Data da Reunião Padrão: 25 de novembro de 2026 às 20:00
+export const DEFAULT_MEETING_DATE = new Date(2026, 10, 25, 20, 0, 0).toISOString();
+
 export function getInitialMeetingDate() {
-  const d = new Date();
-  d.setDate(d.getDate() + 27);
-  d.setHours(20, 15, 0, 0);
-  return d.toISOString();
+  return DEFAULT_MEETING_DATE;
 }
 
 export const INITIAL_MEETING = {
-  dateTime: getInitialMeetingDate(),
-  formattedDate: 'quarta-feira, 20:15',
+  dateTime: DEFAULT_MEETING_DATE,
+  formattedDate: 'quarta-feira, 20:00',
   location: 'Encontro 100% Online via Google Meet',
   address: 'Sala Virtual Google Meet',
   virtualLink: 'https://meet.google.com/exercito-da-paty',
@@ -139,5 +138,3 @@ export const INITIAL_BALLOT = {
 // Acervo Histórico Inicial Limpo
 export const INITIAL_ARCHIVE = [];
 
-// Chave atualizada do localStorage para carregar os novos membros gatinhos e avaliações da Semana 4
-export const STORAGE_KEY = 'exercito_da_paty_retro_revolutionary_v5';

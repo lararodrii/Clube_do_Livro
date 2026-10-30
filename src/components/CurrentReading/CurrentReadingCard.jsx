@@ -14,11 +14,12 @@ import {
   Pencil,
   Sparkles,
   Layers,
-  Star
+  Star,
+  Archive
 } from 'lucide-react';
 
 export default function CurrentReadingCard() {
-  const { currentReading, activeMember, members, toggleWeeklyGoal, triggerComradeConfetti } = useClub();
+  const { currentReading, activeMember, members, toggleWeeklyGoal, triggerComradeConfetti, archiveCurrentReading, archive } = useClub();
   const [showFullSynopsis, setShowFullSynopsis] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isEvaluationModalOpen, setIsEvaluationModalOpen] = useState(false);
@@ -29,6 +30,9 @@ export default function CurrentReadingCard() {
   const activeMemberGoals = currentReading.memberProgress?.[activeMember.id] || [];
   const totalGoals = currentReading.readingGoals?.length || 4;
   const memberCompletionPercent = Math.round((activeMemberGoals.length / totalGoals) * 100);
+
+  // Status de arquivamento no Acervo
+  const isArchived = currentReading.isArchived || (archive || []).some(b => b.title === currentReading.title);
 
   // Avaliação já feita pelo membro ativo nesta obra
   const myReview = currentReading.reviews?.find(r => r.memberId === activeMember.id);
@@ -133,8 +137,43 @@ export default function CurrentReadingCard() {
             <Pencil className="w-3.5 h-3.5 text-[#FEF08A]" />
             <span>Editar Obra</span>
           </button>
+
+          {/* Botão Administrativo: Arquivar Obra Manualmente */}
+          <button
+            type="button"
+            onClick={() => archiveCurrentReading(true)}
+            title={isArchived ? "Obra já arquivada no Acervo Coletivo" : "Arquivar esta obra no Acervo & Resenhas"}
+            className={`flex items-center gap-1.5 px-3 py-1 text-xs font-mono font-bold border-2 border-[#1E1E1E] shadow-[2px_2px_0px_#1E1E1E] rounded-lg transition-transform hover:-translate-x-0.5 hover:-translate-y-0.5 active:translate-x-0.5 active:translate-y-0.5 ${
+              isArchived
+                ? 'bg-stone-200 text-[#57534E] hover:bg-stone-300'
+                : 'bg-[#FEF08A] hover:bg-[#FDE047] text-[#141414]'
+            }`}
+          >
+            <Archive className="w-3.5 h-3.5 text-[#D62828]" />
+            <span>{isArchived ? 'Obra Já Arquivada' : 'Arquivar Obra Manualmente'}</span>
+          </button>
         </div>
       </div>
+
+      {/* Notificação Visual Leve de Obra Arquivada no Acervo */}
+      {isArchived && (
+        <div className="mb-6 p-3.5 sm:p-4 rounded-xl bg-[#283618] text-[#FEF08A] border-2 border-[#1E1E1E] shadow-[4px_4px_0px_#1E1E1E] flex flex-wrap items-center justify-between gap-3 animate-fade-in">
+          <div className="flex items-center gap-3">
+            <span className="w-3 h-3 rounded-full bg-[#FEF08A] animate-ping shrink-0" />
+            <div>
+              <p className="font-headline font-black text-xs sm:text-sm tracking-wide flex items-center gap-1.5 text-white">
+                <span className="text-[#FEF08A]">★</span> OBRA CATALOGADA NO ACERVO COLETIVO
+              </p>
+              <p className="text-[11px] sm:text-xs font-reading text-stone-200 mt-0.5">
+                Esta obra cumpriu o prazo da assembleia ou foi arquivada pelo comitê. As resenhas e métricas estão salvas no <strong>Acervo & Resenhas</strong>.
+              </p>
+            </div>
+          </div>
+          <span className="text-[10px] font-mono font-black uppercase px-3 py-1 rounded bg-[#FEF08A] text-[#141414] border border-[#1E1E1E] shadow-sm shrink-0">
+            Status: Concluído ★
+          </span>
+        </div>
+      )}
 
       {/* Conteúdo Principal: Capa 3D + Detalhes */}
       <div className="grid grid-cols-1 md:grid-cols-12 gap-8 items-start">

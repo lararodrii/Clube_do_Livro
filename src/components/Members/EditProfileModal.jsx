@@ -3,14 +3,12 @@ import { useClub } from '../../context/ClubContext';
 import { X, UserCheck, Sparkles, Image, Palette, BookMarked, FileText } from 'lucide-react';
 
 const AVATAR_PRESETS = [
-  'https://images.unsplash.com/photo-1514888286974-6c03e2ca1dba?auto=format&fit=crop&w=400&q=80',
-  'https://images.unsplash.com/photo-1573865526739-10659fec78a5?auto=format&fit=crop&w=400&q=80',
-  'https://images.unsplash.com/photo-1533738363-b7f9aef128ce?auto=format&fit=crop&w=400&q=80',
-  'https://images.unsplash.com/photo-1543852786-1cf6624b9987?auto=format&fit=crop&w=400&q=80',
-  'https://images.unsplash.com/photo-1507984211203-76701d7bb120?auto=format&fit=crop&w=400&q=80',
-  'https://images.unsplash.com/photo-1561948955-570b270e7c36?auto=format&fit=crop&w=400&q=80',
-  'https://images.unsplash.com/photo-1495360010541-f48722b34f7d?auto=format&fit=crop&w=400&q=80',
-  'https://images.unsplash.com/photo-1518791841217-8f162f1e1131?auto=format&fit=crop&w=400&q=80'
+  '/avatars/gato1.jpg',
+  '/avatars/gato2.jpg',
+  '/avatars/gato3.jpg',
+  '/avatars/gato4.jpg',
+  '/avatars/gato5.jpg',
+  '/avatars/gato6.jpg'
 ];
 
 const COLOR_PRESETS = [

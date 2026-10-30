@@ -23,11 +23,13 @@ export default function BookEvaluationModal({ isOpen, onClose }) {
   const existingReview = currentReading?.reviews?.find(r => r.memberId === activeMember.id);
 
   const [rating, setRating] = useState(5);
+  const [hoverRating, setHoverRating] = useState(0);
   const [comment, setComment] = useState('');
   const [recommendation, setRecommendation] = useState(RECOMMENDATION_OPTIONS[0]);
   const [pacing, setPacing] = useState(PACING_OPTIONS[1]);
 
   useEffect(() => {
+    setHoverRating(0);
     if (existingReview) {
       setRating(existingReview.rating || 5);
       setComment(existingReview.comment || '');
@@ -40,6 +42,25 @@ export default function BookEvaluationModal({ isOpen, onClose }) {
       setPacing(PACING_OPTIONS[1]);
     }
   }, [existingReview, isOpen]);
+
+  const displayRating = hoverRating || rating;
+
+  const getRatingLegend = (stars) => {
+    switch (stars) {
+      case 5:
+        return '👑 Obra-prima indispensável!';
+      case 4:
+        return '★ Excelente leitura coletiva!';
+      case 3:
+        return '▲ Boa leitura com altos e baixos.';
+      case 2:
+        return '▼ Deixou a desejar.';
+      case 1:
+        return '✖ Decepção teórica/literária.';
+      default:
+        return 'Selecione uma nota de 1 a 5 estrelas';
+    }
+  };
 
   if (!isOpen) return null;
 
@@ -108,30 +129,27 @@ export default function BookEvaluationModal({ isOpen, onClose }) {
             </span>
           </div>
 
-          {/* Seletor de Nota em Estrelas */}
+          {/* Seletor de Nota em Estrelas Interativas */}
           <div className="bg-white p-4 rounded-xl border-2 border-[#1E1E1E] shadow-[3px_3px_0px_#1E1E1E]">
             <div className="flex items-center justify-between mb-2">
               <label className="text-xs font-mono font-bold text-[#141414] uppercase tracking-wider">
                 Sua Nota para o Livro:
               </label>
-              <span className="font-mono font-black text-sm text-[#D62828] bg-[#FEF08A] px-2 py-0.5 rounded border border-[#1E1E1E]">
-                ★ {rating}.0 / 5.0
+              <span className="font-mono font-black text-sm text-[#B45309] bg-[#FEF08A] px-2.5 py-1 rounded-lg border-2 border-[#1E1E1E] shadow-[2px_2px_0px_#1E1E1E] flex items-center gap-1 transition-all">
+                <span className="text-[#F59E0B]">★</span> {displayRating}.0 / 5.0
               </span>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-3">
               <StarRating
                 rating={rating}
                 interactive={true}
                 size="lg"
                 onChange={(newRating) => setRating(newRating)}
+                onHoverChange={(hVal) => setHoverRating(hVal)}
                 showValue={false}
               />
-              <span className="text-xs font-reading font-semibold text-[#57534E] ml-2">
-                {rating === 5 && '👑 Obra-prima indispensável!'}
-                {rating === 4 && '★ Excelente leitura coletiva!'}
-                {rating === 3 && '▲ Boa leitura com altos e baixos.'}
-                {rating === 2 && '▼ Deixou a desejar.'}
-                {rating === 1 && '✖ Decepção teórica/literária.'}
+              <span className="text-xs font-reading font-bold text-[#141414] bg-[#FAF7F0] px-3 py-1.5 rounded-lg border border-[#1E1E1E] transition-all">
+                {getRatingLegend(displayRating)}
               </span>
             </div>
           </div>

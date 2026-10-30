@@ -86,6 +86,16 @@ export default function BookDetailsModal({ book, isOpen, onClose }) {
               <span className="text-[11px] font-mono font-black uppercase tracking-wider px-2.5 py-1 rounded bg-[#D62828] text-white border-2 border-[#1E1E1E] shadow-[2px_2px_0px_#1E1E1E] flex items-center gap-1">
                 <span className="text-[#FEF08A]">★</span> Lido em {book.readMonth}
               </span>
+              {book.status && (
+                <span className="text-[11px] font-mono font-black uppercase tracking-wider px-2.5 py-1 rounded bg-[#283618] text-[#FEF08A] border-2 border-[#1E1E1E] shadow-[2px_2px_0px_#1E1E1E]">
+                  Status: {book.status} ★
+                </span>
+              )}
+              {book.assemblyDate && (
+                <span className="text-[11px] font-mono font-bold text-[#9E2A2B] bg-[#FDF0ED] px-2.5 py-1 rounded border-2 border-[#1E1E1E] shadow-[2px_2px_0px_#1E1E1E]">
+                  Assembleia: {book.assemblyDate}
+                </span>
+              )}
               <span className="text-[11px] font-mono font-bold text-[#141414] bg-white px-2.5 py-1 rounded border-2 border-[#1E1E1E] shadow-[2px_2px_0px_#1E1E1E]">
                 {book.pages} páginas
               </span>
