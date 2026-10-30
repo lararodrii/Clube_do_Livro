@@ -174,52 +174,52 @@ export default function NextMeetingCard() {
           )}
         </div>
 
-        {/* CONTADOR REGRESSIVO DE ALTO CONTRASTE COM BLOCOS NEO-BRUTALISTAS AMPLOS */}
-        <div className="lg:col-span-6 bg-[#FAF7F0] p-4 sm:p-6 rounded-2xl border-2 border-[#1E1E1E] shadow-[4px_4px_0px_#1E1E1E] flex flex-col justify-center">
-          <div className="flex items-center justify-center gap-1.5 text-center text-xs font-mono font-black uppercase tracking-wider text-[#D62828] mb-4">
-            <Timer className="w-4 h-4 text-[#D62828]" />
+        {/* CONTADOR REGRESSIVO DE ALTO CONTRASTE TOTALMENTE CONTIDO */}
+        <div className="w-full lg:col-span-6 bg-[#FAF7F0] p-3 sm:p-4 rounded-2xl border-2 border-[#1E1E1E] shadow-[4px_4px_0px_#1E1E1E] flex flex-col justify-center items-center overflow-hidden">
+          <div className="flex items-center justify-center gap-1.5 text-center text-xs font-mono font-black uppercase tracking-wider text-[#D62828] mb-3">
+            <Timer className="w-3.5 h-3.5 text-[#D62828]" />
             <span>Contagem Regressiva para o Debate ★</span>
           </div>
 
-          <div className="grid grid-cols-4 gap-2 sm:gap-3.5 text-center w-full max-w-lg mx-auto">
+          <div className="flex items-center justify-center gap-1.5 sm:gap-2 w-full max-w-xs sm:max-w-sm mx-auto">
             
             {/* Dias */}
-            <div className="bg-[#141414] text-[#FEF08A] py-3.5 px-2 sm:px-3 rounded-xl border-2 border-[#1E1E1E] shadow-[3px_3px_0px_#BC6C25] flex flex-col items-center justify-center min-h-[88px] sm:min-h-[96px] min-w-0 overflow-hidden">
-              <span className="font-mono text-2xl sm:text-3xl md:text-4xl font-black block leading-none tabular-nums tracking-normal">
+            <div className="flex-1 min-w-0 w-12 sm:w-14 bg-[#141414] text-[#FEF08A] py-2 px-1 rounded-xl border-2 border-[#1E1E1E] shadow-[2px_2px_0px_#BC6C25] flex flex-col items-center justify-center text-center">
+              <span className="font-mono text-xl sm:text-2xl font-bold block leading-none tabular-nums text-center">
                 {String(timeLeft.days).padStart(2, '0')}
               </span>
-              <span className="text-[10px] sm:text-[11px] text-stone-300 uppercase tracking-widest font-mono font-black mt-2 leading-none">
-                Dias
+              <span className="text-[9px] sm:text-[10px] font-semibold tracking-normal text-stone-300 font-mono mt-0.5 leading-none text-center">
+                DIAS
               </span>
             </div>
 
-            {/* Horas */}
-            <div className="bg-[#141414] text-[#FEF08A] py-3.5 px-2 sm:px-3 rounded-xl border-2 border-[#1E1E1E] shadow-[3px_3px_0px_#BC6C25] flex flex-col items-center justify-center min-h-[88px] sm:min-h-[96px] min-w-0 overflow-hidden">
-              <span className="font-mono text-2xl sm:text-3xl md:text-4xl font-black block leading-none tabular-nums tracking-normal">
+            {/* Hora */}
+            <div className="flex-1 min-w-0 w-12 sm:w-14 bg-[#141414] text-[#FEF08A] py-2 px-1 rounded-xl border-2 border-[#1E1E1E] shadow-[2px_2px_0px_#BC6C25] flex flex-col items-center justify-center text-center">
+              <span className="font-mono text-xl sm:text-2xl font-bold block leading-none tabular-nums text-center">
                 {String(timeLeft.hours).padStart(2, '0')}
               </span>
-              <span className="text-[10px] sm:text-[11px] text-stone-300 uppercase tracking-widest font-mono font-black mt-2 leading-none">
-                Horas
+              <span className="text-[9px] sm:text-[10px] font-semibold tracking-normal text-stone-300 font-mono mt-0.5 leading-none text-center">
+                HORA
               </span>
             </div>
 
-            {/* Minutos */}
-            <div className="bg-[#141414] text-[#FEF08A] py-3.5 px-2 sm:px-3 rounded-xl border-2 border-[#1E1E1E] shadow-[3px_3px_0px_#BC6C25] flex flex-col items-center justify-center min-h-[88px] sm:min-h-[96px] min-w-0 overflow-hidden">
-              <span className="font-mono text-2xl sm:text-3xl md:text-4xl font-black block leading-none tabular-nums tracking-normal">
+            {/* Min */}
+            <div className="flex-1 min-w-0 w-12 sm:w-14 bg-[#141414] text-[#FEF08A] py-2 px-1 rounded-xl border-2 border-[#1E1E1E] shadow-[2px_2px_0px_#BC6C25] flex flex-col items-center justify-center text-center">
+              <span className="font-mono text-xl sm:text-2xl font-bold block leading-none tabular-nums text-center">
                 {String(timeLeft.minutes).padStart(2, '0')}
               </span>
-              <span className="text-[10px] sm:text-[11px] text-stone-300 uppercase tracking-widest font-mono font-black mt-2 leading-none">
-                Min
+              <span className="text-[9px] sm:text-[10px] font-semibold tracking-normal text-stone-300 font-mono mt-0.5 leading-none text-center">
+                MIN
               </span>
             </div>
 
-            {/* Segundos */}
-            <div className="bg-[#141414] text-[#FEF08A] py-3.5 px-2 sm:px-3 rounded-xl border-2 border-[#1E1E1E] shadow-[3px_3px_0px_#BC6C25] flex flex-col items-center justify-center min-h-[88px] sm:min-h-[96px] min-w-0 overflow-hidden">
-              <span className="font-mono text-2xl sm:text-3xl md:text-4xl font-black text-[#D62828] block leading-none tabular-nums tracking-normal">
+            {/* Seg */}
+            <div className="flex-1 min-w-0 w-12 sm:w-14 bg-[#141414] text-[#FEF08A] py-2 px-1 rounded-xl border-2 border-[#1E1E1E] shadow-[2px_2px_0px_#BC6C25] flex flex-col items-center justify-center text-center">
+              <span className="font-mono text-xl sm:text-2xl font-bold text-[#D62828] block leading-none tabular-nums text-center">
                 {String(timeLeft.seconds).padStart(2, '0')}
               </span>
-              <span className="text-[10px] sm:text-[11px] text-stone-300 uppercase tracking-widest font-mono font-black mt-2 leading-none">
-                Seg
+              <span className="text-[9px] sm:text-[10px] font-semibold tracking-normal text-stone-300 font-mono mt-0.5 leading-none text-center">
+                SEG
               </span>
             </div>
 
