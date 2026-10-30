@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useClub } from '../../context/ClubContext';
+import { useAuth } from '../../context/AuthContext';
 import ComradeCat from '../common/ComradeCat';
 import { 
   Quote, 
@@ -24,6 +25,7 @@ export default function QuotesWall() {
     currentReading,
     triggerComradeConfetti
   } = useClub();
+  const { isAuthenticated, openAuthModal } = useAuth();
 
   const [text, setText] = useState('');
   const [page, setPage] = useState('');
@@ -36,6 +38,10 @@ export default function QuotesWall() {
 
   const handleSubmit = (e) => {
     e.preventDefault();
+    if (!isAuthenticated) {
+      openAuthModal('Faça login para publicar uma citação no mural coletivo.', 'login');
+      return;
+    }
     if (!text.trim()) return;
 
     setIsSubmitting(true);
@@ -50,9 +56,29 @@ export default function QuotesWall() {
   };
 
   const handleStartEdit = (quote) => {
+    if (!isAuthenticated) {
+      openAuthModal('Faça login para editar sua citação.', 'login');
+      return;
+    }
     setEditingId(quote.id);
     setEditText(quote.text);
     setEditPage(quote.page || '');
+  };
+
+  const handleDelete = (quoteId) => {
+    if (!isAuthenticated) {
+      openAuthModal('Faça login para excluir sua citação.', 'login');
+      return;
+    }
+    deleteQuote(quoteId);
+  };
+
+  const handleLikeClick = (quoteId) => {
+    if (!isAuthenticated) {
+      openAuthModal('Faça login para curtir citações no mural coletivo.', 'login');
+      return;
+    }
+    toggleQuoteLike(quoteId);
   };
 
   const handleSaveEdit = (quoteId) => {
@@ -98,11 +124,12 @@ export default function QuotesWall() {
           <img
             src={activeMember.avatar}
             alt={activeMember.name}
-            className="w-8 h-8 rounded-lg object-cover border-2 border-[#1E1E1E]"
+            className="w-9 h-9 rounded-lg object-cover border-2 border-[#1E1E1E] shadow-sm"
           />
           <div>
             <p className="text-xs font-mono font-black text-[#141414]">
-              Publicar como: <span className="text-[#D62828]">{activeMember.name}</span>
+              Publicando como: <span className="text-[#D62828] font-black">{activeMember.name}</span>
+              <span className="text-[10px] text-[#283618] ml-1.5 font-bold">({activeMember.roleBadge})</span>
             </p>
             <p className="text-[10px] text-[#57534E] font-reading">
               Qual trecho do livro chamou a sua atenção hoje?
@@ -143,13 +170,19 @@ export default function QuotesWall() {
       {quotes.length === 0 ? (
         <div className="p-8 sm:p-10 text-center bg-[#FAF7F0] rounded-xl border-2 border-[#1E1E1E] shadow-[3px_3px_0px_#1E1E1E] flex flex-col items-center">
           <div className="mb-2">
-            <ComradeCat pose="sleeping" size="md" showBubble={false} />
+            <ComradeCat 
+              pose="reading" 
+              size="md" 
+              showBubble={true} 
+              customQuote="Camaradas, destaque uma passagem e compartilhe com o comitê!" 
+              bubblePosition="top" 
+            />
           </div>
-          <h4 className="font-headline font-black text-lg text-[#141414] mb-1">
+          <h4 className="font-headline font-black text-lg text-[#141414] mb-1 mt-2">
             Nenhuma citação pregada no mural ainda!
           </h4>
           <p className="text-xs text-[#57534E] font-reading max-w-md mx-auto italic">
-            O Gato Camarada está tirando uma soneca sobre os livros enquanto espera você destacar uma passagem impactante de "{currentReading.title}". Seja a primeira!
+            O Gato Camarada está esperando você destacar uma passagem impactante de "{currentReading.title}". Seja a primeira!
           </p>
         </div>
       ) : (
@@ -157,14 +190,14 @@ export default function QuotesWall() {
           {quotes.map((quote) => {
             const authorMember = members.find(m => m.id === quote.memberId) || {
               name: quote.authorName || 'Camarada',
-              avatar: '',
+              avatar: quote.authorAvatar || activeMember.avatar,
               color: '#D62828'
             };
 
             const isAuthor = quote.memberId === activeMember.id;
             const isEditing = editingId === quote.id;
-            const isLiked = quote.likedBy?.includes(activeMember.id);
-            const likesCount = quote.likedBy?.length || 0;
+            const isLiked = (quote.likedBy || quote.likes || []).includes(activeMember.id);
+            const likesCount = (quote.likedBy || quote.likes || []).length;
 
             return (
               <div
@@ -179,14 +212,14 @@ export default function QuotesWall() {
                 <div className="flex items-center justify-between gap-2 mb-3">
                   <div className="flex items-center gap-2.5">
                     <img
-                      src={authorMember.avatar}
-                      alt={authorMember.name}
+                      src={authorMember.avatar || quote.authorAvatar || activeMember.avatar}
+                      alt={authorMember.name || quote.authorName}
                       className="w-8 h-8 rounded-lg object-cover border-2 border-[#1E1E1E]"
                     />
                     <div>
                       <div className="flex items-center gap-1.5">
                         <span className="text-xs font-headline font-bold text-[#141414]">
-                          {authorMember.name}
+                          {authorMember.name || quote.authorName}
                         </span>
                         {isAuthor && (
                           <span className="text-[9px] font-mono bg-[#D62828] text-white font-bold px-1.5 py-0.2 rounded border border-[#1E1E1E]">
@@ -202,7 +235,7 @@ export default function QuotesWall() {
 
                   <div className="flex items-center gap-2">
                     {quote.page && (
-                      <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded bg-white text-[#9E2A2B] border border-[#1E1E1E]">
+                      <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded bg-white text-[#EF4444] border border-[#1E1E1E]">
                         {quote.page}
                       </span>
                     )}
@@ -220,7 +253,7 @@ export default function QuotesWall() {
                         </button>
                         <button
                           type="button"
-                          onClick={() => deleteQuote(quote.id)}
+                          onClick={() => handleDelete(quote.id)}
                           title="Excluir citação"
                           className="p-1 hover:bg-[#D62828] hover:text-white text-[#D62828] border border-[#1E1E1E] rounded transition-colors"
                         >
@@ -277,7 +310,7 @@ export default function QuotesWall() {
                     <div className="flex items-center justify-end pt-2">
                       <button
                         type="button"
-                        onClick={() => toggleQuoteLike(quote.id)}
+                        onClick={() => handleLikeClick(quote.id)}
                         className={`flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-mono font-bold border-2 border-[#1E1E1E] transition-transform hover:-translate-x-0.5 hover:-translate-y-0.5 active:translate-x-0.5 active:translate-y-0.5 ${
                           isLiked 
                             ? 'bg-[#D62828] text-white shadow-[2px_2px_0px_#1E1E1E]' 

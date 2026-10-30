@@ -10,6 +10,7 @@ import {
   INITIAL_BALLOT,
   INITIAL_ARCHIVE
 } from '../data/initialData';
+import { useAuth } from './AuthContext';
 
 const ClubContext = createContext(null);
 
@@ -39,6 +40,12 @@ export function ClubProvider({ children }) {
     archive: INITIAL_ARCHIVE
   });
 
+  const authContext = useAuth();
+  const currentUser = authContext?.currentUser || null;
+  const userProfile = authContext?.userProfile || null;
+  const isAuthenticated = authContext?.isAuthenticated || false;
+  const openAuthModal = authContext?.openAuthModal || (() => {});
+
   // Membro ativo da sessão (identifica qual camarada está conectada neste dispositivo)
   const [activeMemberId, setActiveMemberId] = useState(() => {
     try {
@@ -47,6 +54,16 @@ export function ClubProvider({ children }) {
       return 'm1';
     }
   });
+
+  // Sincroniza automaticamente o perfil ativo quando a camarada estiver autenticada
+  useEffect(() => {
+    if (userProfile?.memberId) {
+      setActiveMemberId(userProfile.memberId);
+      try {
+        localStorage.setItem('clube_active_member_id', userProfile.memberId);
+      } catch {}
+    }
+  }, [userProfile?.memberId]);
 
   const [toast, setToast] = useState(null);
 
@@ -158,6 +175,11 @@ export function ClubProvider({ children }) {
 
   // === EDIÇÃO DE PERFIL DO MEMBRO ===
   const updateMemberProfile = (memberId, updatedFields) => {
+    if (!currentUser) {
+      openAuthModal('Faça login com seu perfil de camarada para editar suas informações!', 'login');
+      return;
+    }
+
     const updatedMembers = data.members.map(m => {
       if (m.id === memberId) {
         return {
@@ -177,6 +199,11 @@ export function ClubProvider({ children }) {
 
   // === EDIÇÃO E GERENCIAMENTO DA REUNIÃO ===
   const updateMeeting = (meetingData) => {
+    if (!currentUser) {
+      openAuthModal('Acesso restrito: faça login para editar os detalhes da reunião!', 'login');
+      return;
+    }
+
     const updatedMeeting = {
       ...data.meeting,
       ...meetingData
@@ -191,6 +218,11 @@ export function ClubProvider({ children }) {
 
   // === METAS DE LEITURA (Semanais) ===
   const toggleWeeklyGoal = (goalId) => {
+    if (!currentUser) {
+      openAuthModal('Faça login para registrar o cumprimento da sua meta de leitura!', 'login');
+      return;
+    }
+
     const current = data.currentReading;
     const memberGoals = current.memberProgress?.[activeMember.id] || [];
     const hasCompleted = memberGoals.includes(goalId);
@@ -225,6 +257,11 @@ export function ClubProvider({ children }) {
 
   // === EDIÇÃO DO LIVRO ATUAL ===
   const updateCurrentReading = (updatedFields) => {
+    if (!currentUser) {
+      openAuthModal('Acesso restrito: faça login para alterar os dados da obra atual!', 'login');
+      return;
+    }
+
     const updatedReading = {
       ...data.currentReading,
       ...updatedFields
@@ -240,6 +277,11 @@ export function ClubProvider({ children }) {
 
   // === AVALIAÇÃO DA OBRA ATUAL (SEMANA 4) ===
   const submitCurrentBookReview = ({ rating, comment, recommendation, pacing }) => {
+    if (!currentUser) {
+      openAuthModal('Faça login para registrar sua avaliação crítica da leitura!', 'login');
+      return false;
+    }
+
     if (!rating) {
       showToast('Por favor, selecione uma nota de 1 a 5 estrelas.', 'error');
       return false;
@@ -283,6 +325,11 @@ export function ClubProvider({ children }) {
 
   // === RSVP (Confirmação de Presença) ===
   const toggleRsvp = () => {
+    if (!currentUser) {
+      openAuthModal('Faça login para confirmar sua presença na assembleia literária!', 'login');
+      return;
+    }
+
     const isConfirmed = data.meeting.confirmedMembers?.includes(activeMember.id);
     const newConfirmed = isConfirmed
       ? data.meeting.confirmedMembers.filter(id => id !== activeMember.id)
@@ -309,16 +356,30 @@ export function ClubProvider({ children }) {
 
   // === MURAL DE CITAÇÕES ===
   const addQuote = ({ page, text }) => {
+    if (!currentUser) {
+      openAuthModal('Faça login para pregar citações no Mural Revolucionário!', 'login');
+      return;
+    }
+
     if (!text || !text.trim()) return;
 
+    const formattedPage = page 
+      ? (String(page).trim().startsWith('p.') ? String(page).trim() : `p. ${String(page).trim()}`)
+      : null;
+
     const newQuote = {
-      id: `q-${Date.now()}`,
-      bookTitle: data.currentReading.title,
-      page: parseInt(page, 10) || null,
+      id: `q-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+      bookTitle: data.currentReading?.title || 'Leitura Coletiva',
+      page: formattedPage,
       text: text.trim(),
       memberId: activeMember.id,
+      authorName: activeMember.name,
+      authorAvatar: activeMember.avatar,
+      authorRole: activeMember.roleBadge || activeMember.nickname || 'Membro do Coletivo',
+      date: new Date().toLocaleDateString('pt-BR'),
       createdAt: new Date().toISOString(),
-      likes: []
+      likes: [],
+      likedBy: []
     };
 
     const updatedQuotes = [newQuote, ...(data.quotes || [])];
@@ -339,7 +400,7 @@ export function ClubProvider({ children }) {
         return {
           ...q,
           text: text.trim(),
-          page: parseInt(page, 10) || null
+          page: page ? (String(page).trim().startsWith('p.') ? String(page).trim() : `p. ${String(page).trim()}`) : null
         };
       }
       return q;
@@ -361,11 +422,12 @@ export function ClubProvider({ children }) {
   const toggleQuoteLike = (quoteId) => {
     const updatedQuotes = (data.quotes || []).map(q => {
       if (q.id === quoteId) {
-        const hasLiked = q.likes?.includes(activeMember.id);
+        const currentLikes = q.likedBy || q.likes || [];
+        const hasLiked = currentLikes.includes(activeMember.id);
         const newLikes = hasLiked
-          ? q.likes.filter(id => id !== activeMember.id)
-          : [...(q.likes || []), activeMember.id];
-        return { ...q, likes: newLikes };
+          ? currentLikes.filter(id => id !== activeMember.id)
+          : [...currentLikes, activeMember.id];
+        return { ...q, likes: newLikes, likedBy: newLikes };
       }
       return q;
     });
@@ -391,33 +453,40 @@ export function ClubProvider({ children }) {
     syncToCloud({ ballot: updatedBallot });
   };
 
-  // Votar em um livro
+  // Votar em um livro (Limite rigoroso de no máximo 3 votos por membro ativo)
   const toggleVote = (bookId) => {
-    if (data.ballot.status !== 'open') {
+    if (!currentUser) {
+      openAuthModal('Faça login com seu perfil para votar na Urna Popular!', 'login');
+      return;
+    }
+
+    if (data.ballot?.status !== 'open') {
       showToast('A votação está encerrada no momento.', 'error');
       return;
     }
 
-    const currentBook = data.ballot.books.find(b => b.id === bookId);
+    const currentBook = data.ballot?.books?.find(b => b.id === bookId);
     if (!currentBook) return;
 
-    const alreadyVotedThis = currentBook.votes.includes(activeMember.id);
+    const alreadyVotedThis = (currentBook.votes || []).includes(activeMember.id);
+    const maxVotes = data.ballot?.maxVotesPerMember || 3;
 
-    // Contar quantos votos o membro ativo já tem na urna
-    const totalVotesByMember = data.ballot.books.reduce((acc, book) => {
-      return acc + (book.votes.includes(activeMember.id) ? 1 : 0);
+    // Contar rigorosamente quantos votos o membro ativo já tem na urna
+    const totalVotesByMember = (data.ballot?.books || []).reduce((acc, book) => {
+      return acc + ((book.votes || []).includes(activeMember.id) ? 1 : 0);
     }, 0);
 
-    if (!alreadyVotedThis && totalVotesByMember >= data.ballot.maxVotesPerMember) {
-      showToast(`Você já atingiu seu limite de ${data.ballot.maxVotesPerMember} votos nesta rodada.`, 'error');
+    if (!alreadyVotedThis && totalVotesByMember >= maxVotes) {
+      showToast(`Votos esgotados nesta rodada! Você já utilizou seus ${maxVotes} votos permitidos.`, 'error');
       return;
     }
 
-    const updatedBooks = data.ballot.books.map(b => {
+    const updatedBooks = (data.ballot?.books || []).map(b => {
       if (b.id === bookId) {
+        const bookVotes = b.votes || [];
         const newVotes = alreadyVotedThis
-          ? b.votes.filter(id => id !== activeMember.id)
-          : [...b.votes, activeMember.id];
+          ? bookVotes.filter(id => id !== activeMember.id)
+          : [...bookVotes, activeMember.id];
         return { ...b, votes: newVotes };
       }
       return b;
@@ -778,30 +847,36 @@ export function ClubProvider({ children }) {
     showToast('Sua resenha foi removida do acervo.', 'info');
   };
 
-  // Estatísticas calculadas dinamicamente
+  // Estatísticas calculadas dinamicamente com tratamento 100% defensivo
   const stats = React.useMemo(() => {
-    const archivePages = (data.archive || []).reduce((acc, b) => acc + (b.pages || 0), 0);
-    const goalsDone = data.currentReading.readingGoals?.length || 4;
-    const memberProgress = data.currentReading.memberProgress || {};
-    const totalGoalsCompleted = Object.values(memberProgress).flat().length;
-    const avgCompletion = totalGoalsCompleted / (data.members.length * goalsDone || 1);
-    const currentReadingPages = Math.round((data.currentReading.pages || 0) * avgCompletion);
+    const archiveList = Array.isArray(data.archive) ? data.archive : [];
+    const archivePages = archiveList.reduce((acc, b) => acc + (Number(b?.pages) || 0), 0);
     
-    const totalPagesYear = archivePages + currentReadingPages;
-    const meetingsHeld = (data.archive || []).length;
+    const readingGoals = data.currentReading?.readingGoals || [];
+    const goalsDone = readingGoals.length || 4;
+    const memberProgress = data.currentReading?.memberProgress || {};
+    const totalGoalsCompleted = Object.values(memberProgress).flat().length || 0;
+    const membersCount = Array.isArray(data.members) && data.members.length > 0 ? data.members.length : 1;
+    const totalPossibleGoals = membersCount * goalsDone;
+    const avgCompletion = totalPossibleGoals > 0 ? (totalGoalsCompleted / totalPossibleGoals) : 0;
+    const currentReadingPages = Math.round((Number(data.currentReading?.pages) || 0) * (avgCompletion || 0));
+    
+    const totalPagesYear = (archivePages || 0) + (currentReadingPages || 0);
+    const meetingsHeld = archiveList.length || 0;
 
-    // Todas as avaliações (acervo + leitura atual)
+    // Todas as avaliações válidas (acervo + leitura atual)
     const allReviews = [
-      ...(data.archive || []).flatMap(b => b.reviews || []),
-      ...(data.currentReading?.reviews || [])
-    ];
+      ...archiveList.flatMap(b => Array.isArray(b?.reviews) ? b.reviews : []),
+      ...(Array.isArray(data.currentReading?.reviews) ? data.currentReading.reviews : [])
+    ].filter(r => r && typeof r.rating === 'number' && !isNaN(r.rating));
     
+    const totalRatingSum = allReviews.reduce((acc, r) => acc + (Number(r.rating) || 0), 0);
     const averageRating = allReviews.length > 0 
-      ? (allReviews.reduce((acc, r) => acc + r.rating, 0) / allReviews.length).toFixed(1)
+      ? (totalRatingSum / allReviews.length).toFixed(1)
       : '5.0';
 
     const genreCounts = {};
-    [...(data.archive || []), data.currentReading].forEach(b => {
+    [...archiveList, data.currentReading].forEach(b => {
       if (b && b.genre) {
         const g = b.genre?.split('/')[0]?.split('&')[0]?.trim() || 'Literatura';
         genreCounts[g] = (genreCounts[g] || 0) + 1;
@@ -817,13 +892,13 @@ export function ClubProvider({ children }) {
     });
 
     return {
-      totalPagesYear,
-      meetingsHeld,
-      averageRating,
-      topGenre,
-      totalQuotes: (data.quotes || []).length,
-      totalBooksRead: (data.archive || []).length + ((data.currentReading?.reviews || []).length > 0 ? 1 : 0),
-      totalReviewsCount: allReviews.length
+      totalPagesYear: totalPagesYear || 0,
+      meetingsHeld: meetingsHeld || 0,
+      averageRating: averageRating || '5.0',
+      topGenre: topGenre || 'Literatura Revolucionária',
+      totalQuotes: (data.quotes || []).length || 0,
+      totalBooksRead: archiveList.length + ((data.currentReading?.reviews || []).length > 0 ? 1 : 0),
+      totalReviewsCount: allReviews.length || 0
     };
   }, [data]);
 
@@ -861,7 +936,11 @@ export function ClubProvider({ children }) {
         resetToDefaults,
         toast,
         showToast,
-        closeToast
+        closeToast,
+        currentUser,
+        userProfile,
+        isAuthenticated,
+        openAuthModal
       }}
     >
       {children}

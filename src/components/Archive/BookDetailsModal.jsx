@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useClub } from '../../context/ClubContext';
+import { useAuth } from '../../context/AuthContext';
 import BookCover from '../common/BookCover';
 import StarRating from '../common/StarRating';
 import { 
@@ -16,6 +17,7 @@ import {
 
 export default function BookDetailsModal({ book, isOpen, onClose }) {
   const { activeMember, members, addOrUpdateReview, deleteReview } = useClub();
+  const { isAuthenticated, openAuthModal } = useAuth();
 
   if (!isOpen || !book) return null;
 
@@ -46,12 +48,20 @@ export default function BookDetailsModal({ book, isOpen, onClose }) {
 
   const handleReviewSubmit = (e) => {
     e.preventDefault();
+    if (!isAuthenticated) {
+      openAuthModal('Faça login para registrar ou atualizar sua resenha no acervo.', 'login');
+      return;
+    }
     setIsSubmitting(true);
     addOrUpdateReview(book.id, { rating, comment });
     setIsSubmitting(false);
   };
 
   const handleDeleteReview = () => {
+    if (!isAuthenticated) {
+      openAuthModal('Faça login para excluir sua resenha.', 'login');
+      return;
+    }
     deleteReview(book.id, activeMember.id);
     setRating(5);
     setComment('');

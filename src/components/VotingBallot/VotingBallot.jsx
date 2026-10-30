@@ -27,7 +27,9 @@ export default function VotingBallot() {
     toggleVote, 
     toggleBallotStatus, 
     promoteToCurrentBook,
-    triggerComradeConfetti
+    triggerComradeConfetti,
+    isAuthenticated,
+    openAuthModal
   } = useClub();
 
   const [isNominateOpen, setIsNominateOpen] = useState(false);
@@ -39,12 +41,15 @@ export default function VotingBallot() {
   // Total de votos nesta rodada
   const totalBallotVotes = books.reduce((acc, b) => acc + (b.votes?.length || 0), 0);
 
-  // Votos já utilizados pelo membro ativo
+  const maxVotes = ballot.maxVotesPerMember || 3;
+
+  // Votos já utilizados pelo membro ativo (limite estrito de até 3 votos)
   const activeMemberVotesCount = books.reduce((acc, b) => {
-    return acc + (b.votes?.includes(activeMember.id) ? 1 : 0);
+    return acc + ((b.votes || []).includes(activeMember.id) ? 1 : 0);
   }, 0);
 
-  const remainingVotes = ballot.maxVotesPerMember - activeMemberVotesCount;
+  const remainingVotes = Math.max(0, maxVotes - activeMemberVotesCount);
+  const isQuotaReached = activeMemberVotesCount >= maxVotes;
 
   // Encontrar o(s) livro(s) líder(es) de votação
   const sortedBooks = [...books].sort((a, b) => (b.votes?.length || 0) - (a.votes?.length || 0));
@@ -52,10 +57,38 @@ export default function VotingBallot() {
   const isLeader = (book) => topVotes > 0 && book.votes?.length === topVotes;
 
   const handleVoteClick = (bookId) => {
+    if (!isAuthenticated) {
+      openAuthModal('Identifique-se com sua conta para votar na Urna Popular!', 'login');
+      return;
+    }
     toggleVote(bookId);
     if (triggerComradeConfetti) {
       triggerComradeConfetti();
     }
+  };
+
+  const handleNominateClick = () => {
+    if (!isAuthenticated) {
+      openAuthModal('Faça login para indicar novas obras na Urna Popular!', 'login');
+      return;
+    }
+    setIsNominateOpen(true);
+  };
+
+  const handleToggleBallotStatus = () => {
+    if (!isAuthenticated) {
+      openAuthModal('Acesso restrito: faça login para abrir ou fechar a urna popular!', 'login');
+      return;
+    }
+    toggleBallotStatus();
+  };
+
+  const handlePromoteClick = (bookId) => {
+    if (!isAuthenticated) {
+      openAuthModal('Acesso restrito: faça login para eleger o livro do mês!', 'login');
+      return;
+    }
+    promoteToCurrentBook(bookId);
   };
 
   return (
@@ -106,19 +139,33 @@ export default function VotingBallot() {
           {/* Painel de Votos do Membro & Ações Rápidas */}
           <div className="flex flex-wrap items-center gap-3">
             
-            {/* Votos Usados */}
-            <div className="bg-[#FAF7F0] px-4 py-2.5 rounded-xl border-2 border-[#1E1E1E] shadow-[3px_3px_0px_#1E1E1E] text-center">
-              <span className="text-[9px] font-mono text-[#57534E] font-bold uppercase tracking-wider block">
-                Cédulas Utilizadas:
-              </span>
-              <span className="text-sm font-mono font-black text-[#D62828]">
-                {activeMemberVotesCount} / {ballot.maxVotesPerMember} votos
-              </span>
-            </div>
+            {/* Votos Usados / Cota de Votos */}
+            {isQuotaReached ? (
+              <div className="bg-[#D62828] text-white px-3.5 py-2 rounded-xl border-2 border-[#1E1E1E] shadow-[3px_3px_0px_#1E1E1E] text-center flex items-center gap-2">
+                <span className="w-2.5 h-2.5 rounded-full bg-[#FEF08A] animate-ping shrink-0" />
+                <div className="text-left">
+                  <span className="text-[10px] font-mono font-black uppercase tracking-wider text-[#FEF08A] block leading-none">
+                    ★ Votos esgotados nesta rodada
+                  </span>
+                  <span className="text-[11px] font-mono font-bold text-white leading-tight">
+                    {activeMemberVotesCount} de {maxVotes} votos utilizados
+                  </span>
+                </div>
+              </div>
+            ) : (
+              <div className="bg-[#FAF7F0] px-4 py-2 rounded-xl border-2 border-[#1E1E1E] shadow-[3px_3px_0px_#1E1E1E] text-center">
+                <span className="text-[9px] font-mono text-[#57534E] font-bold uppercase tracking-wider block">
+                  Cédulas Restantes:
+                </span>
+                <span className="text-sm font-mono font-black text-[#D62828]">
+                  {remainingVotes} de {maxVotes} votos
+                </span>
+              </div>
+            )}
 
             {/* Alternar Status (Administrador da Urna) */}
             <button
-              onClick={toggleBallotStatus}
+              onClick={handleToggleBallotStatus}
               title="Abrir ou fechar a urna de votação"
               className="flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl text-xs font-mono font-bold bg-white hover:bg-[#FAF7F0] text-[#141414] border-2 border-[#1E1E1E] shadow-[3px_3px_0px_#1E1E1E] transition-transform hover:-translate-x-0.5 hover:-translate-y-0.5 active:translate-x-0.5 active:translate-y-0.5"
             >
@@ -137,7 +184,7 @@ export default function VotingBallot() {
 
             {/* BOTÃO DE INDICAÇÃO (ILIMITADO) */}
             <button
-              onClick={() => setIsNominateOpen(true)}
+              onClick={handleNominateClick}
               className="flex items-center gap-2 px-5 py-2.5 bg-[#D62828] hover:bg-[#9E2A2B] text-white rounded-xl text-xs font-headline font-black uppercase tracking-wider border-2 border-[#1E1E1E] shadow-[4px_4px_0px_#1E1E1E] transition-transform hover:-translate-x-0.5 hover:-translate-y-0.5 active:translate-x-0.5 active:translate-y-0.5"
             >
               <BookPlus className="w-4 h-4 text-[#FEF08A]" />
@@ -170,7 +217,7 @@ export default function VotingBallot() {
             {sortedBooks.length > 0 && topVotes > 0 && (
               <button
                 type="button"
-                onClick={() => promoteToCurrentBook(sortedBooks[0].id)}
+                onClick={() => handlePromoteClick(sortedBooks[0].id)}
                 className="flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-mono font-black bg-[#283618] hover:bg-[#1E2812] text-[#FEF08A] border-2 border-[#1E1E1E] shadow-[3px_3px_0px_#1E1E1E] transition-transform hover:-translate-x-0.5 hover:-translate-y-0.5"
               >
                 <span>★</span>
@@ -181,24 +228,30 @@ export default function VotingBallot() {
         </div>
       </div>
 
-      {/* Grid de Cards dos Livros na Urna OU Empty State com o Mascote */}
+      {/* Grid de Cards dos Livros na Urna OU Empty State Padronizado com o Gato Camarada */}
       {books.length === 0 ? (
-        <div className="retro-card rounded-2xl p-10 sm:p-14 text-center bg-[#FAF7F0] border-2 border-[#1E1E1E] shadow-[6px_6px_0px_#1E1E1E] flex flex-col items-center">
-          <div className="mb-4">
-            <ComradeCat pose="sleeping" size="lg" showBubble={false} />
+        <div className="retro-card rounded-2xl p-8 sm:p-12 text-center bg-[#FAF7F0] border-2 border-[#1E1E1E] shadow-[6px_6px_0px_#1E1E1E] flex flex-col items-center">
+          <div className="mb-3">
+            <ComradeCat 
+              pose="reading" 
+              size="lg" 
+              showBubble={true}
+              customQuote="Camaradas, a urna está zerada! Quem vai indicar a primeira obra?"
+              bubblePosition="top"
+            />
           </div>
-          <h3 className="font-headline font-black text-2xl text-[#141414] mb-2">
-            A Urna Popular está limpa e vazia!
+          <h3 className="font-headline font-black text-2xl text-[#141414] mb-2 mt-2">
+            Urna Popular Pronta para Votação!
           </h3>
           <p className="text-sm text-[#57534E] max-w-md mx-auto mb-6 font-reading italic leading-relaxed">
-            O Gato Camarada tirou uma soneca eleitoral enquanto aguarda novas indicações. Que tal sugerir a próxima leitura revolucionária?
+            O Gato Camarada está a postos fiscalizando a urna com sua boina estrelada. Todas as 6 integrantes podem indicar quantas obras quiserem e votar em até 3 favoritas!
           </p>
           <button
-            onClick={() => setIsNominateOpen(true)}
+            onClick={handleNominateClick}
             className="inline-flex items-center gap-2 px-6 py-3 bg-[#D62828] hover:bg-[#9E2A2B] text-white rounded-xl text-sm font-headline font-black uppercase tracking-wider border-2 border-[#1E1E1E] shadow-[4px_4px_0px_#1E1E1E] transition-transform hover:-translate-x-0.5 hover:-translate-y-0.5 active:translate-x-0.5 active:translate-y-0.5"
           >
             <BookPlus className="w-4 h-4 text-[#FEF08A]" />
-            <span>Fazer Primeira Indicação ★</span>
+            <span>Indicar a Primeira Obra ★</span>
           </button>
         </div>
       ) : (
@@ -357,17 +410,17 @@ export default function VotingBallot() {
                     </div>
                   </div>
 
-                  {/* Botão de Votação */}
+                  {/* Botão de Votação (Desativa e exibe badge quando cota de 3 votos for atingida) */}
                   <button
                     type="button"
                     onClick={() => handleVoteClick(book.id)}
-                    disabled={ballot.status !== 'open' || (!hasVotedForThis && remainingVotes <= 0)}
+                    disabled={ballot.status !== 'open' || (!hasVotedForThis && isQuotaReached)}
                     className={`w-full py-2.5 rounded-xl text-xs font-mono font-black uppercase tracking-wider border-2 border-[#1E1E1E] transition-transform hover:-translate-x-0.5 hover:-translate-y-0.5 active:translate-x-0.5 active:translate-y-0.5 flex items-center justify-center gap-1.5 ${
                       hasVotedForThis
                         ? 'bg-[#D62828] text-white shadow-[3px_3px_0px_#1E1E1E]'
-                        : remainingVotes > 0 && ballot.status === 'open'
+                        : !isQuotaReached && ballot.status === 'open'
                         ? 'bg-[#FAF7F0] hover:bg-[#FEF08A] text-[#141414] shadow-[3px_3px_0px_#1E1E1E]'
-                        : 'bg-stone-200 text-stone-500 border-stone-400 cursor-not-allowed'
+                        : 'bg-stone-200 text-stone-500 border-stone-400 cursor-not-allowed shadow-none'
                     }`}
                   >
                     {hasVotedForThis ? (
@@ -375,13 +428,15 @@ export default function VotingBallot() {
                         <Check className="w-4 h-4 text-[#FEF08A]" />
                         <span>Voto Registrado (Remover)</span>
                       </>
-                    ) : remainingVotes > 0 && ballot.status === 'open' ? (
+                    ) : isQuotaReached ? (
+                      <span className="text-stone-600 font-bold">Votos esgotados nesta rodada</span>
+                    ) : ballot.status === 'open' ? (
                       <>
                         <Vote className="w-4 h-4 text-[#D62828]" />
                         <span>Votar neste Livro ({remainingVotes} restando)</span>
                       </>
                     ) : (
-                      <span>Limite de votos atingido</span>
+                      <span>Votação Encerrada</span>
                     )}
                   </button>
                 </div>

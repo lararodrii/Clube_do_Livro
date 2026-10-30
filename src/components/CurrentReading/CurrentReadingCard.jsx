@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useClub } from '../../context/ClubContext';
+import { useAuth } from '../../context/AuthContext';
 import BookCover from '../common/BookCover';
 import ComradeCat from '../common/ComradeCat';
 import EditCurrentReadingModal from './EditCurrentReadingModal';
@@ -20,6 +21,7 @@ import {
 
 export default function CurrentReadingCard() {
   const { currentReading, activeMember, members, toggleWeeklyGoal, triggerComradeConfetti, archiveCurrentReading, archive } = useClub();
+  const { isAuthenticated, openAuthModal } = useAuth();
   const [showFullSynopsis, setShowFullSynopsis] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isEvaluationModalOpen, setIsEvaluationModalOpen] = useState(false);
@@ -42,6 +44,11 @@ export default function CurrentReadingCard() {
   const clubCompletionPercent = Math.round((allCompletedGoals / (members.length * totalGoals)) * 100);
 
   const handleGoalClick = (goalId) => {
+    if (!isAuthenticated) {
+      openAuthModal('Faça login para registrar seu progresso semanal de leitura.', 'login');
+      return;
+    }
+
     setAnimatingGoalId(goalId);
     
     const isNowCompleting = !activeMemberGoals.includes(goalId);
@@ -60,6 +67,30 @@ export default function CurrentReadingCard() {
     }
 
     setTimeout(() => setAnimatingGoalId(null), 500);
+  };
+
+  const handleEditClick = () => {
+    if (!isAuthenticated) {
+      openAuthModal('Faça login para editar os dados da leitura atual.', 'login');
+      return;
+    }
+    setIsEditModalOpen(true);
+  };
+
+  const handleArchiveClick = () => {
+    if (!isAuthenticated) {
+      openAuthModal('Faça login para arquivar a leitura no Acervo Histórico.', 'login');
+      return;
+    }
+    archiveCurrentReading(true);
+  };
+
+  const handleEvaluationClick = () => {
+    if (!isAuthenticated) {
+      openAuthModal('Faça login para avaliar e deixar notas sobre a leitura.', 'login');
+      return;
+    }
+    setIsEvaluationModalOpen(true);
   };
 
   return (
@@ -130,7 +161,7 @@ export default function CurrentReadingCard() {
 
           <button
             type="button"
-            onClick={() => setIsEditModalOpen(true)}
+            onClick={handleEditClick}
             title="Editar informações da leitura atual"
             className="flex items-center gap-1.5 px-3 py-1 text-xs font-mono font-bold text-white bg-[#283618] hover:bg-[#1E2812] border-2 border-[#1E1E1E] shadow-[2px_2px_0px_#1E1E1E] rounded-lg transition-transform hover:-translate-x-0.5 hover:-translate-y-0.5 active:translate-x-0.5 active:translate-y-0.5"
           >
@@ -141,7 +172,7 @@ export default function CurrentReadingCard() {
           {/* Botão Administrativo: Arquivar Obra Manualmente */}
           <button
             type="button"
-            onClick={() => archiveCurrentReading(true)}
+            onClick={handleArchiveClick}
             title={isArchived ? "Obra já arquivada no Acervo Coletivo" : "Arquivar esta obra no Acervo & Resenhas"}
             className={`flex items-center gap-1.5 px-3 py-1 text-xs font-mono font-bold border-2 border-[#1E1E1E] shadow-[2px_2px_0px_#1E1E1E] rounded-lg transition-transform hover:-translate-x-0.5 hover:-translate-y-0.5 active:translate-x-0.5 active:translate-y-0.5 ${
               isArchived
@@ -215,7 +246,7 @@ export default function CurrentReadingCard() {
 
             {/* Sinopse em Caixa Estilo Jornal de Época */}
             <div className="mt-4 text-[#141414] text-xs sm:text-sm leading-relaxed bg-[#FAF7F0] p-4 sm:p-5 rounded-xl border-2 border-[#1E1E1E] shadow-[3px_3px_0px_#1E1E1E]">
-              <div className="flex items-center gap-2 text-[#9E2A2B] font-mono text-[10px] uppercase font-black mb-1">
+              <div className="flex items-center gap-2 text-[#EF4444] font-mono text-[10px] uppercase font-black mb-1">
                 <span>★ RESUMO DA OBRA:</span>
               </div>
               <p className={`font-reading ${showFullSynopsis ? '' : 'line-clamp-3'}`}>
@@ -253,7 +284,7 @@ export default function CurrentReadingCard() {
                 {activeMemberGoals.includes(4) && (
                   <button
                     type="button"
-                    onClick={() => setIsEvaluationModalOpen(true)}
+                    onClick={handleEvaluationClick}
                     className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#FEF08A] hover:bg-[#FDE047] text-[#141414] text-xs font-mono font-black border-2 border-[#1E1E1E] shadow-[2px_2px_0px_#1E1E1E] rounded-lg transition-transform hover:-translate-x-0.5 hover:-translate-y-0.5 active:translate-x-0.5 active:translate-y-0.5"
                   >
                     <Star className="w-3.5 h-3.5 text-[#D62828] fill-[#D62828]" />
@@ -305,28 +336,28 @@ export default function CurrentReadingCard() {
                   <div
                     key={goal.id}
                     onClick={() => handleGoalClick(goal.id)}
-                    className={`cursor-pointer p-4 rounded-xl border-2 border-[#1E1E1E] transition-all duration-150 text-left select-none relative group ${
+                    className={`cursor-pointer p-4 rounded-xl border-2 transition-all duration-150 text-left select-none relative group ${
                       isCompleted
-                        ? 'bg-[#FDF0ED] shadow-[4px_4px_0px_#9E2A2B] translate-x-[-1px] translate-y-[-1px]'
-                        : 'bg-white hover:bg-[#FAF7F0] shadow-[3px_3px_0px_#1E1E1E] hover:-translate-x-0.5 hover:-translate-y-0.5'
+                        ? 'border-[#283618] bg-[#F5F8F1] shadow-[4px_4px_0px_#283618] translate-x-[-1px] translate-y-[-1px]'
+                        : 'border-[#1E1E1E] bg-white hover:bg-[#FAF7F0] shadow-[3px_3px_0px_#1E1E1E] hover:-translate-x-0.5 hover:-translate-y-0.5'
                     } ${isAnimating ? 'animate-pop' : ''}`}
                   >
                     <div className="flex items-start justify-between">
-                      <span className="text-xs font-mono font-black text-[#141414] uppercase tracking-wider">
+                      <span className={`text-xs font-mono font-black uppercase tracking-wider ${isCompleted ? 'text-[#283618]' : 'text-[#141414]'}`}>
                         {goal.week}
                       </span>
                       {isCompleted ? (
-                        <div className="w-6 h-6 rounded-md bg-[#D62828] text-white border-2 border-[#1E1E1E] flex items-center justify-center shadow-[1px_1px_0px_#1E1E1E] shrink-0 group-hover:scale-110 transition-transform">
-                          <CheckCircle2 className="w-4 h-4 text-[#FEF08A]" />
+                        <div className="w-6 h-6 rounded-full bg-[#283618] text-[#FEF08A] border-2 border-[#283618] flex items-center justify-center shadow-[1px_1px_0px_#1E1E1E] shrink-0 group-hover:scale-110 transition-transform">
+                          <CheckCircle2 className="w-4 h-4 text-[#FEF08A] fill-[#283618]" />
                         </div>
                       ) : (
-                        <div className="w-6 h-6 rounded-md bg-white border-2 border-[#1E1E1E] flex items-center justify-center shadow-[1px_1px_0px_#1E1E1E] shrink-0 group-hover:border-[#D62828] transition-colors">
-                          <Circle className="w-3.5 h-3.5 text-stone-300 group-hover:text-[#D62828]" />
+                        <div className="w-6 h-6 rounded-full bg-white border-2 border-[#1E1E1E] flex items-center justify-center shadow-[1px_1px_0px_#1E1E1E] shrink-0 group-hover:border-[#283618] transition-colors">
+                          <Circle className="w-3.5 h-3.5 text-stone-300 group-hover:text-[#283618]" />
                         </div>
                       )}
                     </div>
 
-                    <p className={`text-xs font-bold mt-2 font-headline leading-tight ${isCompleted ? 'text-[#D62828]' : 'text-[#141414]'}`}>
+                    <p className={`text-xs font-bold mt-2 font-headline leading-tight ${isCompleted ? 'text-[#283618]' : 'text-[#141414]'}`}>
                       {goal.label}
                     </p>
                     <p className="text-[11px] text-[#57534E] mt-1 font-mono">

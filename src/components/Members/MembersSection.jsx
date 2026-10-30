@@ -55,7 +55,7 @@ export default function MembersSection() {
               <BookOpen className="w-4 h-4 text-[#D62828]" />
             </div>
             <p className="font-mono text-2xl sm:text-3xl font-black text-[#141414]">
-              {stats.totalPagesYear.toLocaleString('pt-BR')}
+              {(stats?.totalPagesYear || 0).toLocaleString('pt-BR')}
             </p>
             <p className="text-[10px] font-mono text-[#D62828] font-bold mt-1">
               ★ Produção contínua
@@ -70,7 +70,7 @@ export default function MembersSection() {
               <Calendar className="w-4 h-4 text-[#283618]" />
             </div>
             <p className="font-mono text-2xl sm:text-3xl font-black text-[#141414]">
-              {stats.meetingsHeld}
+              {stats?.meetingsHeld || 0}
             </p>
             <p className="text-[10px] font-mono text-[#283618] font-bold mt-1">
               ★ Debate agendado
@@ -85,7 +85,7 @@ export default function MembersSection() {
               <Star className="w-4 h-4 text-[#BC6C25] fill-[#BC6C25]" />
             </div>
             <p className="font-mono text-2xl sm:text-3xl font-black text-[#141414]">
-              ★ {stats.averageRating}
+              ★ {stats?.averageRating || '5.0'}
             </p>
             <p className="text-[10px] font-mono text-[#BC6C25] font-bold mt-1">
               ★ Alto critério crítico
@@ -93,14 +93,14 @@ export default function MembersSection() {
           </div>
 
           <div className="bg-[#FAF7F0] p-4 sm:p-5 rounded-xl border-2 border-[#1E1E1E] shadow-[3px_3px_0px_#1E1E1E]">
-            <div className="flex items-center justify-between text-[#9E2A2B] mb-2">
+            <div className="flex items-center justify-between text-[#EF4444] mb-2">
               <span className="text-[10px] font-mono font-black uppercase tracking-wider text-[#57534E]">
                 Gênero em Destaque
               </span>
-              <Sparkles className="w-4 h-4 text-[#9E2A2B]" />
+              <Sparkles className="w-4 h-4 text-[#EF4444]" />
             </div>
             <p className="font-headline text-base sm:text-lg font-black text-[#141414] truncate">
-              {stats.topGenre}
+              {stats?.topGenre || 'Literatura'}
             </p>
             <p className="text-[10px] font-mono text-[#57534E] font-bold mt-1">
               ★ Tema da leitura atual
@@ -215,7 +215,7 @@ export default function MembersSection() {
                   <div className="flex items-start gap-2 text-xs mb-4">
                     <span className="text-[#D62828] font-black text-xs shrink-0 mt-0.5">★</span>
                     <div>
-                      <span className="text-[#9E2A2B] text-[10px] font-mono font-bold uppercase tracking-wider block">Leitura de Cabeceira:</span>
+                      <span className="text-[#EF4444] text-[10px] font-mono font-bold uppercase tracking-wider block">Leitura de Cabeceira:</span>
                       <strong className="text-[#141414] font-headline">{member.favBook}</strong>
                     </div>
                   </div>

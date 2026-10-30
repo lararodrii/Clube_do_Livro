@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useClub } from '../../context/ClubContext';
+import { useAuth } from '../../context/AuthContext';
 import EditMeetingModal from './EditMeetingModal';
 import Countdown from './Countdown';
 import { 
@@ -15,9 +16,8 @@ import {
 
 export default function NextMeetingCard() {
   const { meeting, activeMember, members, toggleRsvp, triggerComradeConfetti } = useClub();
+  const { isAuthenticated, openAuthModal } = useAuth();
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-  
-
 
   const isConfirmed = meeting.confirmedMembers?.includes(activeMember.id);
   const confirmedCount = meeting.confirmedMembers?.length || 0;
@@ -25,10 +25,22 @@ export default function NextMeetingCard() {
   const isPresentialOnly = meeting.modality?.includes('Apenas Presencial');
 
   const handleRsvpClick = () => {
+    if (!isAuthenticated) {
+      openAuthModal('Faça login para confirmar sua presença na assembleia literária.', 'login');
+      return;
+    }
     toggleRsvp();
     if (!isConfirmed && triggerComradeConfetti) {
       triggerComradeConfetti();
     }
+  };
+
+  const handleOpenEdit = () => {
+    if (!isAuthenticated) {
+      openAuthModal('Faça login para editar a data, local ou detalhes da assembleia.', 'login');
+      return;
+    }
+    setIsEditModalOpen(true);
   };
 
   return (
@@ -57,7 +69,7 @@ export default function NextMeetingCard() {
           </span>
           <button
             type="button"
-            onClick={() => setIsEditModalOpen(true)}
+            onClick={handleOpenEdit}
             title="Editar data, horário, modalidade ou links da reunião"
             className="flex items-center gap-1.5 px-3 py-1 text-xs font-mono font-bold text-[#141414] bg-white hover:bg-[#FAF7F0] border-2 border-[#1E1E1E] shadow-[2px_2px_0px_#1E1E1E] rounded-lg transition-transform hover:-translate-x-0.5 hover:-translate-y-0.5 active:translate-x-0.5 active:translate-y-0.5"
           >
@@ -76,7 +88,7 @@ export default function NextMeetingCard() {
               <Calendar className="w-4 h-4" />
             </div>
             <div>
-              <p className="text-[10px] text-[#D62828] font-mono font-black uppercase tracking-wider flex items-center gap-1">
+              <p className="text-[10px] text-[#EF4444] font-mono font-black uppercase tracking-wider flex items-center gap-1">
                 <span>★</span> Data Marcada no Calendário
               </p>
               <p className="text-sm font-bold text-[#141414] leading-snug font-headline">
@@ -97,7 +109,7 @@ export default function NextMeetingCard() {
                 <MapPin className="w-4 h-4" />
               </div>
               <div>
-                <p className="text-[10px] text-[#9E2A2B] font-mono font-black uppercase tracking-wider">Local Presencial</p>
+                <p className="text-[10px] text-[#BC6C25] font-mono font-black uppercase tracking-wider">Local Presencial</p>
                 <p className="text-sm font-bold text-[#141414] leading-snug font-headline">
                   {meeting.location}
                 </p>

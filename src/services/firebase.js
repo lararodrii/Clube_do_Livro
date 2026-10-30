@@ -1,7 +1,8 @@
 import { initializeApp } from "firebase/app";
 import { getFirestore } from "firebase/firestore";
+import { getAuth } from "firebase/auth";
 
-const firebaseConfig = {
+export const firebaseConfig = {
   apiKey: "AIzaSyASns3DwcnXGBXDLG4tL6EEccP4VtNJXj0",
   authDomain: "clube-do-livro-9e3a0.firebaseapp.com",
   projectId: "clube-do-livro-9e3a0",
@@ -11,7 +12,8 @@ const firebaseConfig = {
 };
 
 // Inicializa o Firebase
-const app = initializeApp(firebaseConfig);
+export const app = initializeApp(firebaseConfig);
 
-// Exporta o Firestore para ser usado em qualquer lugar do app
+// Exporta o Firestore e o Auth para uso em toda a aplicação
 export const db = getFirestore(app);
+export const auth = getAuth(app);

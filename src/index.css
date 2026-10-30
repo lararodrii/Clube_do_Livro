@@ -86,43 +86,85 @@
   box-shadow: 2px 2px 0px 0px #1E1E1E;
 }
 
-/* Realistic 3D Book Styles */
+/* Realistic 3D Physical Book Styles with Editorial Depth */
 .book-3d-wrapper {
-  perspective: 1200px;
+  perspective: 1400px;
 }
 
 .book-3d {
   position: relative;
   transform-style: preserve-3d;
-  transform: rotateY(-18deg) rotateX(4deg);
-  transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275), box-shadow 0.4s ease;
+  transform: rotateY(-16deg) rotateX(3deg);
+  transition: transform 0.45s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.45s cubic-bezier(0.16, 1, 0.3, 1);
   box-shadow: 
-    -12px 14px 28px -4px rgba(20, 20, 20, 0.4),
-    -4px 4px 10px rgba(214, 40, 40, 0.25);
+    -16px 20px 32px -4px rgba(15, 15, 15, 0.52),
+    -6px 8px 16px -2px rgba(20, 20, 20, 0.35),
+    0 2px 4px rgba(0, 0, 0, 0.25);
 }
 
 .book-3d:hover {
-  transform: rotateY(-6deg) rotateX(2deg) translateY(-8px);
+  transform: rotateY(-4deg) rotateX(1deg) translateY(-8px);
   box-shadow: 
-    -18px 22px 36px -6px rgba(20, 20, 20, 0.5),
-    -6px 6px 14px rgba(214, 40, 40, 0.35);
+    -22px 28px 42px -6px rgba(15, 15, 15, 0.62),
+    -8px 12px 20px -2px rgba(20, 20, 20, 0.42),
+    0 4px 8px rgba(0, 0, 0, 0.3);
 }
 
+/* Laterais das páginas do livro físico (Page block depth) */
 .book-3d::before {
   content: '';
   position: absolute;
-  top: 3px;
-  bottom: 3px;
-  right: -12px;
-  width: 12px;
+  top: 4px;
+  bottom: 4px;
+  right: -13px;
+  width: 13px;
   background: repeating-linear-gradient(
     to bottom,
-    #F6F2E9,
-    #F6F2E9 2px,
+    #FAF7F0,
+    #FAF7F0 2px,
     #E8E0D2 2px,
-    #E8E0D2 3px
+    #E8E0D2 4px
   );
   transform: rotateY(90deg);
   transform-origin: left;
   border: 1px solid #1E1E1E;
+  box-shadow: inset 0 0 4px rgba(0, 0, 0, 0.15);
+}
+
+/* Lombada realista com espessura na esquerda */
+.book-spine-relief {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 20px;
+  background: linear-gradient(
+    to right,
+    rgba(0, 0, 0, 0.7) 0%,
+    rgba(255, 255, 255, 0.18) 18%,
+    rgba(0, 0, 0, 0.15) 45%,
+    rgba(255, 255, 255, 0.28) 70%,
+    rgba(0, 0, 0, 0.55) 88%,
+    transparent 100%
+  );
+  pointer-events: none;
+  z-index: 25;
+}
+
+/* Vinco de dobra da capa dura (hinge groove) */
+.book-hinge-crease {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 17px;
+  width: 3px;
+  background: linear-gradient(
+    to right,
+    rgba(0, 0, 0, 0.6) 0%,
+    rgba(255, 255, 255, 0.45) 50%,
+    rgba(0, 0, 0, 0.25) 100%
+  );
+  box-shadow: 0 0 2px rgba(0, 0, 0, 0.5);
+  pointer-events: none;
+  z-index: 26;
 }

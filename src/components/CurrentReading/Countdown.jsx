@@ -106,7 +106,7 @@ export default function Countdown({ targetDate }) {
 
         {/* Seg */}
         <div className="flex-1 min-w-0 w-12 sm:w-14 bg-[#141414] text-[#FEF08A] py-2 px-1 rounded-xl border-2 border-[#1E1E1E] shadow-[2px_2px_0px_#BC6C25] flex flex-col items-center justify-center text-center">
-          <span className="font-mono text-xl sm:text-2xl font-bold text-[#D62828] block leading-none tabular-nums text-center">
+          <span className="font-mono text-xl sm:text-2xl font-bold text-[#EF4444] block leading-none tabular-nums text-center">
             {String(timeLeft.seconds).padStart(2, '0')}
           </span>
           <span className="text-[9px] sm:text-[10px] font-semibold tracking-normal text-stone-300 font-mono mt-0.5 leading-none text-center">

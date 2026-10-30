@@ -80,27 +80,39 @@ export default function ArchiveSection() {
         </div>
       </div>
 
-      {/* Grid de Livros no Acervo OU Empty State com o Gato Camarada */}
+      {/* Grid de Livros no Acervo OU Empty State Padronizado com o Gato Camarada */}
       {archive.length === 0 ? (
-        <div className="retro-card rounded-2xl p-10 sm:p-14 text-center bg-[#FAF7F0] border-2 border-[#1E1E1E] shadow-[6px_6px_0px_#1E1E1E] flex flex-col items-center">
-          <div className="mb-4">
-            <ComradeCat pose="sleeping" size="lg" showBubble={false} />
+        <div className="retro-card rounded-2xl p-8 sm:p-12 text-center bg-[#FAF7F0] border-2 border-[#1E1E1E] shadow-[6px_6px_0px_#1E1E1E] flex flex-col items-center">
+          <div className="mb-3">
+            <ComradeCat 
+              pose="reading" 
+              size="lg" 
+              showBubble={true}
+              customQuote="Livros concluídos viram patrimônio revolucionário no acervo!"
+              bubblePosition="top"
+            />
           </div>
-          <h3 className="font-headline font-black text-2xl text-[#141414] mb-2">
+          <h3 className="font-headline font-black text-2xl text-[#141414] mb-2 mt-2">
             O Acervo do Exército da Paty começa agora!
           </h3>
-          <p className="text-sm text-[#57534E] max-w-md mx-auto mb-2 font-reading italic leading-relaxed">
-            O Gato Camarada está descansando enquanto aguarda o primeiro livro concluído. Assim que a leitura de <strong>"Como as democracias morrem"</strong> for finalizada na reunião, ela será catalogada aqui com notas em estrelas e resenhas críticas de cada membro!
+          <p className="text-sm text-[#57534E] max-w-lg mx-auto mb-4 font-reading italic leading-relaxed">
+            O Gato Camarada está organizando as estantes da nossa biblioteca. Assim que a assembleia de debate for realizada, o livro atual será catalogado aqui com avaliações em estrelas, resenhas de cada camarada e histórico permanente.
           </p>
+          <div className="inline-flex items-center gap-2 bg-[#FEF08A] px-4 py-2 rounded-xl border-2 border-[#1E1E1E] text-xs font-mono font-bold text-[#141414] shadow-[2px_2px_0px_#1E1E1E]">
+            <span className="text-[#D62828]">★</span>
+            <span>Leitura atual em andamento pelo comitê</span>
+          </div>
         </div>
       ) : filteredBooks.length === 0 ? (
-        <div className="retro-card text-center py-12 bg-white rounded-2xl border-2 border-[#1E1E1E] p-6 shadow-[4px_4px_0px_#1E1E1E]">
-          <BookOpen className="w-10 h-10 text-stone-400 mx-auto mb-3" />
+        <div className="retro-card text-center py-10 bg-white rounded-2xl border-2 border-[#1E1E1E] p-6 shadow-[4px_4px_0px_#1E1E1E] flex flex-col items-center">
+          <div className="mb-2">
+            <ComradeCat pose="curious" size="sm" showBubble={false} />
+          </div>
           <h4 className="font-headline text-lg font-bold text-[#141414] mb-1">
             Nenhum livro encontrado
           </h4>
-          <p className="text-xs text-[#57534E]">
-            Tente buscar por outro termo ou limpe o campo de busca.
+          <p className="text-xs text-[#57534E] font-reading">
+            O Gato Camarada farejou por todas as estantes e não encontrou essa obra. Tente buscar por outro termo ou limpe o campo de busca.
           </p>
         </div>
       ) : (
@@ -135,7 +147,7 @@ export default function ArchiveSection() {
                         {book.pages} págs
                       </span>
                       {book.assemblyDate && (
-                        <span className="text-[9px] font-mono text-[#9E2A2B] font-bold block">
+                        <span className="text-[9px] font-mono text-[#EF4444] font-bold block">
                           {book.assemblyDate}
                         </span>
                       )}

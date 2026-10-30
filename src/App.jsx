@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { AuthProvider } from './context/AuthContext';
 import { ClubProvider } from './context/ClubContext';
 import Header from './components/Header';
 import CurrentReadingCard from './components/CurrentReading/CurrentReadingCard';
@@ -7,6 +8,7 @@ import QuotesWall from './components/CurrentReading/QuotesWall';
 import VotingBallot from './components/VotingBallot/VotingBallot';
 import ArchiveSection from './components/Archive/ArchiveSection';
 import MembersSection from './components/Members/MembersSection';
+import AuthModal from './components/Auth/AuthModal';
 import ComradeCat from './components/common/ComradeCat';
 import Toast from './components/common/Toast';
 
@@ -106,6 +108,9 @@ function ClubApp() {
         </div>
       </footer>
 
+      {/* Modal Global de Acesso e Autenticação das Camaradas */}
+      <AuthModal />
+
       {/* Sistema de Notificações Toast */}
       <Toast />
     </div>
@@ -114,8 +119,10 @@ function ClubApp() {
 
 export default function App() {
   return (
-    <ClubProvider>
-      <ClubApp />
-    </ClubProvider>
+    <AuthProvider>
+      <ClubProvider>
+        <ClubApp />
+      </ClubProvider>
+    </AuthProvider>
   );
 }

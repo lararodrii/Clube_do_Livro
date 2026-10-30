@@ -27,14 +27,17 @@ export default function BookCover({
   return (
     <div className={`relative inline-block select-none group book-3d-wrapper ${className}`}>
       
+      {/* Sombra Projetada Realista no Chão (Realistic Floor Drop Shadow) */}
+      <div className="absolute -bottom-3.5 left-2 right-1 h-5 bg-black/45 rounded-[100%] blur-md -z-10 transform skew-x-[-15deg] pointer-events-none group-hover:scale-105 group-hover:opacity-85 transition-all duration-300" />
+
       {show3DMockup ? (
         /* MOCKUP 3D REALISTA DO LIVRO COM O MASCOTE E ARTE RETRÔ */
         <div 
           className={`book-3d ${sizeClasses[size] || sizeClasses.md} rounded-r-md rounded-l-sm bg-gradient-to-tr from-[#7F1D1D] via-[#9E2A2B] to-[#D62828] border-2 border-[#1E1E1E] p-4 flex flex-col justify-between text-center overflow-hidden cursor-pointer`}
         >
-          {/* Sombra da Lombada */}
-          <div className="absolute top-0 bottom-0 left-0 w-3 bg-gradient-to-r from-black/60 via-black/20 to-transparent pointer-events-none" />
-          <div className="absolute top-0 bottom-0 left-3 w-[1px] bg-white/20 pointer-events-none" />
+          {/* Relevo e Sombra da Lombada Editorial */}
+          <div className="book-spine-relief" />
+          <div className="book-hinge-crease" />
 
           {/* Moldura Dourada da Capa */}
           <div className="absolute inset-2 border border-[#DDA15E]/60 pointer-events-none" />
@@ -75,13 +78,13 @@ export default function BookCover({
           <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/10 to-transparent pointer-events-none" />
         </div>
       ) : (
-        /* CAPA REAL IMPORTADA COM PERSPECTIVA E MOLDURA VINTAGE */
+        /* CAPA REAL IMPORTADA COM PERSPECTIVA, RELEVO DE LOMBADA E SOMBRA PROJETADA */
         <div
           className={`book-3d ${sizeClasses[size] || sizeClasses.md} relative overflow-hidden rounded-r-md rounded-l-sm bg-[#1E1E1E] border-2 border-[#1E1E1E]`}
         >
-          {/* Efeito de Lombada 3D */}
-          <div className="absolute top-0 bottom-0 left-0 w-3 bg-gradient-to-r from-black/70 via-black/20 to-transparent z-20 pointer-events-none" />
-          <div className="absolute top-0 bottom-0 left-3 w-[1px] bg-white/30 z-20 pointer-events-none" />
+          {/* Efeito de Lombada 3D com Relevo e Vinco Físico */}
+          <div className="book-spine-relief" />
+          <div className="book-hinge-crease" />
 
           {/* Imagem da Capa */}
           <img
@@ -102,7 +105,7 @@ export default function BookCover({
           {isLoading && (
             <div className="absolute inset-0 bg-[#FAF7F0] flex flex-col items-center justify-center p-3 text-center">
               <ComradeCat pose="reading" size="sm" showBubble={false} />
-              <p className="text-[10px] text-[#9E2A2B] font-mono font-bold mt-1 animate-pulse">
+              <p className="text-[10px] text-[#EF4444] font-mono font-bold mt-1 animate-pulse">
                 Carregando Obra...
               </p>
             </div>
