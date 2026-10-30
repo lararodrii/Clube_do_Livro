@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useClub } from '../../context/ClubContext';
+import { useAuth } from '../../context/AuthContext';
 import EditProfileModal from './EditProfileModal';
 import { 
   Users, 
@@ -12,7 +13,8 @@ import {
 } from 'lucide-react';
 
 export default function MembersSection() {
-  const { members, activeMember, setActiveMember, stats, archive, currentReading, quotes, meeting } = useClub();
+  const { members, activeMember, stats, archive, currentReading, quotes, meeting } = useClub();
+  const { isAuthenticated, openAuthModal } = useAuth();
   const [isEditProfileOpen, setIsEditProfileOpen] = useState(false);
 
   return (
@@ -119,7 +121,7 @@ export default function MembersSection() {
               <span className="text-[#D62828]">★</span>
             </h3>
             <p className="text-xs text-[#57534E] font-reading font-semibold italic">
-              Conheça as integrantes, personalize seu perfil ou alterne de usuária para testar
+              Conheça as integrantes, acompanhe suas leituras e fortaleça os laços do comitê
             </p>
           </div>
           <span className="text-xs font-mono font-black px-3 py-1 rounded-lg bg-[#FEF08A] text-[#141414] border-2 border-[#1E1E1E] shadow-[2px_2px_0px_#1E1E1E] flex items-center gap-1.5">
@@ -184,7 +186,13 @@ export default function MembersSection() {
                         {isMe && (
                           <button
                             type="button"
-                            onClick={() => setIsEditProfileOpen(true)}
+                            onClick={() => {
+                              if (!isAuthenticated) {
+                                openAuthModal('Faça login para editar seu perfil!', 'login');
+                                return;
+                              }
+                              setIsEditProfileOpen(true);
+                            }}
                             title="Editar meu perfil"
                             className="p-1 hover:bg-[#FEF08A] text-[#141414] rounded border border-[#1E1E1E] transition-colors"
                           >
@@ -249,20 +257,23 @@ export default function MembersSection() {
                 {isMe ? (
                   <button
                     type="button"
-                    onClick={() => setIsEditProfileOpen(true)}
+                    onClick={() => {
+                      if (!isAuthenticated) {
+                        openAuthModal('Faça login com seu perfil para editar suas informações!', 'login');
+                        return;
+                      }
+                      setIsEditProfileOpen(true);
+                    }}
                     className="w-full py-2.5 rounded-xl text-xs font-mono font-black uppercase tracking-wider bg-[#D62828] hover:bg-[#9E2A2B] text-white border-2 border-[#1E1E1E] shadow-[3px_3px_0px_#1E1E1E] transition-transform hover:-translate-x-0.5 hover:-translate-y-0.5 active:translate-x-0.5 active:translate-y-0.5 flex items-center justify-center gap-2"
                   >
                     <Pencil className="w-3.5 h-3.5 text-[#FEF08A]" />
                     <span>Editar Meu Perfil ★</span>
                   </button>
                 ) : (
-                  <button
-                    type="button"
-                    onClick={() => setActiveMember(member.id)}
-                    className="w-full py-2.5 rounded-xl text-xs font-mono font-bold uppercase tracking-wider bg-white hover:bg-[#FEF08A] text-[#141414] border-2 border-[#1E1E1E] shadow-[3px_3px_0px_#1E1E1E] transition-transform hover:-translate-x-0.5 hover:-translate-y-0.5 active:translate-x-0.5 active:translate-y-0.5"
-                  >
-                    <span>Alternar para {member.name.split(' ')[0]}</span>
-                  </button>
+                  <div className="w-full py-2.5 rounded-xl text-xs font-mono font-bold uppercase tracking-wider bg-[#FAF7F0] text-[#57534E] border-2 border-[#1E1E1E] shadow-[2px_2px_0px_#1E1E1E] flex items-center justify-center gap-1.5 select-none">
+                    <span className="text-[#283618]">★</span>
+                    <span>Camarada do Coletivo</span>
+                  </div>
                 )}
 
               </div>

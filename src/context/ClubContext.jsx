@@ -135,19 +135,23 @@ export function ClubProvider({ children }) {
     }
   };
 
-  // Membro ativo atual do dispositivo
-  const activeMember = data.members.find(m => m.id === activeMemberId) || data.members[0] || INITIAL_MEMBERS[0];
+  // Membro ativo: quando autenticada, é SEMPRE e RIGOROSAMENTE o membro vinculado à conta no Firebase Auth
+  const effectiveActiveMemberId = (isAuthenticated && userProfile?.memberId) 
+    ? userProfile.memberId 
+    : activeMemberId;
 
-  // Alternar membro ativo deste dispositivo
+  const activeMember = data.members.find(m => m.id === effectiveActiveMemberId) || data.members[0] || INITIAL_MEMBERS[0];
+
+  // Alternar membro ativo deste dispositivo - bloqueado estritamente durante a sessão autenticada
   const setActiveMember = (memberId) => {
-    const member = data.members.find(m => m.id === memberId);
+    if (isAuthenticated) {
+      showToast('A troca de perfil é bloqueada. Para trocar de camarada, encerre a sessão (Sair) e entre com a outra conta!', 'error');
+      return;
+    }
     setActiveMemberId(memberId);
     try {
       localStorage.setItem('clube_active_member_id', memberId);
     } catch {}
-    if (member) {
-      showToast(`Perfil alternado para ${member.name} 🐾★`, 'info');
-    }
   };
 
   // Resetar dados para o padrão limpo do Exército da Paty na nuvem
@@ -175,13 +179,16 @@ export function ClubProvider({ children }) {
 
   // === EDIÇÃO DE PERFIL DO MEMBRO ===
   const updateMemberProfile = (memberId, updatedFields) => {
-    if (!currentUser) {
+    if (!currentUser || !isAuthenticated || !userProfile?.memberId) {
       openAuthModal('Faça login com seu perfil de camarada para editar suas informações!', 'login');
       return;
     }
 
+    // Só é permitido editar o próprio perfil vinculado à conta autenticada
+    const targetMemberId = userProfile.memberId;
+
     const updatedMembers = data.members.map(m => {
-      if (m.id === memberId) {
+      if (m.id === targetMemberId) {
         return {
           ...m,
           ...updatedFields
@@ -194,12 +201,12 @@ export function ClubProvider({ children }) {
     syncToCloud({ members: updatedMembers });
 
     triggerComradeConfetti(45);
-    showToast('Perfil atualizado com sucesso! 🐾★', 'success');
+    showToast('Seu perfil foi atualizado com sucesso! 🐾★', 'success');
   };
 
   // === EDIÇÃO E GERENCIAMENTO DA REUNIÃO ===
   const updateMeeting = (meetingData) => {
-    if (!currentUser) {
+    if (!currentUser || !isAuthenticated) {
       openAuthModal('Acesso restrito: faça login para editar os detalhes da reunião!', 'login');
       return;
     }
@@ -218,13 +225,14 @@ export function ClubProvider({ children }) {
 
   // === METAS DE LEITURA (Semanais) ===
   const toggleWeeklyGoal = (goalId) => {
-    if (!currentUser) {
+    if (!currentUser || !isAuthenticated || !userProfile?.memberId) {
       openAuthModal('Faça login para registrar o cumprimento da sua meta de leitura!', 'login');
       return;
     }
 
+    const memberId = userProfile.memberId;
     const current = data.currentReading;
-    const memberGoals = current.memberProgress?.[activeMember.id] || [];
+    const memberGoals = current.memberProgress?.[memberId] || [];
     const hasCompleted = memberGoals.includes(goalId);
     
     const newGoals = hasCompleted
@@ -233,7 +241,7 @@ export function ClubProvider({ children }) {
 
     const updatedProgress = {
       ...(current.memberProgress || {}),
-      [activeMember.id]: newGoals
+      [memberId]: newGoals
     };
 
     const updatedReading = {
@@ -277,7 +285,7 @@ export function ClubProvider({ children }) {
 
   // === AVALIAÇÃO DA OBRA ATUAL (SEMANA 4) ===
   const submitCurrentBookReview = ({ rating, comment, recommendation, pacing }) => {
-    if (!currentUser) {
+    if (!currentUser || !isAuthenticated || !userProfile?.memberId) {
       openAuthModal('Faça login para registrar sua avaliação crítica da leitura!', 'login');
       return false;
     }
@@ -287,12 +295,13 @@ export function ClubProvider({ children }) {
       return false;
     }
 
+    const reviewerId = userProfile.memberId;
     const today = new Date().toLocaleDateString('pt-BR');
     const currentReviews = data.currentReading.reviews || [];
-    const existingIdx = currentReviews.findIndex(r => r.memberId === activeMember.id);
+    const existingIdx = currentReviews.findIndex(r => r.memberId === reviewerId);
 
     const reviewPayload = {
-      memberId: activeMember.id,
+      memberId: reviewerId,
       rating: Number(rating),
       comment: comment?.trim() || 'Leitura concluída com sucesso pelo coletivo!',
       recommendation: recommendation || '★ Super recomendo',
@@ -325,15 +334,16 @@ export function ClubProvider({ children }) {
 
   // === RSVP (Confirmação de Presença) ===
   const toggleRsvp = () => {
-    if (!currentUser) {
+    if (!currentUser || !isAuthenticated || !userProfile?.memberId) {
       openAuthModal('Faça login para confirmar sua presença na assembleia literária!', 'login');
       return;
     }
 
-    const isConfirmed = data.meeting.confirmedMembers?.includes(activeMember.id);
+    const comradeId = userProfile.memberId;
+    const isConfirmed = data.meeting.confirmedMembers?.includes(comradeId);
     const newConfirmed = isConfirmed
-      ? data.meeting.confirmedMembers.filter(id => id !== activeMember.id)
-      : [...(data.meeting.confirmedMembers || []), activeMember.id];
+      ? data.meeting.confirmedMembers.filter(id => id !== comradeId)
+      : [...(data.meeting.confirmedMembers || []), comradeId];
 
     if (!isConfirmed) {
       triggerComradeConfetti(55);
@@ -356,13 +366,14 @@ export function ClubProvider({ children }) {
 
   // === MURAL DE CITAÇÕES ===
   const addQuote = ({ page, text }) => {
-    if (!currentUser) {
+    if (!currentUser || !isAuthenticated || !userProfile?.memberId) {
       openAuthModal('Faça login para pregar citações no Mural Revolucionário!', 'login');
       return;
     }
 
     if (!text || !text.trim()) return;
 
+    const authorMember = data.members.find(m => m.id === userProfile.memberId) || activeMember;
     const formattedPage = page 
       ? (String(page).trim().startsWith('p.') ? String(page).trim() : `p. ${String(page).trim()}`)
       : null;
@@ -372,10 +383,10 @@ export function ClubProvider({ children }) {
       bookTitle: data.currentReading?.title || 'Leitura Coletiva',
       page: formattedPage,
       text: text.trim(),
-      memberId: activeMember.id,
-      authorName: activeMember.name,
-      authorAvatar: activeMember.avatar,
-      authorRole: activeMember.roleBadge || activeMember.nickname || 'Membro do Coletivo',
+      memberId: userProfile.memberId,
+      authorName: authorMember.name,
+      authorAvatar: authorMember.avatar,
+      authorRole: authorMember.roleBadge || authorMember.nickname || 'Membro do Coletivo',
       date: new Date().toLocaleDateString('pt-BR'),
       createdAt: new Date().toISOString(),
       likes: [],
@@ -395,6 +406,17 @@ export function ClubProvider({ children }) {
   };
 
   const updateQuote = (quoteId, { text, page }) => {
+    if (!currentUser || !isAuthenticated || !userProfile?.memberId) {
+      openAuthModal('Faça login para editar sua citação!', 'login');
+      return;
+    }
+
+    const targetQuote = (data.quotes || []).find(q => q.id === quoteId);
+    if (targetQuote && targetQuote.memberId !== userProfile.memberId) {
+      showToast('Você só pode alterar citações publicadas por você!', 'error');
+      return;
+    }
+
     const updatedQuotes = (data.quotes || []).map(q => {
       if (q.id === quoteId) {
         return {
@@ -412,6 +434,17 @@ export function ClubProvider({ children }) {
   };
 
   const deleteQuote = (quoteId) => {
+    if (!currentUser || !isAuthenticated || !userProfile?.memberId) {
+      openAuthModal('Faça login para remover sua citação!', 'login');
+      return;
+    }
+
+    const targetQuote = (data.quotes || []).find(q => q.id === quoteId);
+    if (targetQuote && targetQuote.memberId !== userProfile.memberId) {
+      showToast('Você só pode excluir citações publicadas por você!', 'error');
+      return;
+    }
+
     const updatedQuotes = (data.quotes || []).filter(q => q.id !== quoteId);
 
     setData(prev => ({ ...prev, quotes: updatedQuotes }));
@@ -420,13 +453,19 @@ export function ClubProvider({ children }) {
   };
 
   const toggleQuoteLike = (quoteId) => {
+    if (!currentUser || !isAuthenticated || !userProfile?.memberId) {
+      openAuthModal('Faça login para curtir citações no mural!', 'login');
+      return;
+    }
+
+    const likerId = userProfile.memberId;
     const updatedQuotes = (data.quotes || []).map(q => {
       if (q.id === quoteId) {
         const currentLikes = q.likedBy || q.likes || [];
-        const hasLiked = currentLikes.includes(activeMember.id);
+        const hasLiked = currentLikes.includes(likerId);
         const newLikes = hasLiked
-          ? currentLikes.filter(id => id !== activeMember.id)
-          : [...currentLikes, activeMember.id];
+          ? currentLikes.filter(id => id !== likerId)
+          : [...currentLikes, likerId];
         return { ...q, likes: newLikes, likedBy: newLikes };
       }
       return q;
@@ -453,9 +492,9 @@ export function ClubProvider({ children }) {
     syncToCloud({ ballot: updatedBallot });
   };
 
-  // Votar em um livro (Limite rigoroso de no máximo 3 votos por membro ativo)
+  // Votar em um livro (Limite rigoroso de no máximo 3 votos por membro ativo autenticado)
   const toggleVote = (bookId) => {
-    if (!currentUser) {
+    if (!currentUser || !isAuthenticated || !userProfile?.memberId) {
       openAuthModal('Faça login com seu perfil para votar na Urna Popular!', 'login');
       return;
     }
@@ -468,12 +507,13 @@ export function ClubProvider({ children }) {
     const currentBook = data.ballot?.books?.find(b => b.id === bookId);
     if (!currentBook) return;
 
-    const alreadyVotedThis = (currentBook.votes || []).includes(activeMember.id);
+    const voterId = userProfile.memberId;
+    const alreadyVotedThis = (currentBook.votes || []).includes(voterId);
     const maxVotes = data.ballot?.maxVotesPerMember || 3;
 
     // Contar rigorosamente quantos votos o membro ativo já tem na urna
     const totalVotesByMember = (data.ballot?.books || []).reduce((acc, book) => {
-      return acc + ((book.votes || []).includes(activeMember.id) ? 1 : 0);
+      return acc + ((book.votes || []).includes(voterId) ? 1 : 0);
     }, 0);
 
     if (!alreadyVotedThis && totalVotesByMember >= maxVotes) {
@@ -485,8 +525,8 @@ export function ClubProvider({ children }) {
       if (b.id === bookId) {
         const bookVotes = b.votes || [];
         const newVotes = alreadyVotedThis
-          ? bookVotes.filter(id => id !== activeMember.id)
-          : [...bookVotes, activeMember.id];
+          ? bookVotes.filter(id => id !== voterId)
+          : [...bookVotes, voterId];
         return { ...b, votes: newVotes };
       }
       return b;
@@ -513,6 +553,12 @@ export function ClubProvider({ children }) {
 
   // Indicar livro para a urna (SEM LIMITE DE QUANTIDADE POR PESSOA!)
   const nominateBook = ({ title, author, pages, coverUrl, synopsis, genre, nominationReason }) => {
+    if (!currentUser || !isAuthenticated || !userProfile?.memberId) {
+      openAuthModal('Faça login com seu perfil para indicar um livro para a urna popular!', 'login');
+      return false;
+    }
+
+    const nominatorId = userProfile.memberId;
     const newBook = {
       id: `ballot-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
       title: title.trim(),
@@ -521,9 +567,9 @@ export function ClubProvider({ children }) {
       coverUrl: coverUrl || '',
       synopsis: synopsis || 'Sem sinopse cadastrada.',
       genre: genre || 'Literatura',
-      nominatedBy: activeMember.id,
+      nominatedBy: nominatorId,
       nominationReason: nominationReason?.trim() || 'Indicação especial para o Exército da Paty!',
-      votes: [activeMember.id] // Quem indica já vota automaticamente
+      votes: [nominatorId] // Quem indica já vota automaticamente com seu ID autenticado
     };
 
     const updatedBallot = {
@@ -544,6 +590,17 @@ export function ClubProvider({ children }) {
 
   // Editar indicação existente
   const updateNomination = (bookId, updatedFields) => {
+    if (!currentUser || !isAuthenticated || !userProfile?.memberId) {
+      openAuthModal('Faça login para editar sua indicação!', 'login');
+      return;
+    }
+
+    const targetBook = (data.ballot.books || []).find(b => b.id === bookId);
+    if (targetBook && targetBook.nominatedBy !== userProfile.memberId) {
+      showToast('Você só pode editar indicações feitas por você!', 'error');
+      return;
+    }
+
     const updatedBooks = data.ballot.books.map(b => {
       if (b.id === bookId) {
         return {
@@ -571,6 +628,17 @@ export function ClubProvider({ children }) {
 
   // Excluir indicação própria da urna
   const deleteNomination = (bookId) => {
+    if (!currentUser || !isAuthenticated || !userProfile?.memberId) {
+      openAuthModal('Faça login para remover uma indicação da urna!', 'login');
+      return;
+    }
+
+    const targetBook = (data.ballot.books || []).find(b => b.id === bookId);
+    if (targetBook && targetBook.nominatedBy !== userProfile.memberId) {
+      showToast('Você só pode remover indicações feitas por você!', 'error');
+      return;
+    }
+
     const updatedBallot = {
       ...data.ballot,
       books: data.ballot.books.filter(b => b.id !== bookId)
@@ -780,17 +848,23 @@ export function ClubProvider({ children }) {
 
   // === ACERVO & RESENHAS ===
   const addOrUpdateReview = (bookId, { rating, comment }) => {
+    if (!currentUser || !isAuthenticated || !userProfile?.memberId) {
+      openAuthModal('Faça login com seu perfil de camarada para publicar sua resenha!', 'login');
+      return;
+    }
+
     if (!rating) {
       showToast('Por favor, selecione uma nota de 1 a 5 estrelas.', 'error');
       return;
     }
 
+    const reviewerId = userProfile.memberId;
     const today = new Date().toLocaleDateString('pt-BR');
 
     const updatedArchive = (data.archive || []).map(book => {
       if (book.id === bookId) {
         const existingReviews = book.reviews || [];
-        const existingIndex = existingReviews.findIndex(r => r.memberId === activeMember.id);
+        const existingIndex = existingReviews.findIndex(r => r.memberId === reviewerId);
 
         let newReviews;
         if (existingIndex >= 0) {
@@ -803,7 +877,7 @@ export function ClubProvider({ children }) {
           newReviews = [
             ...existingReviews,
             {
-              memberId: activeMember.id,
+              memberId: reviewerId,
               rating: Number(rating),
               comment: comment.trim(),
               date: today
@@ -826,13 +900,19 @@ export function ClubProvider({ children }) {
     showToast('Sua resenha crítica foi salva com sucesso! 🐾★', 'success');
   };
 
-  // Excluir resenha do membro ativo
-  const deleteReview = (bookId, memberId) => {
+  // Excluir resenha do membro autenticado
+  const deleteReview = (bookId) => {
+    if (!currentUser || !isAuthenticated || !userProfile?.memberId) {
+      openAuthModal('Faça login com seu perfil para remover sua resenha!', 'login');
+      return;
+    }
+
+    const reviewerId = userProfile.memberId;
     const updatedArchive = (data.archive || []).map(book => {
       if (book.id === bookId) {
         return {
           ...book,
-          reviews: (book.reviews || []).filter(r => r.memberId !== memberId)
+          reviews: (book.reviews || []).filter(r => r.memberId !== reviewerId)
         };
       }
       return book;

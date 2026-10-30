@@ -3,30 +3,23 @@ import { useClub } from '../context/ClubContext';
 import EditProfileModal from './Members/EditProfileModal';
 import ComradeCat from './common/ComradeCat';
 import { 
-  ChevronDown, 
   RotateCcw, 
-  Check, 
   BookOpen, 
   Vote, 
   Library, 
   BarChart3, 
-  Pencil,
-  Sparkles,
-  LogIn,
-  LogOut,
-  UserCheck
+  LogIn, 
+  LogOut 
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
 export default function Header({ activeTab, setActiveTab }) {
-  const { activeMember, members, setActiveMember, resetToDefaults, ballot, showToast } = useClub();
+  const { activeMember, resetToDefaults, ballot, showToast } = useClub();
   const { currentUser, isAuthenticated, logout, openAuthModal } = useAuth();
-  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [showResetConfirm, setShowResetConfirm] = useState(false);
   const [isEditProfileOpen, setIsEditProfileOpen] = useState(false);
 
   const handleLogoutClick = async () => {
-    setIsDropdownOpen(false);
     await logout();
     showToast('Sessão encerrada com sucesso. Até logo, camarada! 🐾★', 'info');
   };
@@ -100,143 +93,44 @@ export default function Header({ activeTab, setActiveTab }) {
             {/* ÁREA DE AUTENTICAÇÃO / PERFIL ATIVO */}
             {isAuthenticated ? (
               <div className="flex items-center gap-2">
-                {/* SELETOR DE PERFIL ATIVO (Estilo Carteirinha de Membro Autenticado) */}
-                <div className="relative">
-                  <button
-                    type="button"
-                    onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                    className="flex items-center gap-2 p-1.5 pr-3 rounded-xl bg-white border-2 border-[#1E1E1E] shadow-[3px_3px_0px_#1E1E1E] hover:-translate-x-0.5 hover:-translate-y-0.5 transition-all focus:outline-none"
-                  >
-                    <div className="relative">
-                      <img
-                        src={activeMember.avatar}
-                        alt={activeMember.name}
-                        className="w-8 h-8 rounded-lg object-cover border border-[#1E1E1E]"
-                      />
-                      <span 
-                        className="absolute -bottom-1 -right-1 w-3.5 h-3.5 rounded-full border border-white bg-[#283618] flex items-center justify-center text-[7px] text-[#FEF08A] font-bold"
-                        title="Autenticada no comitê"
-                      >
-                        ★
-                      </span>
-                    </div>
-                    <div className="text-left hidden md:block">
-                      <p className="text-xs font-black text-[#141414] leading-tight">
-                        {activeMember.name.split(' ')[0]}
-                      </p>
-                      <p className="text-[10px] text-[#283618] font-mono font-bold leading-none truncate max-w-[120px]">
-                        {activeMember.roleBadge}
-                      </p>
-                    </div>
-                    <ChevronDown className={`w-4 h-4 text-[#1E1E1E] transition-transform ${isDropdownOpen ? 'rotate-180' : ''}`} />
-                  </button>
-
-                  {/* Dropdown Menu dos 6 Membros */}
-                  {isDropdownOpen && (
-                    <>
-                      <div 
-                        className="fixed inset-0 z-40" 
-                        onClick={() => setIsDropdownOpen(false)}
-                      />
-                      <div className="absolute right-0 mt-2 w-72 rounded-2xl bg-[#FAF7F0] border-2 border-[#1E1E1E] shadow-[6px_6px_0px_#1E1E1E] py-2 z-50 animate-pop">
-                        
-                        <div className="px-4 py-2.5 border-b-2 border-[#1E1E1E] flex items-center justify-between bg-white">
-                          <div className="min-w-0 pr-2">
-                            <p className="text-[10px] font-mono font-bold tracking-wider text-[#283618] uppercase flex items-center gap-1">
-                              <span>★</span> Conectada: {currentUser?.email}
-                            </p>
-                            <p className="text-xs font-black text-[#141414] truncate">
-                              {activeMember.name}
-                            </p>
-                          </div>
-
-                          {/* Botão para editar o perfil direto no header */}
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setIsDropdownOpen(false);
-                              setIsEditProfileOpen(true);
-                            }}
-                            className="flex items-center gap-1 px-2.5 py-1 text-[11px] font-bold text-[#141414] bg-[#FEF08A] hover:bg-[#FDE047] rounded-lg border-2 border-[#1E1E1E] shadow-[2px_2px_0px_#1E1E1E] transition-transform hover:-translate-x-0.5 hover:-translate-y-0.5 shrink-0"
-                          >
-                            <Pencil className="w-3 h-3" />
-                            <span>Editar</span>
-                          </button>
-                        </div>
-
-                        <div className="py-1">
-                          <p className="px-4 py-1.5 text-[10px] text-[#57534E] font-mono font-bold uppercase tracking-wider">
-                            Alternar de Perfil:
-                          </p>
-                          {members.map((member) => {
-                            const isActive = member.id === activeMember.id;
-                            return (
-                              <button
-                                key={member.id}
-                                onClick={() => {
-                                  setActiveMember(member.id);
-                                  setIsDropdownOpen(false);
-                                }}
-                                className={`w-full flex items-center gap-3 px-4 py-2.5 text-left transition-colors ${
-                                  isActive ? 'bg-[#FDF0ED] font-bold border-l-4 border-[#D62828]' : 'hover:bg-white'
-                                }`}
-                              >
-                                <div className="relative shrink-0">
-                                  <img
-                                    src={member.avatar}
-                                    alt={member.name}
-                                    className="w-9 h-9 rounded-lg object-cover border border-[#1E1E1E]"
-                                  />
-                                  <span
-                                    className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full border border-white flex items-center justify-center text-[7px] text-white"
-                                    style={{ backgroundColor: member.color || '#D62828' }}
-                                  >
-                                    ★
-                                  </span>
-                                </div>
-                                <div className="flex-1 min-w-0">
-                                  <div className="flex items-center justify-between">
-                                    <p className={`text-sm truncate ${isActive ? 'font-black text-[#D62828]' : 'font-bold text-[#141414]'}`}>
-                                      {member.name}
-                                    </p>
-                                    {isActive && (
-                                      <Check className="w-4 h-4 text-[#D62828] shrink-0" />
-                                    )}
-                                  </div>
-                                  <p className="text-[11px] text-[#283618] font-reading italic truncate">
-                                    {member.roleBadge}
-                                  </p>
-                                </div>
-                              </button>
-                            );
-                          })}
-                        </div>
-
-                        {/* Botão de Logout no Rodapé do Dropdown */}
-                        <div className="p-2 border-t border-[#1E1E1E]/20">
-                          <button
-                            type="button"
-                            onClick={handleLogoutClick}
-                            className="w-full flex items-center justify-center gap-1.5 py-2 px-3 bg-[#FDF0ED] hover:bg-[#D62828] text-[#D62828] hover:text-white rounded-lg text-xs font-mono font-bold border border-[#D62828] transition-colors"
-                          >
-                            <LogOut className="w-3.5 h-3.5" />
-                            <span>Sair / Encerrar Sessão</span>
-                          </button>
-                        </div>
-                      </div>
-                    </>
-                  )}
+                {/* CARD DE PERFIL FIXO E ESTÁTICO (SEM DROPDOWN, SEM SETA DE ALTERNAR) */}
+                <div 
+                  className="flex items-center gap-2.5 p-1.5 pr-3 rounded-xl bg-white border-2 border-[#1E1E1E] shadow-[3px_3px_0px_#1E1E1E] select-none"
+                  title={`Conectada como ${activeMember.name} (${currentUser?.email})`}
+                >
+                  <div className="relative shrink-0">
+                    <img
+                      src={activeMember.avatar}
+                      alt={activeMember.name}
+                      className="w-8 h-8 rounded-lg object-cover border border-[#1E1E1E]"
+                    />
+                    <span 
+                      className="absolute -bottom-1 -right-1 w-3.5 h-3.5 rounded-full border border-white bg-[#283618] flex items-center justify-center text-[7px] text-[#FEF08A] font-bold shadow-sm"
+                      title="Sessão autenticada no comitê"
+                    >
+                      ★
+                    </span>
+                  </div>
+                  <div className="text-left hidden md:block">
+                    <p className="text-xs font-black text-[#141414] leading-tight flex items-center gap-1.5">
+                      <span>{activeMember.name.split(' ')[0]}</span>
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-600 animate-pulse" title="Sessão ativa e sincronizada" />
+                    </p>
+                    <p className="text-[10px] text-[#283618] font-mono font-bold leading-none truncate max-w-[130px] mt-0.5">
+                      {activeMember.roleBadge}
+                    </p>
+                  </div>
                 </div>
 
-                {/* Botão discreto de Sair / Logout ao lado do perfil */}
+                {/* Botão de Sair / Logout ao lado do perfil */}
                 <button
                   type="button"
                   onClick={handleLogoutClick}
-                  title="Sair da sessão / Encerrar conta conectada"
-                  className="flex items-center gap-1.5 p-2 sm:px-3 sm:py-2 rounded-xl text-xs font-mono font-bold text-stone-600 hover:text-[#D62828] bg-white hover:bg-[#FDF0ED] border-2 border-[#1E1E1E] shadow-[2px_2px_0px_#1E1E1E] transition-transform hover:-translate-x-0.5 hover:-translate-y-0.5 active:translate-x-0.5 active:translate-y-0.5"
+                  title="Sair da sessão / Encerrar conta para alternar de perfil"
+                  className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-mono font-bold text-stone-700 hover:text-[#D62828] bg-white hover:bg-[#FDF0ED] border-2 border-[#1E1E1E] shadow-[2px_2px_0px_#1E1E1E] transition-transform hover:-translate-x-0.5 hover:-translate-y-0.5 active:translate-x-0.5 active:translate-y-0.5"
                 >
                   <LogOut className="w-4 h-4 text-[#D62828]" />
-                  <span className="hidden sm:inline">Sair</span>
+                  <span>Sair</span>
                 </button>
               </div>
             ) : (
