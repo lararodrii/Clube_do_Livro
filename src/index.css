@@ -1,0 +1,128 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+  }
+  
+  body {
+    background-color: #F6F2E9;
+    color: #141414;
+    font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+    background-image: 
+      radial-gradient(#1E1E1E 0.75px, transparent 0.75px),
+      radial-gradient(circle at 15% 15%, rgba(214, 40, 40, 0.04) 0%, transparent 50%),
+      radial-gradient(circle at 85% 85%, rgba(40, 54, 24, 0.05) 0%, transparent 50%);
+    background-size: 24px 24px, 100% 100%, 100% 100%;
+    min-height: 100vh;
+  }
+
+  ::selection {
+    background: #D62828;
+    color: #FFFFFF;
+  }
+}
+
+/* Custom Scrollbar in Revolutionary Poster Style */
+::-webkit-scrollbar {
+  width: 9px;
+  height: 9px;
+}
+::-webkit-scrollbar-track {
+  background: #F6F2E9;
+  border-left: 2px solid #1E1E1E;
+}
+::-webkit-scrollbar-thumb {
+  background: #D62828;
+  border: 2px solid #1E1E1E;
+  border-radius: 0px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #9E2A2B;
+}
+
+/* Neo-Brutalist Revolutionary Poster Card */
+.retro-card {
+  background-color: #FFFFFF;
+  border: 2px solid #1E1E1E;
+  box-shadow: 4px 4px 0px 0px #1E1E1E;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.retro-card-hover:hover {
+  transform: translate(-2px, -2px);
+  box-shadow: 6px 6px 0px 0px #1E1E1E;
+}
+
+/* Interactive Button Neo-Brutalist */
+.retro-btn {
+  border: 2px solid #1E1E1E;
+  box-shadow: 3px 3px 0px 0px #1E1E1E;
+  font-weight: 800;
+  transition: all 0.12s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.retro-btn:hover {
+  transform: translate(-1px, -1px);
+  box-shadow: 4px 4px 0px 0px #1E1E1E;
+}
+
+.retro-btn:active {
+  transform: translate(2px, 2px);
+  box-shadow: 1px 1px 0px 0px #1E1E1E;
+}
+
+/* Red Star & Stamp Styles */
+.rev-stamp {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  border: 2px solid #1E1E1E;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  box-shadow: 2px 2px 0px 0px #1E1E1E;
+}
+
+/* Realistic 3D Book Styles */
+.book-3d-wrapper {
+  perspective: 1200px;
+}
+
+.book-3d {
+  position: relative;
+  transform-style: preserve-3d;
+  transform: rotateY(-18deg) rotateX(4deg);
+  transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275), box-shadow 0.4s ease;
+  box-shadow: 
+    -12px 14px 28px -4px rgba(20, 20, 20, 0.4),
+    -4px 4px 10px rgba(214, 40, 40, 0.25);
+}
+
+.book-3d:hover {
+  transform: rotateY(-6deg) rotateX(2deg) translateY(-8px);
+  box-shadow: 
+    -18px 22px 36px -6px rgba(20, 20, 20, 0.5),
+    -6px 6px 14px rgba(214, 40, 40, 0.35);
+}
+
+.book-3d::before {
+  content: '';
+  position: absolute;
+  top: 3px;
+  bottom: 3px;
+  right: -12px;
+  width: 12px;
+  background: repeating-linear-gradient(
+    to bottom,
+    #F6F2E9,
+    #F6F2E9 2px,
+    #E8E0D2 2px,
+    #E8E0D2 3px
+  );
+  transform: rotateY(90deg);
+  transform-origin: left;
+  border: 1px solid #1E1E1E;
+}
