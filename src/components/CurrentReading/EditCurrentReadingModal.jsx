@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useClub } from '../../context/ClubContext';
 import { INITIAL_CURRENT_READING } from '../../data/initialData';
+import BookAutocomplete from '../common/BookAutocomplete';
 import { 
   X, 
   Save, 
@@ -10,7 +11,8 @@ import {
   RotateCcw, 
   Trash2, 
   AlertCircle,
-  CheckCircle2
+  CheckCircle2,
+  Sparkles
 } from 'lucide-react';
 
 export default function EditCurrentReadingModal({ isOpen, onClose }) {
@@ -40,6 +42,16 @@ export default function EditCurrentReadingModal({ isOpen, onClose }) {
       setShowUrlInput(false);
     }
   }, [currentReading, isOpen]);
+
+  // Ao selecionar uma sugestão do autocomplete Multi-API, autopreenche todos os campos
+  const handleSelectBook = (book) => {
+    setTitle(book.title);
+    setAuthor(book.author);
+    setPages(book.pages || 280);
+    setGenre(book.genre || 'Literatura');
+    setCoverUrl(book.coverUrl);
+    setSynopsis(book.synopsis);
+  };
 
   if (!isOpen) return null;
 
@@ -141,28 +153,28 @@ export default function EditCurrentReadingModal({ isOpen, onClose }) {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm animate-fade-in overflow-y-auto">
-      <div className="relative bg-[#FAF7F0] rounded-2xl max-w-xl w-full p-6 sm:p-8 border-2 border-[#1E1E1E] shadow-[8px_8px_0px_#1E1E1E] my-8 max-h-[90vh] overflow-y-auto">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/75 backdrop-blur-sm animate-fade-in overflow-y-auto">
+      <div className="relative bg-theme-container text-theme-primary rounded-2xl w-[95vw] max-w-lg max-h-[90vh] overflow-y-auto p-4 sm:p-6 mx-auto border-2 border-theme-border shadow-[8px_8px_0px_var(--shadow-color)] my-4 sm:my-8">
         
         {/* Fechar */}
         <button
           onClick={onClose}
-          className="absolute top-5 right-5 text-stone-500 hover:text-[#141414] p-2 rounded-lg border-2 border-[#1E1E1E] bg-white hover:bg-[#FEF08A] transition-colors shadow-[2px_2px_0px_#1E1E1E]"
+          className="absolute top-5 right-5 text-theme-muted hover:text-theme-primary p-2 rounded-lg border-2 border-theme-border bg-theme-card hover:bg-theme-gold/20 transition-colors shadow-[2px_2px_0px_var(--shadow-color)]"
         >
           <X className="w-5 h-5" />
         </button>
 
         {/* Cabeçalho */}
         <div className="mb-6">
-          <div className="flex items-center gap-2 text-[#D62828] text-xs font-mono font-black uppercase tracking-wider mb-1">
+          <div className="flex items-center gap-2 text-theme-red text-xs font-mono font-black uppercase tracking-wider mb-1">
             <span>★</span>
             <span>Leitura do Mês</span>
-            <span className="text-[#283618]">• Não vai lutar contra o fascismo?</span>
+            <span className="text-theme-gold">• Não vai lutar contra o fascismo?</span>
           </div>
-          <h3 className="font-headline text-2xl sm:text-3xl font-black text-[#141414]">
+          <h3 className="font-headline text-2xl sm:text-3xl font-black text-theme-primary">
             Editar Dados da Leitura ★
           </h3>
-          <p className="text-sm text-[#57534E] mt-1 font-reading font-semibold">
+          <p className="text-sm text-theme-muted mt-1 font-reading font-semibold">
             Ajuste as informações da obra atualmente em debate no coletivo.
           </p>
         </div>
@@ -170,20 +182,18 @@ export default function EditCurrentReadingModal({ isOpen, onClose }) {
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs font-mono font-bold text-[#141414] uppercase tracking-wider mb-1">
-                Título da Obra *
-              </label>
-              <input
-                type="text"
-                required
+              <BookAutocomplete
                 value={title}
-                onChange={(e) => setTitle(e.target.value)}
-                className="w-full text-sm bg-white border-2 border-[#1E1E1E] rounded-lg px-3.5 py-2.5 text-[#141414] focus:outline-none focus:ring-2 focus:ring-[#D62828]"
+                onChange={setTitle}
+                onSelectBook={handleSelectBook}
+                placeholder="Digite o título da obra (ex: O Capital)..."
+                label="Título da Obra / Busca Multi-API *"
+                required={true}
               />
             </div>
 
             <div>
-              <label className="block text-xs font-mono font-bold text-[#141414] uppercase tracking-wider mb-1">
+              <label className="block text-xs font-mono font-bold text-theme-primary uppercase tracking-wider mb-1">
                 Autor(a) *
               </label>
               <input
@@ -191,14 +201,14 @@ export default function EditCurrentReadingModal({ isOpen, onClose }) {
                 required
                 value={author}
                 onChange={(e) => setAuthor(e.target.value)}
-                className="w-full text-sm bg-white border-2 border-[#1E1E1E] rounded-lg px-3.5 py-2.5 text-[#141414] focus:outline-none focus:ring-2 focus:ring-[#D62828] font-reading font-bold"
+                className="w-full text-sm bg-theme-input border-2 border-theme-border rounded-lg px-3.5 py-2.5 text-theme-primary placeholder:text-theme-muted focus:outline-none focus:ring-2 focus:ring-theme-red font-reading font-bold"
               />
             </div>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs font-mono font-bold text-[#141414] uppercase tracking-wider mb-1">
+              <label className="block text-xs font-mono font-bold text-theme-primary uppercase tracking-wider mb-1">
                 Total de Páginas
               </label>
               <input
@@ -206,33 +216,33 @@ export default function EditCurrentReadingModal({ isOpen, onClose }) {
                 min="1"
                 value={pages}
                 onChange={(e) => setPages(e.target.value)}
-                className="w-full text-sm bg-white border-2 border-[#1E1E1E] rounded-lg px-3.5 py-2.5 text-[#141414] focus:outline-none focus:ring-2 focus:ring-[#D62828] font-mono"
+                className="w-full text-sm bg-theme-input border-2 border-theme-border rounded-lg px-3.5 py-2.5 text-theme-primary placeholder:text-theme-muted focus:outline-none focus:ring-2 focus:ring-theme-red font-mono"
               />
             </div>
 
             <div>
-              <label className="block text-xs font-mono font-bold text-[#141414] uppercase tracking-wider mb-1">
+              <label className="block text-xs font-mono font-bold text-theme-primary uppercase tracking-wider mb-1">
                 Gênero / Categoria
               </label>
               <input
                 type="text"
                 value={genre}
                 onChange={(e) => setGenre(e.target.value)}
-                className="w-full text-sm bg-white border-2 border-[#1E1E1E] rounded-lg px-3.5 py-2.5 text-[#141414] focus:outline-none focus:ring-2 focus:ring-[#D62828]"
+                className="w-full text-sm bg-theme-input border-2 border-theme-border rounded-lg px-3.5 py-2.5 text-theme-primary placeholder:text-theme-muted focus:outline-none focus:ring-2 focus:ring-theme-red"
               />
             </div>
           </div>
 
           {/* ÁREA DE UPLOAD DE ARQUIVO DA CAPA (BASE64 + PREVIEW) */}
-          <div className="bg-white p-4 rounded-xl border-2 border-[#1E1E1E] shadow-[3px_3px_0px_#1E1E1E]">
+          <div className="bg-theme-card p-4 rounded-xl border-2 border-theme-border shadow-[3px_3px_0px_var(--shadow-color)]">
             <div className="flex items-center justify-between mb-2.5">
-              <label className="block text-xs font-mono font-bold text-[#141414] uppercase tracking-wider">
+              <label className="block text-xs font-mono font-bold text-theme-primary uppercase tracking-wider">
                 Capa do Livro (Upload do Dispositivo) *
               </label>
               <button
                 type="button"
                 onClick={() => setShowUrlInput(!showUrlInput)}
-                className="text-[11px] font-mono font-bold text-[#D62828] hover:text-[#9E2A2B] underline flex items-center gap-1"
+                className="text-[11px] font-mono font-bold text-theme-red hover:underline flex items-center gap-1"
               >
                 <LinkIcon className="w-3 h-3" />
                 <span>{showUrlInput ? 'Ocultar campo de link' : 'Ou colar URL de imagem'}</span>
@@ -250,7 +260,7 @@ export default function EditCurrentReadingModal({ isOpen, onClose }) {
 
             <div className="flex flex-col sm:flex-row items-center gap-4">
               {/* Miniatura de Pré-visualização da Capa */}
-              <div className="relative shrink-0 w-20 h-28 bg-[#FAF7F0] rounded-lg border-2 border-[#1E1E1E] shadow-[2px_2px_0px_#1E1E1E] overflow-hidden flex items-center justify-center">
+              <div className="relative shrink-0 w-20 h-28 bg-theme-container rounded-lg border-2 border-theme-border shadow-[2px_2px_0px_var(--shadow-color)] overflow-hidden flex items-center justify-center">
                 {coverUrl ? (
                   <img
                     src={coverUrl}
@@ -260,8 +270,8 @@ export default function EditCurrentReadingModal({ isOpen, onClose }) {
                   />
                 ) : (
                   <div className="text-center p-2">
-                    <ImageIcon className="w-6 h-6 text-stone-400 mx-auto mb-1" />
-                    <span className="text-[9px] font-mono text-[#57534E] block leading-tight">Sem Capa (Usa Mockup 3D)</span>
+                    <ImageIcon className="w-6 h-6 text-theme-muted mx-auto mb-1" />
+                    <span className="text-[9px] font-mono text-theme-muted block leading-tight">Sem Capa (Usa Mockup 3D)</span>
                   </div>
                 )}
                 {isProcessing && (
@@ -277,9 +287,9 @@ export default function EditCurrentReadingModal({ isOpen, onClose }) {
                   <button
                     type="button"
                     onClick={() => fileInputRef.current?.click()}
-                    className="px-4 py-2 bg-[#FAF7F0] hover:bg-[#FEF08A] text-[#141414] text-xs font-mono font-black uppercase tracking-wider rounded-lg border-2 border-[#1E1E1E] shadow-[2px_2px_0px_#1E1E1E] transition-transform hover:-translate-x-0.5 hover:-translate-y-0.5 active:translate-x-0.5 active:translate-y-0.5 flex items-center gap-2"
+                    className="px-4 py-2 bg-theme-container hover:bg-[#FEF08A] hover:text-[#111111] text-theme-primary text-xs font-mono font-black uppercase tracking-wider rounded-lg border-2 border-theme-border shadow-[2px_2px_0px_var(--shadow-color)] transition-transform hover:-translate-x-0.5 hover:-translate-y-0.5 active:translate-x-0.5 active:translate-y-0.5 flex items-center gap-2"
                   >
-                    <Upload className="w-3.5 h-3.5 text-[#D62828]" />
+                    <Upload className="w-3.5 h-3.5 text-theme-red" />
                     <span>Carregar Imagem do Dispositivo</span>
                   </button>
 
@@ -287,7 +297,7 @@ export default function EditCurrentReadingModal({ isOpen, onClose }) {
                     <button
                       type="button"
                       onClick={handleRemoveCover}
-                      className="px-2.5 py-2 text-xs font-mono font-bold text-[#D62828] hover:bg-red-50 rounded-lg border border-transparent hover:border-[#D62828] transition-colors flex items-center gap-1"
+                      className="px-2.5 py-2 text-xs font-mono font-bold text-theme-red hover:bg-theme-red/10 rounded-lg border border-transparent hover:border-theme-red transition-colors flex items-center gap-1"
                       title="Remover capa e exibir mockup 3D automático"
                     >
                       <Trash2 className="w-3.5 h-3.5" />
@@ -298,7 +308,7 @@ export default function EditCurrentReadingModal({ isOpen, onClose }) {
                   <button
                     type="button"
                     onClick={handleRestoreDefault}
-                    className="px-2.5 py-2 text-xs font-mono font-bold text-[#57534E] hover:text-[#141414] hover:bg-stone-100 rounded-lg border border-transparent transition-colors flex items-center gap-1"
+                    className="px-2.5 py-2 text-xs font-mono font-bold text-theme-muted hover:text-theme-primary hover:bg-theme-container rounded-lg border border-transparent transition-colors flex items-center gap-1"
                     title="Restaurar capa padrão da obra"
                   >
                     <RotateCcw className="w-3 h-3" />
@@ -306,14 +316,14 @@ export default function EditCurrentReadingModal({ isOpen, onClose }) {
                   </button>
                 </div>
 
-                <p className="text-[11px] text-[#57534E] font-reading">
+                <p className="text-[11px] text-theme-muted font-reading">
                   {coverUrl 
                     ? '★ Imagem pronta e convertida para o acervo local.' 
                     : 'Formatos aceitos: JPG, PNG, WEBP. Arquivos locais são salvos em Base64 e persistidos no seu navegador.'}
                 </p>
 
                 {uploadError && (
-                  <p className="text-xs text-[#D62828] font-mono font-bold flex items-center gap-1 justify-center sm:justify-start">
+                  <p className="text-xs text-theme-red font-mono font-bold flex items-center gap-1 justify-center sm:justify-start">
                     <AlertCircle className="w-3.5 h-3.5" />
                     <span>{uploadError}</span>
                   </p>
@@ -323,8 +333,8 @@ export default function EditCurrentReadingModal({ isOpen, onClose }) {
 
             {/* Opção secundária: Digitar link da imagem */}
             {showUrlInput && (
-              <div className="mt-3 pt-3 border-t border-[#1E1E1E]/20 animate-fade-in">
-                <label className="block text-[10px] font-mono font-bold text-[#57534E] uppercase tracking-wider mb-1">
+              <div className="mt-3 pt-3 border-t border-theme-border/20 animate-fade-in">
+                <label className="block text-[10px] font-mono font-bold text-theme-muted uppercase tracking-wider mb-1">
                   Ou digite a URL direta da imagem:
                 </label>
                 <input
@@ -335,36 +345,36 @@ export default function EditCurrentReadingModal({ isOpen, onClose }) {
                     setUploadError('');
                   }}
                   placeholder="https://..."
-                  className="w-full text-xs font-mono bg-[#FAF7F0] border-2 border-[#1E1E1E] rounded-lg px-3 py-2 text-[#141414] focus:outline-none focus:ring-2 focus:ring-[#D62828]"
+                  className="w-full text-xs font-mono bg-theme-input border-2 border-theme-border rounded-lg px-3 py-2 text-theme-primary placeholder:text-theme-muted focus:outline-none focus:ring-2 focus:ring-theme-red"
                 />
               </div>
             )}
           </div>
 
           <div>
-            <label className="block text-xs font-mono font-bold text-[#141414] uppercase tracking-wider mb-1">
+            <label className="block text-xs font-mono font-bold text-theme-primary uppercase tracking-wider mb-1">
               Sinopse do Livro
             </label>
             <textarea
               rows={3}
               value={synopsis}
               onChange={(e) => setSynopsis(e.target.value)}
-              className="w-full text-sm bg-white border-2 border-[#1E1E1E] rounded-lg p-3 text-[#141414] focus:outline-none focus:ring-2 focus:ring-[#D62828] leading-relaxed font-reading"
+              className="w-full text-sm bg-theme-input border-2 border-theme-border rounded-lg p-3 text-theme-primary placeholder:text-theme-muted focus:outline-none focus:ring-2 focus:ring-theme-red leading-relaxed font-reading"
             />
           </div>
 
           {/* Botões de Ação */}
-          <div className="flex items-center justify-end gap-3 pt-4 border-t-2 border-[#1E1E1E]">
+          <div className="flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-end gap-2.5 sm:gap-3 pt-4 border-t-2 border-theme-border">
             <button
               type="button"
               onClick={onClose}
-              className="px-5 py-2.5 text-xs font-mono font-bold text-[#57534E] hover:bg-stone-200 rounded-lg border-2 border-[#1E1E1E] transition-colors"
+              className="w-full sm:w-auto px-5 py-2.5 text-xs font-mono font-bold text-theme-muted hover:bg-theme-card rounded-lg border-2 border-theme-border transition-colors text-center"
             >
               Cancelar
             </button>
             <button
               type="submit"
-              className="px-6 py-2.5 bg-[#D62828] hover:bg-[#9E2A2B] text-white text-xs font-headline font-black uppercase tracking-wider rounded-lg border-2 border-[#1E1E1E] shadow-[3px_3px_0px_#1E1E1E] transition-transform hover:-translate-x-0.5 hover:-translate-y-0.5 active:translate-x-0.5 active:translate-y-0.5 flex items-center gap-2"
+              className="w-full sm:w-auto justify-center px-6 py-2.5 bg-theme-red hover:brightness-110 text-white text-xs font-headline font-black uppercase tracking-wider rounded-lg border-2 border-theme-border shadow-[3px_3px_0px_var(--shadow-color)] transition-transform hover:-translate-x-0.5 hover:-translate-y-0.5 active:translate-x-0.5 active:translate-y-0.5 flex items-center gap-2"
             >
               <Save className="w-4 h-4 text-[#FEF08A]" />
               <span>Salvar Dados da Obra ★</span>

@@ -304,7 +304,7 @@ export function ClubProvider({ children }) {
   };
 
   // === AVALIAÇÃO DA OBRA ATUAL (SEMANA 4) ===
-  const submitCurrentBookReview = ({ rating, comment, recommendation, pacing }) => {
+  const submitCurrentBookReview = ({ rating, comment, recommendation, pacing, isSpoiler = false }) => {
     if (!currentUser || !isAuthenticated || !userProfile?.memberId) {
       openAuthModal('Faça login para registrar sua avaliação crítica da leitura!', 'login');
       return false;
@@ -326,6 +326,7 @@ export function ClubProvider({ children }) {
       comment: comment?.trim() || 'Leitura concluída com sucesso pelo coletivo!',
       recommendation: recommendation || '★ Super recomendo',
       pacing: pacing || 'Segui o ritmo semanal',
+      isSpoiler: !!isSpoiler,
       date: today
     };
 
@@ -426,7 +427,7 @@ export function ClubProvider({ children }) {
     showToast('Citação pregada no mural com sucesso! ★📝', 'success');
   };
 
-  const updateQuote = (quoteId, { text, page }) => {
+  const updateQuote = (quoteId, { text, page, isSpoiler }) => {
     if (!currentUser || !isAuthenticated || !userProfile?.memberId) {
       openAuthModal('Faça login para editar sua citação!', 'login');
       return;
@@ -443,7 +444,8 @@ export function ClubProvider({ children }) {
         return {
           ...q,
           text: text.trim(),
-          page: page ? (String(page).trim().startsWith('p.') ? String(page).trim() : `p. ${String(page).trim()}`) : null
+          page: page ? (String(page).trim().startsWith('p.') ? String(page).trim() : `p. ${String(page).trim()}`) : null,
+          ...(isSpoiler !== undefined ? { isSpoiler: !!isSpoiler } : {})
         };
       }
       return q;
@@ -452,6 +454,29 @@ export function ClubProvider({ children }) {
     setData(prev => ({ ...prev, quotes: updatedQuotes }));
     syncToCloud({ quotes: updatedQuotes });
     showToast('Citação atualizada com sucesso! 📝★', 'success');
+  };
+
+  const toggleQuoteSpoiler = (quoteId) => {
+    if (!currentUser || !isAuthenticated || !userProfile?.memberId) {
+      openAuthModal('Faça login para alterar a tarja confidencial desta citação!', 'login');
+      return;
+    }
+
+    let isNowSpoiler = false;
+    const updatedQuotes = (data.quotes || []).map(q => {
+      if (q.id === quoteId) {
+        isNowSpoiler = !q.isSpoiler;
+        return {
+          ...q,
+          isSpoiler: isNowSpoiler
+        };
+      }
+      return q;
+    });
+
+    setData(prev => ({ ...prev, quotes: updatedQuotes }));
+    syncToCloud({ quotes: updatedQuotes });
+    showToast(isNowSpoiler ? 'Tarja confidencial ativada! 🔒★' : 'Tarja confidencial desativada! 📖★', 'info');
   };
 
   const deleteQuote = (quoteId) => {
@@ -1023,6 +1048,7 @@ export function ClubProvider({ children }) {
         updateQuote,
         deleteQuote,
         toggleQuoteLike,
+        toggleQuoteSpoiler,
         ballot: data.ballot,
         toggleBallotStatus,
         toggleVote,

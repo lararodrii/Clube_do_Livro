@@ -9,11 +9,23 @@ export const THEMES = [
     subtitle: 'Modo Claro Retrô • Xilogravura & Panfleto',
     badge: '★ Tradicional',
     icon: '📰',
-    primaryColor: '#D62828',
-    bgColor: '#F5F0E6',
-    cardColor: '#FFFDF9',
+    primaryColor: '#B91C1C',
+    bgColor: '#F4EFE6',
+    cardColor: '#FFFFFF',
     borderColor: '#141414',
-    textColor: '#141414'
+    textColor: '#111111'
+  },
+  {
+    id: 'carmim',
+    name: 'Manifesto Carmim',
+    subtitle: 'Alto Contraste Escuro • Carbono & Carmim',
+    badge: '★ Vanguarda',
+    icon: '☭',
+    primaryColor: '#FF4D6D',
+    bgColor: '#09090B',
+    cardColor: '#1C1C22',
+    borderColor: '#FF4D6D',
+    textColor: '#FFFFFF'
   },
   {
     id: 'sierra',
@@ -21,23 +33,11 @@ export const THEMES = [
     subtitle: 'Verde Guerrilha • Café Expresso & Terracota',
     badge: '★ Camponês',
     icon: '☕',
-    primaryColor: '#D4A359',
-    bgColor: '#162419',
-    cardColor: '#231915',
+    primaryColor: '#F87171',
+    bgColor: '#0F1912',
+    cardColor: '#211A16',
     borderColor: '#D4A359',
-    textColor: '#EDE6D6'
-  },
-  {
-    id: 'carmim',
-    name: 'Manifesto Carmim',
-    subtitle: 'Alto Contraste Escuro • Carbono & Vermelho Vivo',
-    badge: '★ Vanguarda',
-    icon: '☭',
-    primaryColor: '#E11D48',
-    bgColor: '#0F0F12',
-    cardColor: '#18181C',
-    borderColor: '#E11D48',
-    textColor: '#F3F4F6'
+    textColor: '#FAF6EB'
   },
   {
     id: 'cybersyn',
@@ -46,10 +46,10 @@ export const THEMES = [
     badge: '★ Cybersyn',
     icon: '⚡',
     primaryColor: '#FF2A54',
-    bgColor: '#0B132B',
-    cardColor: '#1C2541',
+    bgColor: '#070B19',
+    cardColor: '#1E293B',
     borderColor: '#FF2A54',
-    textColor: '#E0FBFC'
+    textColor: '#F8FAFC'
   }
 ];
 

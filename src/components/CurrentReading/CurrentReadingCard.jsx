@@ -95,16 +95,16 @@ export default function CurrentReadingCard() {
   };
 
   return (
-    <div className="retro-card rounded-2xl p-6 sm:p-8 relative bg-white border-2 border-[#1E1E1E] shadow-[6px_6px_0px_#1E1E1E]">
+    <div className="retro-card rounded-2xl p-6 sm:p-8 relative bg-theme-container border-2 border-theme-border shadow-[6px_6px_0px_var(--shadow-color)] transition-colors duration-300">
       
       {/* Detalhe de fita de carimbo revolucionário no canto */}
-      <div className="absolute top-0 right-10 bg-[#D62828] text-[#FEF08A] font-mono text-xs font-black px-3 py-1.5 border-b-2 border-x-2 border-[#1E1E1E] shadow-[2px_2px_0px_#1E1E1E] hidden sm:flex items-center gap-1">
+      <div className="absolute top-0 right-10 bg-theme-red text-white font-mono text-xs font-black px-3 py-1.5 border-b-2 border-x-2 border-theme-border shadow-[2px_2px_0px_var(--shadow-color)] hidden sm:flex items-center gap-1">
         <span>★</span>
         <span>LEITURA DO COLETIVO</span>
       </div>
 
       {/* Banner de Destaque com o Mascote e Slogan Oficial */}
-      <div className="mb-6 rounded-xl bg-[#FAF7F0] border-2 border-[#1E1E1E] p-4 flex flex-col md:flex-row items-center justify-between gap-4 shadow-[3px_3px_0px_#1E1E1E]">
+      <div className="mb-6 rounded-xl bg-theme-card border-2 border-theme-border p-4 flex flex-col md:flex-row items-center justify-between gap-4 shadow-[3px_3px_0px_var(--shadow-color)]">
         <div className="flex items-center gap-3.5">
           <div className="shrink-0">
             <ComradeCat 
@@ -116,47 +116,47 @@ export default function CurrentReadingCard() {
           </div>
           <div>
             <div className="flex items-center gap-2 flex-wrap">
-              <span className="font-headline font-black text-[#D62828] text-base sm:text-lg tracking-tight">
+              <span className="font-headline font-black text-theme-red text-base sm:text-lg tracking-tight">
                 "Não vai lutar contra o fascismo?"
               </span>
-              <span className="text-[10px] bg-[#283618] text-[#FEF08A] font-mono font-extrabold px-2 py-0.5 rounded border border-[#1E1E1E] uppercase tracking-wider">
+              <span className="text-[10px] bg-theme-container text-theme-gold font-mono font-extrabold px-2 py-0.5 rounded border border-theme-border uppercase tracking-wider">
                 Comitê Literário
               </span>
             </div>
-            <p className="text-xs text-[#57534E] font-reading font-semibold italic mt-0.5">
+            <p className="text-xs text-theme-muted font-reading font-semibold italic mt-0.5">
               "Sem teoria crítica e páginas lidas, não há transformação!"
             </p>
           </div>
         </div>
 
-        <div className="flex items-center gap-2 text-xs font-mono font-black text-[#141414] bg-[#FEF08A] px-3.5 py-1.5 rounded-lg border-2 border-[#1E1E1E] shadow-[2px_2px_0px_#1E1E1E] shrink-0">
-          <span className="text-[#D62828]">★</span>
+        <div className="flex items-center gap-2 text-xs font-mono font-black text-[#111111] bg-[#FEF08A] px-3.5 py-1.5 rounded-lg border-2 border-theme-border shadow-[2px_2px_0px_var(--shadow-color)] shrink-0">
+          <span className="text-theme-red">★</span>
           <span>{currentReading.monthYear || 'Novembro / 2026'}</span>
         </div>
       </div>
 
       {/* Cabeçalho do Card */}
-      <div className="flex flex-wrap items-center justify-between gap-3 mb-6 pb-4 border-b-2 border-[#1E1E1E]">
+      <div className="flex flex-wrap items-center justify-between gap-3 mb-6 pb-4 border-b-2 border-theme-border">
         <div className="flex items-center gap-2.5">
-          <span className="w-3 h-3 rounded-full bg-[#D62828] border border-[#1E1E1E] animate-pulse" />
-          <span className="text-xs font-mono font-black uppercase tracking-wider px-3 py-1 rounded bg-[#FDF0ED] text-[#D62828] border-2 border-[#1E1E1E] shadow-[2px_2px_0px_#1E1E1E] flex items-center gap-1.5">
+          <span className="w-3 h-3 rounded-full bg-theme-red border border-theme-border animate-pulse" />
+          <span className="text-xs font-mono font-black uppercase tracking-wider px-3 py-1 rounded bg-theme-card text-theme-red border-2 border-theme-border shadow-[2px_2px_0px_var(--shadow-color)] flex items-center gap-1.5">
             <span>★</span> {currentReading.badge || 'Livro em Debate'}
           </span>
-          <span className="text-[#1E1E1E] font-bold">•</span>
-          <span className="text-xs text-[#57534E] font-reading font-bold italic">
+          <span className="text-theme-muted font-bold">•</span>
+          <span className="text-xs text-theme-muted font-reading font-bold italic">
             Meta ativa
           </span>
         </div>
 
-        <div className="flex flex-wrap items-center gap-2 sm:gap-2.5 w-full sm:w-auto">
+        <div className="flex flex-wrap gap-2 w-full sm:w-auto justify-center sm:justify-start">
           {/* Alternar Mockup 3D */}
           <button
             type="button"
             onClick={() => setPrefer3DMockup(!prefer3DMockup)}
             title="Alternar entre capa original e mockup 3D realista"
-            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-mono font-bold text-[#141414] bg-white hover:bg-[#FAF7F0] border-2 border-[#1E1E1E] shadow-[2px_2px_0px_#1E1E1E] rounded-lg transition-transform hover:-translate-x-0.5 hover:-translate-y-0.5 active:translate-x-0.5 active:translate-y-0.5"
+            className="flex items-center gap-1.5 px-3 py-2 text-xs font-mono font-bold text-theme-primary bg-theme-card hover:bg-theme-container border-2 border-theme-border shadow-[2px_2px_0px_var(--shadow-color)] rounded-lg transition-transform hover:-translate-x-0.5 hover:-translate-y-0.5 active:translate-x-0.5 active:translate-y-0.5"
           >
-            <Layers className="w-3.5 h-3.5 text-[#D62828]" />
+            <Layers className="w-3.5 h-3.5 text-theme-red" />
             <span>{prefer3DMockup ? 'Capa Plana' : 'Mockup 3D'}</span>
           </button>
 
@@ -164,9 +164,9 @@ export default function CurrentReadingCard() {
             type="button"
             onClick={handleEditClick}
             title="Editar informações da leitura atual"
-            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-mono font-bold text-white bg-[#283618] hover:bg-[#1E2812] border-2 border-[#1E1E1E] shadow-[2px_2px_0px_#1E1E1E] rounded-lg transition-transform hover:-translate-x-0.5 hover:-translate-y-0.5 active:translate-x-0.5 active:translate-y-0.5"
+            className="flex items-center gap-1.5 px-3 py-2 text-xs font-mono font-bold text-theme-primary bg-theme-card hover:bg-theme-container border-2 border-theme-border shadow-[2px_2px_0px_var(--shadow-color)] rounded-lg transition-transform hover:-translate-x-0.5 hover:-translate-y-0.5 active:translate-x-0.5 active:translate-y-0.5"
           >
-            <Pencil className="w-3.5 h-3.5 text-[#FEF08A]" />
+            <Pencil className="w-3.5 h-3.5 text-theme-gold" />
             <span>Editar Obra</span>
           </button>
 
@@ -175,13 +175,13 @@ export default function CurrentReadingCard() {
             type="button"
             onClick={handleArchiveClick}
             title={isArchived ? "Obra já arquivada no Acervo Coletivo" : "Arquivar esta obra no Acervo & Resenhas"}
-            className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-mono font-bold border-2 border-[#1E1E1E] shadow-[2px_2px_0px_#1E1E1E] rounded-lg transition-transform hover:-translate-x-0.5 hover:-translate-y-0.5 active:translate-x-0.5 active:translate-y-0.5 ${
+            className={`flex items-center gap-1.5 px-3 py-2 text-xs font-mono font-bold border-2 border-theme-border shadow-[2px_2px_0px_var(--shadow-color)] rounded-lg transition-transform hover:-translate-x-0.5 hover:-translate-y-0.5 active:translate-x-0.5 active:translate-y-0.5 ${
               isArchived
-                ? 'bg-stone-200 text-[#57534E] hover:bg-stone-300'
-                : 'bg-[#FEF08A] hover:bg-[#FDE047] text-[#141414]'
+                ? 'bg-theme-card text-theme-muted opacity-80'
+                : 'bg-[#FEF08A] hover:bg-[#FDE047] text-[#111111] font-bold'
             }`}
           >
-            <Archive className="w-3.5 h-3.5 text-[#D62828]" />
+            <Archive className="w-3.5 h-3.5 text-theme-red" />
             <span>{isArchived ? 'Obra Arquivada' : 'Arquivar Manualmente'}</span>
           </button>
         </div>
@@ -189,29 +189,29 @@ export default function CurrentReadingCard() {
 
       {/* Notificação Visual Leve de Obra Arquivada no Acervo */}
       {isArchived && (
-        <div className="mb-6 p-3.5 sm:p-4 rounded-xl bg-[#283618] text-[#FEF08A] border-2 border-[#1E1E1E] shadow-[4px_4px_0px_#1E1E1E] flex flex-wrap items-center justify-between gap-3 animate-fade-in">
+        <div className="mb-6 p-3.5 sm:p-4 rounded-xl bg-theme-card text-theme-primary border-2 border-theme-border shadow-[4px_4px_0px_var(--shadow-color)] flex flex-wrap items-center justify-between gap-3 animate-fade-in">
           <div className="flex items-center gap-3">
-            <span className="w-3 h-3 rounded-full bg-[#FEF08A] animate-ping shrink-0" />
+            <span className="w-3 h-3 rounded-full bg-theme-gold animate-ping shrink-0" />
             <div>
-              <p className="font-headline font-black text-xs sm:text-sm tracking-wide flex items-center gap-1.5 text-white">
-                <span className="text-[#FEF08A]">★</span> OBRA CATALOGADA NO ACERVO COLETIVO
+              <p className="font-headline font-black text-xs sm:text-sm tracking-wide flex items-center gap-1.5 text-theme-primary">
+                <span className="text-theme-gold">★</span> OBRA CATALOGADA NO ACERVO COLETIVO
               </p>
-              <p className="text-[11px] sm:text-xs font-reading text-stone-200 mt-0.5">
+              <p className="text-[11px] sm:text-xs font-reading text-theme-secondary mt-0.5">
                 Esta obra cumpriu o prazo da assembleia ou foi arquivada pelo comitê. As resenhas e métricas estão salvas no <strong>Acervo & Resenhas</strong>.
               </p>
             </div>
           </div>
-          <span className="text-[10px] font-mono font-black uppercase px-3 py-1 rounded bg-[#FEF08A] text-[#141414] border border-[#1E1E1E] shadow-sm shrink-0">
+          <span className="text-[10px] font-mono font-black uppercase px-3 py-1 rounded bg-[#FEF08A] text-[#111111] font-bold border border-theme-border shadow-sm shrink-0">
             Status: Concluído ★
           </span>
         </div>
       )}
 
       {/* Conteúdo Principal: Capa 3D Centralizada no Mobile + Detalhes */}
-      <div className="grid grid-cols-1 md:grid-cols-12 gap-8 items-start">
+      <div className="flex flex-col md:flex-row items-center md:items-start gap-6">
         
         {/* Coluna da Capa Centralizada no Mobile */}
-        <div className="md:col-span-5 lg:col-span-4 flex flex-col items-center justify-center text-center mx-auto w-full">
+        <div className="w-full md:w-auto shrink-0 flex flex-col items-center justify-center text-center mx-auto max-w-[200px] sm:max-w-[240px]">
           <BookCover
             src={currentReading.coverUrl}
             title={currentReading.title}
@@ -220,43 +220,43 @@ export default function CurrentReadingCard() {
             size="lg"
             forceRealistic3D={prefer3DMockup}
             badge={
-              <span className="bg-[#D62828] text-white border-2 border-[#1E1E1E] text-[10px] font-mono font-black px-2.5 py-1 rounded shadow-[2px_2px_0px_#1E1E1E] uppercase tracking-wider flex items-center gap-1">
+              <span className="bg-theme-red text-white font-bold border-2 border-theme-border text-[10px] font-mono px-2.5 py-1 rounded shadow-[2px_2px_0px_var(--shadow-color)] uppercase tracking-wider flex items-center gap-1">
                 <span>★</span> Em Leitura
               </span>
             }
           />
 
           <div className="mt-5 text-center flex flex-wrap items-center justify-center gap-2">
-            <span className="text-[11px] font-mono font-black uppercase px-3 py-1 rounded bg-[#FAF7F0] text-[#141414] border-2 border-[#1E1E1E] shadow-[2px_2px_0px_#1E1E1E]">
+            <span className="text-[11px] font-mono font-black uppercase px-3 py-1 rounded bg-theme-card text-theme-primary border-2 border-theme-border shadow-[2px_2px_0px_var(--shadow-color)]">
               {currentReading.genre}
             </span>
-            <span className="text-[11px] font-mono font-black uppercase px-3 py-1 rounded bg-[#FEF08A] text-[#141414] border-2 border-[#1E1E1E] shadow-[2px_2px_0px_#1E1E1E]">
+            <span className="text-[11px] font-mono font-black uppercase px-3 py-1 rounded bg-[#FEF08A] text-[#111111] font-bold border-2 border-theme-border shadow-[2px_2px_0px_var(--shadow-color)]">
               {currentReading.pages} páginas
             </span>
           </div>
         </div>
 
         {/* Coluna de Detalhes e Metas Semanais */}
-        <div className="md:col-span-7 lg:col-span-8 flex flex-col justify-between">
+        <div className="flex-1 w-full flex flex-col justify-between">
           <div>
-            <h2 className="font-headline font-black text-2xl sm:text-3xl md:text-4xl text-[#141414] tracking-tight leading-tight">
+            <h2 className="font-headline font-black text-2xl sm:text-3xl md:text-4xl text-theme-primary tracking-tight leading-tight break-words">
               {currentReading.title}
             </h2>
-            <p className="text-base sm:text-lg text-[#D62828] font-reading italic mt-1 font-bold">
+            <p className="text-base sm:text-lg text-theme-red font-reading italic mt-1 font-bold">
               por {currentReading.author}
             </p>
 
             {/* Sinopse em Caixa Estilo Jornal de Época */}
-            <div className="mt-4 text-[#141414] text-xs sm:text-sm leading-relaxed bg-[#FAF7F0] p-4 sm:p-5 rounded-xl border-2 border-[#1E1E1E] shadow-[3px_3px_0px_#1E1E1E]">
-              <div className="flex items-center gap-2 text-[#EF4444] font-mono text-[10px] uppercase font-black mb-1">
+            <div className="mt-4 text-theme-secondary text-xs sm:text-sm leading-relaxed bg-theme-card p-4 sm:p-5 rounded-xl border-2 border-theme-border shadow-[3px_3px_0px_var(--shadow-color)]">
+              <div className="flex items-center gap-2 text-theme-red font-mono text-[10px] uppercase font-black mb-1">
                 <span>★ RESUMO DA OBRA:</span>
               </div>
               <p className={`font-reading whitespace-pre-line leading-relaxed ${showFullSynopsis ? '' : 'line-clamp-3'}`}>
-                {formatTextWithBold(currentReading.synopsis, 'font-bold text-[#9E2A2B]')}
+                {formatTextWithBold(currentReading.synopsis, 'font-bold text-theme-red')}
               </p>
               <button
                 onClick={() => setShowFullSynopsis(!showFullSynopsis)}
-                className="mt-2 text-xs font-mono font-bold text-[#D62828] hover:text-[#9E2A2B] flex items-center gap-1 underline focus:outline-none"
+                className="mt-2 text-xs font-mono font-bold text-theme-red hover:underline flex items-center gap-1 focus:outline-none"
               >
                 {showFullSynopsis ? (
                   <>Recolher sinopse <ChevronUp className="w-3.5 h-3.5" /></>
@@ -268,15 +268,15 @@ export default function CurrentReadingCard() {
           </div>
 
           {/* Progresso de Leitura Coletivo e Individual com o Mascote */}
-          <div className="mt-6 pt-6 border-t-2 border-[#1E1E1E]">
+          <div className="mt-6 pt-6 border-t-2 border-theme-border">
             <div className="flex flex-wrap items-center justify-between gap-3 mb-3">
               <div>
-                <h4 className="text-sm sm:text-base font-headline font-black text-[#141414] flex items-center gap-2">
-                  <Bookmark className="w-4 h-4 text-[#D62828]" />
+                <h4 className="text-sm sm:text-base font-headline font-black text-theme-primary flex items-center gap-2">
+                  <Bookmark className="w-4 h-4 text-theme-red" />
                   <span>Metas Semanais de Leitura</span>
-                  <span className="text-[#D62828]">★</span>
+                  <span className="text-theme-red">★</span>
                 </h4>
-                <p className="text-xs text-[#57534E] font-reading font-semibold">
+                <p className="text-xs text-theme-muted font-reading font-semibold">
                   Clique no card da semana para registrar o seu progresso individual
                 </p>
               </div>
@@ -287,22 +287,22 @@ export default function CurrentReadingCard() {
                   <button
                     type="button"
                     onClick={handleEvaluationClick}
-                    className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#FEF08A] hover:bg-[#FDE047] text-[#141414] text-xs font-mono font-black border-2 border-[#1E1E1E] shadow-[2px_2px_0px_#1E1E1E] rounded-lg transition-transform hover:-translate-x-0.5 hover:-translate-y-0.5 active:translate-x-0.5 active:translate-y-0.5"
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#FEF08A] hover:bg-[#FDE047] text-[#111111] font-bold text-xs font-mono border-2 border-theme-border shadow-[2px_2px_0px_var(--shadow-color)] rounded-lg transition-transform hover:-translate-x-0.5 hover:-translate-y-0.5 active:translate-x-0.5 active:translate-y-0.5"
                   >
-                    <Star className="w-3.5 h-3.5 text-[#D62828] fill-[#D62828]" />
+                    <Star className="w-3.5 h-3.5 text-theme-red fill-current" />
                     <span>{myReview ? `★ Minha Avaliação (${myReview.rating}★)` : '★ Avaliar Obra Concluída'}</span>
                   </button>
                 )}
 
-                <div className="bg-[#FAF7F0] p-2 rounded-lg border-2 border-[#1E1E1E] shadow-[2px_2px_0px_#1E1E1E]">
-                  <span className="text-[9px] font-mono text-[#57534E] font-bold uppercase tracking-wider block">Seu Avanço:</span>
-                  <span className="text-sm font-mono font-black text-[#D62828]">
+                <div className="bg-theme-card p-2 rounded-lg border-2 border-theme-border shadow-[2px_2px_0px_var(--shadow-color)]">
+                  <span className="text-[9px] font-mono text-theme-muted font-bold uppercase tracking-wider block">Seu Avanço:</span>
+                  <span className="text-sm font-mono font-black text-theme-red">
                     {memberCompletionPercent}%
                   </span>
                 </div>
-                <div className="bg-[#FAF7F0] p-2 rounded-lg border-2 border-[#1E1E1E] shadow-[2px_2px_0px_#1E1E1E]">
-                  <span className="text-[9px] font-mono text-[#57534E] font-bold uppercase tracking-wider block">Média do Clube:</span>
-                  <span className="text-sm font-mono font-black text-[#283618]">
+                <div className="bg-theme-card p-2 rounded-lg border-2 border-theme-border shadow-[2px_2px_0px_var(--shadow-color)]">
+                  <span className="text-[9px] font-mono text-theme-muted font-bold uppercase tracking-wider block">Média do Clube:</span>
+                  <span className="text-sm font-mono font-black text-theme-gold">
                     {clubCompletionPercent}%
                   </span>
                 </div>
@@ -310,13 +310,13 @@ export default function CurrentReadingCard() {
             </div>
 
             {/* Barra de Progresso Vibrante em Vermelho com Borda Neo-brutalista */}
-            <div className="w-full bg-[#FAF7F0] h-5 rounded-lg border-2 border-[#1E1E1E] shadow-[2px_2px_0px_#1E1E1E] overflow-hidden mb-5 p-0.5 relative">
+            <div className="w-full bg-theme-card h-5 rounded-lg border-2 border-theme-border shadow-[2px_2px_0px_var(--shadow-color)] overflow-hidden mb-5 p-0.5 relative">
               <div
-                className="bg-[#D62828] h-full rounded transition-all duration-500 relative flex items-center justify-end pr-2"
+                className="bg-theme-red h-full rounded transition-all duration-500 relative flex items-center justify-end pr-2"
                 style={{ width: `${Math.max(memberCompletionPercent, 5)}%` }}
               >
                 {memberCompletionPercent >= 20 && (
-                  <span className="text-[10px] font-mono font-black text-[#FEF08A] tracking-wider">
+                  <span className="text-[10px] font-mono font-black text-white tracking-wider">
                     ★ {memberCompletionPercent}%
                   </span>
                 )}
@@ -340,35 +340,35 @@ export default function CurrentReadingCard() {
                     onClick={() => handleGoalClick(goal.id)}
                     className={`cursor-pointer p-4 rounded-xl border-2 transition-all duration-150 text-left select-none relative group ${
                       isCompleted
-                        ? 'border-[#283618] bg-[#F5F8F1] shadow-[4px_4px_0px_#283618] translate-x-[-1px] translate-y-[-1px]'
-                        : 'border-[#1E1E1E] bg-white hover:bg-[#FAF7F0] shadow-[3px_3px_0px_#1E1E1E] hover:-translate-x-0.5 hover:-translate-y-0.5'
+                        ? 'border-theme-border bg-theme-card shadow-[4px_4px_0px_var(--shadow-color)] translate-x-[-1px] translate-y-[-1px]'
+                        : 'border-theme-border bg-theme-card hover:bg-theme-container shadow-[3px_3px_0px_var(--shadow-color)] hover:-translate-x-0.5 hover:-translate-y-0.5'
                     } ${isAnimating ? 'animate-pop' : ''}`}
                   >
                     <div className="flex items-start justify-between">
-                      <span className={`text-xs font-mono font-black uppercase tracking-wider ${isCompleted ? 'text-[#283618]' : 'text-[#141414]'}`}>
+                      <span className={`text-xs font-mono font-black uppercase tracking-wider ${isCompleted ? 'text-theme-red' : 'text-theme-primary'}`}>
                         {goal.week}
                       </span>
                       {isCompleted ? (
-                        <div className="w-6 h-6 rounded-full bg-[#283618] text-[#FEF08A] border-2 border-[#283618] flex items-center justify-center shadow-[1px_1px_0px_#1E1E1E] shrink-0 group-hover:scale-110 transition-transform">
-                          <CheckCircle2 className="w-4 h-4 text-[#FEF08A] fill-[#283618]" />
+                        <div className="w-6 h-6 rounded-full bg-theme-red text-white border-2 border-theme-border flex items-center justify-center shadow-[1px_1px_0px_var(--shadow-color)] shrink-0 group-hover:scale-110 transition-transform">
+                          <CheckCircle2 className="w-4 h-4 text-white" />
                         </div>
                       ) : (
-                        <div className="w-6 h-6 rounded-full bg-white border-2 border-[#1E1E1E] flex items-center justify-center shadow-[1px_1px_0px_#1E1E1E] shrink-0 group-hover:border-[#283618] transition-colors">
-                          <Circle className="w-3.5 h-3.5 text-stone-300 group-hover:text-[#283618]" />
+                        <div className="w-6 h-6 rounded-full bg-theme-container border-2 border-theme-border flex items-center justify-center shadow-[1px_1px_0px_var(--shadow-color)] shrink-0 group-hover:border-theme-red transition-colors">
+                          <Circle className="w-3.5 h-3.5 text-theme-muted group-hover:text-theme-red" />
                         </div>
                       )}
                     </div>
 
-                    <p className={`text-xs font-bold mt-2 font-headline leading-tight ${isCompleted ? 'text-[#283618]' : 'text-[#141414]'}`}>
+                    <p className={`text-xs font-bold mt-2 font-headline leading-tight ${isCompleted ? 'text-theme-red' : 'text-theme-primary'}`}>
                       {goal.label}
                     </p>
-                    <p className="text-[11px] text-[#57534E] mt-1 font-mono">
+                    <p className="text-[11px] text-theme-muted mt-1 font-mono">
                       {goal.pages}
                     </p>
 
                     {/* Status de leitura e avatares */}
-                    <div className="mt-3 pt-2 border-t border-[#1E1E1E]/20 flex items-center justify-between">
-                      <span className="text-[10px] font-mono font-bold text-[#141414]">
+                    <div className="mt-3 pt-2 border-t border-theme-border/20 flex items-center justify-between">
+                      <span className="text-[10px] font-mono font-bold text-theme-muted">
                         {membersWhoCompleted.length}/6 leram
                       </span>
                       <div className="flex -space-x-1.5 overflow-hidden">
@@ -378,7 +378,7 @@ export default function CurrentReadingCard() {
                             src={m.avatar}
                             alt={m.name}
                             title={`${m.name} concluiu`}
-                            className="w-4 h-4 rounded-full border border-[#1E1E1E] object-cover"
+                            className="w-4 h-4 rounded-full border border-theme-border object-cover"
                           />
                         ))}
                       </div>

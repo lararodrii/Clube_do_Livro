@@ -96,9 +96,9 @@ export default function VotingBallot() {
     <div className="space-y-6">
       
       {/* Cabeçalho do Módulo de Votação com o Mascote Fiscalizando a Urna */}
-      <div className="retro-card rounded-2xl p-6 sm:p-8 bg-white border-2 border-[#1E1E1E] shadow-[6px_6px_0px_#1E1E1E] relative">
+      <div className="retro-card rounded-2xl p-6 sm:p-8 bg-theme-container border-2 border-theme-border shadow-[6px_6px_0px_var(--shadow-color)] relative transition-colors duration-300">
         
-        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 pb-6 border-b-2 border-[#1E1E1E]">
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 pb-6 border-b-2 border-theme-border">
           
           <div className="flex items-center gap-4">
             {/* O Gato Camarada Fiscal da Urna */}
@@ -115,24 +115,24 @@ export default function VotingBallot() {
 
             <div>
               <div className="flex items-center gap-2 mb-1.5 flex-wrap">
-                <span className={`text-[10px] font-mono font-black uppercase tracking-wider px-3 py-0.5 rounded border-2 border-[#1E1E1E] shadow-[2px_2px_0px_#1E1E1E] ${
+                <span className={`text-[10px] font-mono font-black uppercase tracking-wider px-3 py-0.5 rounded border-2 border-theme-border shadow-[2px_2px_0px_var(--shadow-color)] ${
                   ballot.status === 'open' 
-                    ? 'bg-[#FEF08A] text-[#141414]' 
-                    : 'bg-stone-200 text-stone-700'
+                    ? 'bg-[#FEF08A] text-[#111111] font-bold' 
+                    : 'bg-theme-card text-theme-muted'
                 }`}>
                   {ballot.status === 'open' ? '★ Urna Popular Aberta' : 'Votação Encerrada'}
                 </span>
-                <span className="text-xs text-[#57534E] font-reading font-bold italic">
+                <span className="text-xs text-theme-muted font-reading font-bold italic">
                   Eleição da Próxima Leitura
                 </span>
               </div>
 
-              <h2 className="font-headline font-black text-2xl sm:text-3xl text-[#141414] flex items-center gap-2">
-                <span className="text-[#D62828]">★</span>
+              <h2 className="font-headline font-black text-2xl sm:text-3xl text-theme-primary flex items-center gap-2">
+                <span className="text-theme-red">★</span>
                 <span>Urna Popular do Exército da Paty</span>
               </h2>
-              <p className="text-xs sm:text-sm text-[#57534E] mt-1 max-w-xl font-reading font-semibold">
-                Indicações <strong className="text-[#D62828] font-black">100% livres e ilimitadas</strong>! Cada camarada tem direito a até {ballot.maxVotesPerMember} votos para eleger a próxima obra revolucionária.
+              <p className="text-xs sm:text-sm text-theme-muted mt-1 max-w-xl font-reading font-semibold">
+                Indicações <strong className="text-theme-red font-black">100% livres e ilimitadas</strong>! Cada camarada tem direito a até {ballot.maxVotesPerMember} votos para eleger a próxima obra revolucionária.
               </p>
             </div>
           </div>
@@ -142,7 +142,7 @@ export default function VotingBallot() {
             
             {/* Votos Usados / Cota de Votos */}
             {isQuotaReached ? (
-              <div className="bg-[#D62828] text-white px-3.5 py-2 rounded-xl border-2 border-[#1E1E1E] shadow-[3px_3px_0px_#1E1E1E] text-center flex items-center gap-2">
+              <div className="bg-theme-red text-white px-3.5 py-2 rounded-xl border-2 border-theme-border shadow-[3px_3px_0px_var(--shadow-color)] text-center flex items-center gap-2">
                 <span className="w-2.5 h-2.5 rounded-full bg-[#FEF08A] animate-ping shrink-0" />
                 <div className="text-left">
                   <span className="text-[10px] font-mono font-black uppercase tracking-wider text-[#FEF08A] block leading-none">
@@ -154,11 +154,11 @@ export default function VotingBallot() {
                 </div>
               </div>
             ) : (
-              <div className="bg-[#FAF7F0] px-4 py-2 rounded-xl border-2 border-[#1E1E1E] shadow-[3px_3px_0px_#1E1E1E] text-center">
-                <span className="text-[9px] font-mono text-[#57534E] font-bold uppercase tracking-wider block">
+              <div className="bg-theme-card px-4 py-2 rounded-xl border-2 border-theme-border shadow-[3px_3px_0px_var(--shadow-color)] text-center">
+                <span className="text-[9px] font-mono text-theme-muted font-bold uppercase tracking-wider block">
                   Cédulas Restantes:
                 </span>
-                <span className="text-sm font-mono font-black text-[#D62828]">
+                <span className="text-sm font-mono font-black text-theme-red">
                   {remainingVotes} de {maxVotes} votos
                 </span>
               </div>
@@ -168,16 +168,16 @@ export default function VotingBallot() {
             <button
               onClick={handleToggleBallotStatus}
               title="Abrir ou fechar a urna de votação"
-              className="flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl text-xs font-mono font-bold bg-white hover:bg-[#FAF7F0] text-[#141414] border-2 border-[#1E1E1E] shadow-[3px_3px_0px_#1E1E1E] transition-transform hover:-translate-x-0.5 hover:-translate-y-0.5 active:translate-x-0.5 active:translate-y-0.5"
+              className="flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl text-xs font-mono font-bold bg-theme-card hover:bg-theme-container text-theme-primary border-2 border-theme-border shadow-[3px_3px_0px_var(--shadow-color)] transition-transform hover:-translate-x-0.5 hover:-translate-y-0.5 active:translate-x-0.5 active:translate-y-0.5"
             >
               {ballot.status === 'open' ? (
                 <>
-                  <Lock className="w-3.5 h-3.5 text-[#D62828]" />
+                  <Lock className="w-3.5 h-3.5 text-theme-red" />
                   <span>Fechar Urna</span>
                 </>
               ) : (
                 <>
-                  <Unlock className="w-3.5 h-3.5 text-[#283618]" />
+                  <Unlock className="w-3.5 h-3.5 text-theme-gold" />
                   <span>Reabrir Urna</span>
                 </>
               )}
@@ -186,7 +186,7 @@ export default function VotingBallot() {
             {/* BOTÃO DE INDICAÇÃO (ILIMITADO) */}
             <button
               onClick={handleNominateClick}
-              className="flex items-center gap-2 px-5 py-2.5 bg-[#D62828] hover:bg-[#9E2A2B] text-white rounded-xl text-xs font-headline font-black uppercase tracking-wider border-2 border-[#1E1E1E] shadow-[4px_4px_0px_#1E1E1E] transition-transform hover:-translate-x-0.5 hover:-translate-y-0.5 active:translate-x-0.5 active:translate-y-0.5"
+              className="flex items-center gap-2 px-5 py-2.5 bg-theme-red hover:opacity-90 text-white font-bold rounded-xl text-xs font-headline font-black uppercase tracking-wider border-2 border-theme-border shadow-[4px_4px_0px_var(--shadow-color)] transition-transform hover:-translate-x-0.5 hover:-translate-y-0.5 active:translate-x-0.5 active:translate-y-0.5"
             >
               <BookPlus className="w-4 h-4 text-[#FEF08A]" />
               <span>Indicar Livro (+1) ★</span>
@@ -196,8 +196,8 @@ export default function VotingBallot() {
 
         {/* Barra de Ações Rápidas: Desempate da Sorte e Promoção */}
         <div className="pt-4 flex flex-wrap items-center justify-between gap-3">
-          <div className="flex items-center gap-2 text-xs font-mono font-bold text-[#141414]">
-            <Users className="w-4 h-4 text-[#D62828]" />
+          <div className="flex items-center gap-2 text-xs font-mono font-bold text-theme-primary">
+            <Users className="w-4 h-4 text-theme-red" />
             <span>Total de {totalBallotVotes} votos computados ({books.length} obras indicadas)</span>
           </div>
 
@@ -207,9 +207,9 @@ export default function VotingBallot() {
               <button
                 type="button"
                 onClick={() => setIsRouletteOpen(true)}
-                className="flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-mono font-black bg-[#FEF08A] hover:bg-[#FDE047] text-[#141414] border-2 border-[#1E1E1E] shadow-[3px_3px_0px_#1E1E1E] transition-transform hover:-translate-x-0.5 hover:-translate-y-0.5 group"
+                className="flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-mono font-black bg-[#FEF08A] hover:bg-[#FDE047] text-[#111111] font-bold border-2 border-theme-border shadow-[3px_3px_0px_var(--shadow-color)] transition-transform hover:-translate-x-0.5 hover:-translate-y-0.5 group"
               >
-                <Dices className="w-4 h-4 text-[#D62828] group-hover:rotate-45 transition-transform" />
+                <Dices className="w-4 h-4 text-theme-red group-hover:rotate-45 transition-transform" />
                 <span>Sorteio da Roleta 🎲</span>
               </button>
             )}
@@ -219,7 +219,7 @@ export default function VotingBallot() {
               <button
                 type="button"
                 onClick={() => handlePromoteClick(sortedBooks[0].id)}
-                className="flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-mono font-black bg-[#283618] hover:bg-[#1E2812] text-[#FEF08A] border-2 border-[#1E1E1E] shadow-[3px_3px_0px_#1E1E1E] transition-transform hover:-translate-x-0.5 hover:-translate-y-0.5"
+                className="flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-mono font-black bg-theme-container text-theme-gold border-2 border-theme-border shadow-[3px_3px_0px_var(--shadow-color)] transition-transform hover:-translate-x-0.5 hover:-translate-y-0.5"
               >
                 <span>★</span>
                 <span>Eleger Líder ({sortedBooks[0].title.substring(0, 15)}...)</span>
@@ -231,32 +231,32 @@ export default function VotingBallot() {
 
       {/* Grid de Cards dos Livros na Urna OU Empty State Padronizado com o Gato Camarada */}
       {books.length === 0 ? (
-        <div className="retro-card rounded-2xl p-8 sm:p-12 text-center bg-[#FAF7F0] border-2 border-[#1E1E1E] shadow-[6px_6px_0px_#1E1E1E] flex flex-col items-center">
+        <div className="retro-card rounded-2xl p-8 sm:p-12 text-center bg-theme-card border-2 border-theme-border shadow-[6px_6px_0px_var(--shadow-color)] flex flex-col items-center">
           <div className="mb-3">
             <ComradeCat 
               pose="reading" 
               size="lg" 
-              showBubble={true}
+              showBubble={true} 
               customQuote="Camaradas, a urna está zerada! Quem vai indicar a primeira obra?"
               bubblePosition="top"
             />
           </div>
-          <h3 className="font-headline font-black text-2xl text-[#141414] mb-2 mt-2">
+          <h3 className="font-headline font-black text-2xl text-theme-primary mb-2 mt-2">
             Urna Popular Pronta para Votação!
           </h3>
-          <p className="text-sm text-[#57534E] max-w-md mx-auto mb-6 font-reading italic leading-relaxed">
+          <p className="text-sm text-theme-muted max-w-md mx-auto mb-6 font-reading italic leading-relaxed">
             O Gato Camarada está a postos fiscalizando a urna com sua boina estrelada. Todas as 6 integrantes podem indicar quantas obras quiserem e votar em até 3 favoritas!
           </p>
           <button
             onClick={handleNominateClick}
-            className="inline-flex items-center gap-2 px-6 py-3 bg-[#D62828] hover:bg-[#9E2A2B] text-white rounded-xl text-sm font-headline font-black uppercase tracking-wider border-2 border-[#1E1E1E] shadow-[4px_4px_0px_#1E1E1E] transition-transform hover:-translate-x-0.5 hover:-translate-y-0.5 active:translate-x-0.5 active:translate-y-0.5"
+            className="inline-flex items-center gap-2 px-6 py-3 bg-theme-red hover:opacity-90 text-white font-bold rounded-xl text-sm font-headline font-black uppercase tracking-wider border-2 border-theme-border shadow-[4px_4px_0px_var(--shadow-color)] transition-transform hover:-translate-x-0.5 hover:-translate-y-0.5 active:translate-x-0.5 active:translate-y-0.5"
           >
             <BookPlus className="w-4 h-4 text-[#FEF08A]" />
             <span>Indicar a Primeira Obra ★</span>
           </button>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {books.map((book) => {
             const voteCount = book.votes?.length || 0;
             const votePercentage = totalBallotVotes > 0 
@@ -277,22 +277,22 @@ export default function VotingBallot() {
             return (
               <div
                 key={book.id}
-                className={`retro-card rounded-2xl p-5 flex flex-col justify-between relative transition-all duration-200 border-2 border-[#1E1E1E] ${
+                className={`retro-card rounded-2xl p-5 flex flex-col justify-between relative transition-all duration-200 border-2 border-theme-border ${
                   hasVotedForThis
-                    ? 'bg-[#FDF0ED] shadow-[6px_6px_0px_#D62828] -translate-x-0.5 -translate-y-0.5'
-                    : 'bg-white shadow-[4px_4px_0px_#1E1E1E] hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[6px_6px_0px_#1E1E1E]'
+                    ? 'bg-theme-card shadow-[6px_6px_0px_var(--accent-red)] -translate-x-0.5 -translate-y-0.5'
+                    : 'bg-theme-card shadow-[4px_4px_0px_var(--shadow-color)] hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[6px_6px_0px_var(--shadow-color)]'
                 }`}
               >
                 {/* Badges superiores estilo carimbo */}
                 <div className="absolute -top-3 left-4 right-4 flex items-center justify-between z-20 pointer-events-none">
                   {leader ? (
-                    <span className="flex items-center gap-1 text-[10px] font-mono font-black uppercase tracking-wider px-2.5 py-0.5 rounded bg-[#D62828] text-white border-2 border-[#1E1E1E] shadow-[2px_2px_0px_#1E1E1E]">
+                    <span className="flex items-center gap-1 text-[10px] font-mono font-black uppercase tracking-wider px-2.5 py-0.5 rounded bg-theme-red text-white font-bold border-2 border-theme-border shadow-[2px_2px_0px_var(--shadow-color)]">
                       <span>★</span> Mais Votado
                     </span>
                   ) : <span />}
 
                   {isMyNomination && (
-                    <span className="flex items-center gap-1 text-[10px] font-mono font-black uppercase tracking-wider px-2.5 py-0.5 rounded bg-[#FEF08A] text-[#141414] border-2 border-[#1E1E1E] shadow-[2px_2px_0px_#1E1E1E]">
+                    <span className="flex items-center gap-1 text-[10px] font-mono font-black uppercase tracking-wider px-2.5 py-0.5 rounded bg-[#FEF08A] text-[#111111] font-bold border-2 border-theme-border shadow-[2px_2px_0px_var(--shadow-color)]">
                       <span>★</span> Sua Indicação
                     </span>
                   )}
@@ -305,19 +305,19 @@ export default function VotingBallot() {
                       <img
                         src={nominator.avatar}
                         alt={nominator.name}
-                        className="w-6 h-6 rounded-md object-cover border border-[#1E1E1E]"
+                        className="w-6 h-6 rounded-md object-cover border border-theme-border"
                       />
-                      <span className="text-[11px] text-[#57534E] font-reading font-bold">
+                      <span className="text-[11px] text-theme-muted font-reading font-bold">
                         {isMyNomination ? (
-                          <strong className="text-[#D62828]">Você indicou</strong>
+                          <strong className="text-theme-red">Você indicou</strong>
                         ) : (
-                          <>Indicado por <strong className="text-[#141414]">{nominator.name}</strong></>
+                          <>Indicado por <strong className="text-theme-primary">{nominator.name}</strong></>
                         )}
                       </span>
                     </div>
 
                     <div className="flex items-center gap-1.5">
-                      <span className="text-[10px] font-mono font-bold text-[#141414] bg-[#FAF7F0] px-2 py-0.5 rounded border border-[#1E1E1E]">
+                      <span className="text-[10px] font-mono font-bold text-theme-muted bg-theme-container px-2 py-0.5 rounded border border-theme-border">
                         {book.pages} págs
                       </span>
 
@@ -327,7 +327,7 @@ export default function VotingBallot() {
                           type="button"
                           onClick={() => setEditingBook(book)}
                           title="Editar ou excluir sua recomendação"
-                          className="p-1 hover:bg-[#FEF08A] text-[#141414] rounded border border-[#1E1E1E] transition-colors"
+                          className="p-1 hover:bg-[#FEF08A] hover:text-[#111111] text-theme-primary rounded border border-theme-border transition-colors"
                         >
                           <Pencil className="w-3.5 h-3.5" />
                         </button>
@@ -347,20 +347,20 @@ export default function VotingBallot() {
                     </div>
 
                     <div className="flex-1 min-w-0">
-                      <h3 className="font-headline font-black text-base sm:text-lg text-[#141414] leading-snug line-clamp-2">
+                      <h3 className="font-headline font-black text-base sm:text-lg text-theme-primary leading-snug line-clamp-2">
                         {book.title}
                       </h3>
-                      <p className="text-xs text-[#D62828] font-reading font-bold italic mt-0.5">
+                      <p className="text-xs text-theme-red font-reading font-bold italic mt-0.5">
                         por {book.author}
                       </p>
-                      <p className="text-[10px] text-[#57534E] font-mono mt-1 line-clamp-1 uppercase font-bold">
+                      <p className="text-[10px] text-theme-muted font-mono mt-1 line-clamp-1 uppercase font-bold">
                         {book.genre}
                       </p>
 
                       {/* Defesa da Indicação ("Por que ler") */}
                       {book.nominationReason && (
-                        <div className="mt-3 p-2.5 bg-[#FAF7F0] rounded-lg border border-[#1E1E1E]/40">
-                          <p className="text-[11px] text-[#141414] italic font-reading line-clamp-3 leading-relaxed whitespace-pre-line">
+                        <div className="mt-3 p-2.5 bg-theme-container rounded-lg border border-theme-border/40 text-theme-secondary">
+                          <p className="text-[11px] italic font-reading line-clamp-3 leading-relaxed whitespace-pre-line">
                             "{formatTextWithBold(book.nominationReason)}"
                           </p>
                         </div>
@@ -370,22 +370,22 @@ export default function VotingBallot() {
                 </div>
 
                 {/* Seção Inferior: Votos, Percentual e Botão */}
-                <div className="mt-4 pt-4 border-t-2 border-[#1E1E1E]">
+                <div className="mt-4 pt-4 border-t-2 border-theme-border">
                   
                   {/* Barra de Progresso e Contagem de Votos */}
                   <div className="flex items-center justify-between text-xs mb-1.5 font-mono">
-                    <span className="font-black text-[#141414]">
+                    <span className="font-black text-theme-primary">
                       {voteCount} {voteCount === 1 ? 'voto' : 'votos'}
                     </span>
-                    <span className="font-black text-[#D62828]">
+                    <span className="font-black text-theme-red">
                       {votePercentage}%
                     </span>
                   </div>
 
-                  <div className="w-full bg-[#FAF7F0] h-3 rounded border-2 border-[#1E1E1E] overflow-hidden mb-3 p-0.5">
+                  <div className="w-full bg-theme-container h-3 rounded border-2 border-theme-border overflow-hidden mb-3 p-0.5">
                     <div
                       className={`h-full rounded transition-all duration-500 ${
-                        leader ? 'bg-[#D62828]' : 'bg-[#BC6C25]'
+                        leader ? 'bg-theme-red' : 'bg-theme-gold'
                       }`}
                       style={{ width: `${votePercentage}%` }}
                     />
@@ -393,7 +393,7 @@ export default function VotingBallot() {
 
                   {/* Avatares dos membros que votaram neste livro */}
                   <div className="flex items-center justify-between mb-4">
-                    <span className="text-[10px] font-mono text-[#57534E] font-bold">Votos confirmados:</span>
+                    <span className="text-[10px] font-mono text-theme-muted font-bold">Votos confirmados:</span>
                     <div className="flex -space-x-1.5 overflow-hidden">
                       {book.votes?.map((memberId) => {
                         const m = members.find(mem => mem.id === memberId);
@@ -404,7 +404,7 @@ export default function VotingBallot() {
                             src={m.avatar}
                             alt={m.name}
                             title={m.name}
-                            className="w-5 h-5 rounded-full object-cover border border-[#1E1E1E]"
+                            className="w-5 h-5 rounded-full object-cover border border-theme-border"
                           />
                         );
                       })}
@@ -416,12 +416,12 @@ export default function VotingBallot() {
                     type="button"
                     onClick={() => handleVoteClick(book.id)}
                     disabled={ballot.status !== 'open' || (!hasVotedForThis && isQuotaReached)}
-                    className={`w-full py-2.5 rounded-xl text-xs font-mono font-black uppercase tracking-wider border-2 border-[#1E1E1E] transition-transform hover:-translate-x-0.5 hover:-translate-y-0.5 active:translate-x-0.5 active:translate-y-0.5 flex items-center justify-center gap-1.5 ${
+                    className={`w-full py-2.5 rounded-xl text-xs font-mono font-black uppercase tracking-wider border-2 border-theme-border transition-transform hover:-translate-x-0.5 hover:-translate-y-0.5 active:translate-x-0.5 active:translate-y-0.5 flex items-center justify-center gap-1.5 ${
                       hasVotedForThis
-                        ? 'bg-[#D62828] text-white shadow-[3px_3px_0px_#1E1E1E]'
+                        ? 'bg-theme-red text-white font-bold shadow-[3px_3px_0px_var(--shadow-color)]'
                         : !isQuotaReached && ballot.status === 'open'
-                        ? 'bg-[#FAF7F0] hover:bg-[#FEF08A] text-[#141414] shadow-[3px_3px_0px_#1E1E1E]'
-                        : 'bg-stone-200 text-stone-500 border-stone-400 cursor-not-allowed shadow-none'
+                        ? 'bg-theme-container hover:bg-[#FEF08A] hover:text-[#111111] text-theme-primary shadow-[3px_3px_0px_var(--shadow-color)]'
+                        : 'bg-theme-card text-theme-muted border-theme-border/40 cursor-not-allowed shadow-none'
                     }`}
                   >
                     {hasVotedForThis ? (
@@ -430,10 +430,10 @@ export default function VotingBallot() {
                         <span>Voto Registrado (Remover)</span>
                       </>
                     ) : isQuotaReached ? (
-                      <span className="text-stone-600 font-bold">Votos esgotados nesta rodada</span>
+                      <span className="text-theme-muted font-bold">Votos esgotados nesta rodada</span>
                     ) : ballot.status === 'open' ? (
                       <>
-                        <Vote className="w-4 h-4 text-[#D62828]" />
+                        <Vote className="w-4 h-4 text-theme-red" />
                         <span>Votar neste Livro ({remainingVotes} restando)</span>
                       </>
                     ) : (

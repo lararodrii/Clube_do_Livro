@@ -75,13 +75,13 @@ export default function StarRating({
       </div>
 
       {showValue && (
-        <span className="text-xs font-mono font-bold text-[#141414] ml-1">
+        <span className="text-xs font-mono font-bold text-theme-primary ml-1">
           {Number(rating).toFixed(1)}
         </span>
       )}
 
       {count !== null && (
-        <span className="text-xs text-[#57534E] font-reading">
+        <span className="text-xs text-theme-muted font-reading">
           ({count} {count === 1 ? 'resenha' : 'resenhas'})
         </span>
       )}

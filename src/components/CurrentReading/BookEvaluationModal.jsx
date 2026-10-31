@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useClub } from '../../context/ClubContext';
 import StarRating from '../common/StarRating';
 import ComradeCat from '../common/ComradeCat';
-import { X, Star, Send, Award, Sparkles, CheckCircle2 } from 'lucide-react';
+import { X, Star, Send, Award, Sparkles, CheckCircle2, Lock } from 'lucide-react';
 
 const RECOMMENDATION_OPTIONS = [
   '★ Super recomendo (leitura essencial)',
@@ -27,6 +27,7 @@ export default function BookEvaluationModal({ isOpen, onClose }) {
   const [comment, setComment] = useState('');
   const [recommendation, setRecommendation] = useState(RECOMMENDATION_OPTIONS[0]);
   const [pacing, setPacing] = useState(PACING_OPTIONS[1]);
+  const [isSpoiler, setIsSpoiler] = useState(false);
 
   useEffect(() => {
     setHoverRating(0);
@@ -35,11 +36,13 @@ export default function BookEvaluationModal({ isOpen, onClose }) {
       setComment(existingReview.comment || '');
       setRecommendation(existingReview.recommendation || RECOMMENDATION_OPTIONS[0]);
       setPacing(existingReview.pacing || PACING_OPTIONS[1]);
+      setIsSpoiler(!!existingReview.isSpoiler);
     } else {
       setRating(5);
       setComment('');
       setRecommendation(RECOMMENDATION_OPTIONS[0]);
       setPacing(PACING_OPTIONS[1]);
+      setIsSpoiler(false);
     }
   }, [existingReview, isOpen]);
 
@@ -72,38 +75,39 @@ export default function BookEvaluationModal({ isOpen, onClose }) {
       rating,
       comment: comment.trim(),
       recommendation,
-      pacing
+      pacing,
+      isSpoiler
     });
 
     onClose();
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm animate-fade-in overflow-y-auto">
-      <div className="relative bg-[#FAF7F0] rounded-2xl max-w-xl w-full p-6 sm:p-8 border-2 border-[#1E1E1E] shadow-[8px_8px_0px_#1E1E1E] my-8 max-h-[92vh] overflow-y-auto">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/75 backdrop-blur-sm animate-fade-in overflow-y-auto">
+      <div className="relative bg-theme-container text-theme-primary rounded-2xl w-[95vw] max-w-lg max-h-[90vh] overflow-y-auto p-4 sm:p-6 mx-auto border-2 border-theme-border shadow-[8px_8px_0px_var(--shadow-color)] my-4 sm:my-8">
         
         {/* Fechar */}
         <button
           onClick={onClose}
-          className="absolute top-5 right-5 text-stone-500 hover:text-[#141414] p-2 rounded-lg border-2 border-[#1E1E1E] bg-white hover:bg-[#FEF08A] transition-colors shadow-[2px_2px_0px_#1E1E1E]"
+          className="absolute top-5 right-5 text-theme-muted hover:text-theme-primary p-2 rounded-lg border-2 border-theme-border bg-theme-card hover:bg-theme-gold/20 transition-colors shadow-[2px_2px_0px_var(--shadow-color)]"
         >
           <X className="w-5 h-5" />
         </button>
 
         {/* Topo Festivo com o Mascote Comemorando */}
-        <div className="flex items-center gap-4 mb-5 pb-5 border-b-2 border-[#1E1E1E]">
+        <div className="flex items-center gap-4 mb-5 pb-5 border-b-2 border-theme-border">
           <div className="shrink-0">
             <ComradeCat pose="celebrating" size="sm" showBubble={false} className="scale-100" />
           </div>
           <div>
-            <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded bg-[#D62828] text-white text-[10px] font-mono font-black uppercase tracking-wider border border-[#1E1E1E] shadow-[1px_1px_0px_#1E1E1E] mb-1">
+            <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded bg-theme-red text-white text-[10px] font-mono font-black uppercase tracking-wider border border-theme-border shadow-[1px_1px_0px_var(--shadow-color)] mb-1">
               <span>★</span>
               <span>SEMANA 4 CONCLUÍDA! LEITURA FINALIZADA</span>
             </div>
-            <h3 className="font-headline text-xl sm:text-2xl font-black text-[#141414] leading-tight">
+            <h3 className="font-headline text-xl sm:text-2xl font-black text-theme-primary leading-tight">
               Avaliação Crítica da Obra ★
             </h3>
-            <p className="text-xs text-[#57534E] font-reading font-semibold mt-0.5">
+            <p className="text-xs text-theme-muted font-reading font-semibold mt-0.5">
               Camarada <strong>{activeMember.name}</strong>, registre sua nota e impressões para computar em membros e métricas!
             </p>
           </div>
@@ -112,31 +116,31 @@ export default function BookEvaluationModal({ isOpen, onClose }) {
         <form onSubmit={handleSubmit} className="space-y-4">
           
           {/* Obra Sendo Avaliada */}
-          <div className="bg-white p-3.5 rounded-xl border-2 border-[#1E1E1E] shadow-[3px_3px_0px_#1E1E1E] flex items-center justify-between gap-3">
+          <div className="bg-theme-card p-3.5 rounded-xl border-2 border-theme-border shadow-[3px_3px_0px_var(--shadow-color)] flex items-center justify-between gap-3">
             <div>
-              <span className="text-[10px] font-mono font-black uppercase tracking-wider text-[#9E2A2B] block">
+              <span className="text-[10px] font-mono font-black uppercase tracking-wider text-theme-red block">
                 Obra Finalizada:
               </span>
-              <p className="font-headline font-black text-sm text-[#141414]">
+              <p className="font-headline font-black text-sm text-theme-primary">
                 {currentReading.title}
               </p>
-              <p className="text-xs text-[#57534E] font-reading italic">
+              <p className="text-xs text-theme-muted font-reading italic">
                 por {currentReading.author}
               </p>
             </div>
-            <span className="text-xs font-mono font-bold bg-[#FEF08A] px-2.5 py-1 rounded border border-[#1E1E1E]">
+            <span className="text-xs font-mono font-bold bg-[#FEF08A] text-[#111111] px-2.5 py-1 rounded border border-theme-border">
               {currentReading.pages} págs
             </span>
           </div>
 
           {/* Seletor de Nota em Estrelas Interativas */}
-          <div className="bg-white p-4 rounded-xl border-2 border-[#1E1E1E] shadow-[3px_3px_0px_#1E1E1E]">
+          <div className="bg-theme-card p-4 rounded-xl border-2 border-theme-border shadow-[3px_3px_0px_var(--shadow-color)]">
             <div className="flex items-center justify-between mb-2">
-              <label className="text-xs font-mono font-bold text-[#141414] uppercase tracking-wider">
+              <label className="text-xs font-mono font-bold text-theme-primary uppercase tracking-wider">
                 Sua Nota para o Livro:
               </label>
-              <span className="font-mono font-black text-sm text-[#B45309] bg-[#FEF08A] px-2.5 py-1 rounded-lg border-2 border-[#1E1E1E] shadow-[2px_2px_0px_#1E1E1E] flex items-center gap-1 transition-all">
-                <span className="text-[#F59E0B]">★</span> {displayRating}.0 / 5.0
+              <span className="font-mono font-black text-sm text-[#111111] bg-[#FEF08A] px-2.5 py-1 rounded-lg border-2 border-theme-border shadow-[2px_2px_0px_var(--shadow-color)] flex items-center gap-1 transition-all">
+                <span className="text-[#92400E]">★</span> {displayRating}.0 / 5.0
               </span>
             </div>
             <div className="flex flex-wrap items-center gap-3">
@@ -148,7 +152,7 @@ export default function BookEvaluationModal({ isOpen, onClose }) {
                 onHoverChange={(hVal) => setHoverRating(hVal)}
                 showValue={false}
               />
-              <span className="text-xs font-reading font-bold text-[#141414] bg-[#FAF7F0] px-3 py-1.5 rounded-lg border border-[#1E1E1E] transition-all">
+              <span className="text-xs font-reading font-bold text-theme-primary bg-theme-container px-3 py-1.5 rounded-lg border border-theme-border transition-all">
                 {getRatingLegend(displayRating)}
               </span>
             </div>
@@ -156,22 +160,37 @@ export default function BookEvaluationModal({ isOpen, onClose }) {
 
           {/* Comentário / Resenha Crítica */}
           <div>
-            <label className="block text-xs font-mono font-bold text-[#141414] uppercase tracking-wider mb-1">
-              O que você achou da obra? (Resenha Crítica) *
-            </label>
+            <div className="flex items-center justify-between mb-1">
+              <label className="block text-xs font-mono font-bold text-theme-primary uppercase tracking-wider">
+                O que você achou da obra? (Resenha Crítica) *
+              </label>
+              <button
+                type="button"
+                onClick={() => setIsSpoiler(!isSpoiler)}
+                title="Ativar tarja censurada para proteger as camaradas de spoilers"
+                className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-mono font-bold border-2 border-theme-border transition-all ${
+                  isSpoiler
+                    ? 'bg-theme-red text-white font-black shadow-[2px_2px_0px_var(--shadow-color)]'
+                    : 'bg-theme-card text-theme-muted hover:text-theme-primary'
+                }`}
+              >
+                <Lock className={`w-3.5 h-3.5 ${isSpoiler ? 'text-[#FEF08A]' : 'text-theme-red'}`} />
+                <span>{isSpoiler ? '🔒 Tarja Confidencial Ativada' : '🔒 Tarja Confidencial (Spoiler)'}</span>
+              </button>
+            </div>
             <textarea
               required
               rows={3}
               value={comment}
               onChange={(e) => setComment(e.target.value)}
-              placeholder="Quais foram seus pontos favoritos, reflexões políticas ou impressões centrais para o debate com as outras camaradas?"
-              className="w-full text-xs sm:text-sm bg-white border-2 border-[#1E1E1E] rounded-xl p-3 text-[#141414] focus:outline-none focus:ring-2 focus:ring-[#D62828] leading-relaxed font-reading"
+              placeholder="Quais foram seus pontos favoritos, reflexões políticas ou impressões centrais para o debate com as outras camaradas? (Dica: use ||texto|| para tarja parcial)"
+              className="w-full text-xs sm:text-sm bg-theme-input border-2 border-theme-border rounded-xl p-3 text-theme-primary placeholder:text-theme-muted focus:outline-none focus:ring-2 focus:ring-theme-red leading-relaxed font-reading"
             />
           </div>
 
           {/* Pergunta: Recomendação */}
           <div>
-            <label className="block text-xs font-mono font-bold text-[#141414] uppercase tracking-wider mb-1.5">
+            <label className="block text-xs font-mono font-bold text-theme-primary uppercase tracking-wider mb-1.5">
               Recomendação para o Coletivo:
             </label>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
@@ -180,10 +199,10 @@ export default function BookEvaluationModal({ isOpen, onClose }) {
                   key={rec}
                   type="button"
                   onClick={() => setRecommendation(rec)}
-                  className={`p-2.5 rounded-lg text-xs font-reading font-bold border-2 border-[#1E1E1E] text-left transition-all ${
+                  className={`p-2.5 rounded-lg text-xs font-reading font-bold border-2 border-theme-border text-left transition-all ${
                     recommendation === rec
-                      ? 'bg-[#FEF08A] text-[#141414] shadow-[3px_3px_0px_#1E1E1E] -translate-y-0.5'
-                      : 'bg-white hover:bg-[#FAF7F0] text-[#57534E]'
+                      ? 'bg-[#FEF08A] text-[#111111] shadow-[3px_3px_0px_var(--shadow-color)] -translate-y-0.5'
+                      : 'bg-theme-card hover:bg-theme-input text-theme-primary'
                   }`}
                 >
                   {rec}
@@ -194,7 +213,7 @@ export default function BookEvaluationModal({ isOpen, onClose }) {
 
           {/* Pergunta: Ritmo de Leitura */}
           <div>
-            <label className="block text-xs font-mono font-bold text-[#141414] uppercase tracking-wider mb-1.5">
+            <label className="block text-xs font-mono font-bold text-theme-primary uppercase tracking-wider mb-1.5">
               Como foi seu ritmo ao longo das 4 semanas?
             </label>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
@@ -203,10 +222,10 @@ export default function BookEvaluationModal({ isOpen, onClose }) {
                   key={pace}
                   type="button"
                   onClick={() => setPacing(pace)}
-                  className={`p-2.5 rounded-lg text-[11px] font-mono font-bold border-2 border-[#1E1E1E] text-center transition-all ${
+                  className={`p-2.5 rounded-lg text-[11px] font-mono font-bold border-2 border-theme-border text-center transition-all ${
                     pacing === pace
-                      ? 'bg-[#283618] text-[#FEF08A] shadow-[3px_3px_0px_#1E1E1E] -translate-y-0.5'
-                      : 'bg-white hover:bg-[#FAF7F0] text-[#57534E]'
+                      ? 'bg-[#283618] text-[#FEF08A] shadow-[3px_3px_0px_var(--shadow-color)] -translate-y-0.5'
+                      : 'bg-theme-card hover:bg-theme-input text-theme-primary'
                   }`}
                 >
                   {pace}
@@ -216,20 +235,20 @@ export default function BookEvaluationModal({ isOpen, onClose }) {
           </div>
 
           {/* Botões de Ação */}
-          <div className="flex items-center justify-end gap-3 pt-4 border-t-2 border-[#1E1E1E]">
+          <div className="flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-end gap-2.5 sm:gap-3 pt-4 border-t-2 border-theme-border">
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2.5 text-xs font-mono font-bold text-[#57534E] hover:bg-stone-200 rounded-lg border-2 border-[#1E1E1E] transition-colors"
+              className="w-full sm:w-auto px-4 py-2.5 text-xs font-mono font-bold text-theme-muted hover:bg-theme-card rounded-lg border-2 border-theme-border transition-colors text-center"
             >
               Avaliar Mais Tarde
             </button>
             <button
               type="submit"
-              className="px-6 py-2.5 bg-[#D62828] hover:bg-[#9E2A2B] text-white text-xs font-headline font-black uppercase tracking-wider rounded-lg border-2 border-[#1E1E1E] shadow-[3px_3px_0px_#1E1E1E] transition-transform hover:-translate-x-0.5 hover:-translate-y-0.5 active:translate-x-0.5 active:translate-y-0.5 flex items-center gap-2"
+              className="w-full sm:w-auto justify-center px-6 py-2.5 bg-theme-red hover:brightness-110 text-white text-xs font-headline font-black uppercase tracking-wider rounded-lg border-2 border-theme-border shadow-[3px_3px_0px_var(--shadow-color)] transition-transform hover:-translate-x-0.5 hover:-translate-y-0.5 active:translate-x-0.5 active:translate-y-0.5 flex items-center gap-2"
             >
               <Send className="w-4 h-4 text-[#FEF08A]" />
-              <span>Salvar Avaliação no Meu Perfil ★</span>
+              <span>Salvar Avaliação ★</span>
             </button>
           </div>
         </form>

@@ -107,62 +107,13 @@ export function cleanHtmlText(text) {
     .trim();
 }
 
+import { searchBooksAutocomplete } from './bookSearch';
+
 /**
- * Busca livros na Google Books API
+ * Busca livros na Google Books API (agora com motor híbrido Multi-API)
  * @param {string} query Termo de busca (título, autor, ISBN)
  * @returns {Promise<Array>} Lista de livros sanitizados
  */
 export async function searchGoogleBooks(query) {
-  if (!query || query.trim().length < 2) {
-    return [];
-  }
-
-  const encodedQuery = encodeURIComponent(query.trim());
-  const primaryUrl = `https://www.googleapis.com/books/v1/volumes?q=${encodedQuery}&maxResults=6&langRestrict=pt`;
-  
-  try {
-    let response = await fetch(primaryUrl);
-    if (!response.ok) {
-      throw new Error(`Google Books API status: ${response.status}`);
-    }
-    
-    let data = await response.json();
-    let items = data.items || [];
-
-    // Se não encontrou livros em português, tenta busca sem restrição de idioma
-    if (items.length === 0) {
-      const fallbackUrl = `https://www.googleapis.com/books/v1/volumes?q=${encodedQuery}&maxResults=6`;
-      response = await fetch(fallbackUrl);
-      if (response.ok) {
-        data = await response.json();
-        items = data.items || [];
-      }
-    }
-
-    return items.map((item) => {
-      const info = item.volumeInfo || {};
-      const title = info.title || 'Título Indisponível';
-      const authors = info.authors ? info.authors.join(', ') : 'Autor Desconhecido';
-      const pageCount = info.pageCount || 280;
-      const coverUrl = sanitizeCoverUrl(info.imageLinks, title, authors);
-      const synopsis = cleanHtmlText(info.description);
-      const publishedDate = info.publishedDate ? info.publishedDate.substring(0, 4) : '';
-      const categories = info.categories ? info.categories[0] : 'Literatura';
-
-      return {
-        id: item.id || `gb-${Math.random().toString(36).substring(2, 9)}`,
-        title,
-        author: authors,
-        pages: pageCount,
-        coverUrl,
-        synopsis,
-        year: publishedDate,
-        genre: categories,
-        isbn: info.industryIdentifiers ? info.industryIdentifiers[0]?.identifier : null
-      };
-    });
-  } catch (error) {
-    console.error('Erro ao buscar livros no Google Books:', error);
-    return [];
-  }
+  return searchBooksAutocomplete(query);
 }

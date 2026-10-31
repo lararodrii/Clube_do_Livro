@@ -65,28 +65,28 @@ export default function RouletteModal({ isOpen, onClose, books = [] }) {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-stone-950/70 backdrop-blur-sm animate-fade-in">
-      <div className="relative bg-[#FAF7F0] rounded-2xl max-w-xl w-full p-6 sm:p-8 border-2 border-[#1E1E1E] shadow-[8px_8px_0px_#1E1E1E] overflow-hidden text-center max-h-[90vh] overflow-y-auto">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-stone-950/70 backdrop-blur-sm animate-fade-in overflow-y-auto">
+      <div className="relative bg-theme-container text-theme-primary rounded-2xl w-[95vw] max-w-lg max-h-[90vh] overflow-y-auto p-4 sm:p-6 mx-auto border-2 border-theme-border shadow-[8px_8px_0px_var(--shadow-color)] text-center my-4 sm:my-8">
         
         {/* Botão de Fechar */}
         <button
           onClick={onClose}
           disabled={isSpinning}
-          className="absolute top-5 right-5 text-stone-500 hover:text-[#141414] p-2 rounded-lg border-2 border-[#1E1E1E] bg-white hover:bg-[#FEF08A] transition-colors disabled:opacity-30 shadow-[2px_2px_0px_#1E1E1E]"
+          className="absolute top-5 right-5 text-theme-muted hover:text-theme-primary p-2 rounded-lg border-2 border-theme-border bg-theme-card hover:bg-theme-gold/20 transition-colors disabled:opacity-30 shadow-[2px_2px_0px_var(--shadow-color)]"
         >
           <X className="w-5 h-5" />
         </button>
 
         {/* Cabeçalho */}
         <div className="mb-6 relative z-10">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded bg-[#FEF08A] border-2 border-[#1E1E1E] text-[#141414] text-xs font-mono font-black uppercase tracking-wider mb-2 shadow-[2px_2px_0px_#1E1E1E]">
-            <span className="text-[#D62828]">★</span>
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded bg-[#FEF08A] border-2 border-theme-border text-[#111111] text-xs font-mono font-black uppercase tracking-wider mb-2 shadow-[2px_2px_0px_var(--shadow-color)]">
+            <span className="text-theme-red">★</span>
             <span>Sorteio Popular da Assembleia 🎲</span>
           </div>
-          <h3 className="font-headline font-black text-2xl sm:text-3xl text-[#141414]">
+          <h3 className="font-headline font-black text-2xl sm:text-3xl text-theme-primary">
             Desempate da Sorte
           </h3>
-          <p className="text-xs sm:text-sm text-[#57534E] mt-1 max-w-sm mx-auto font-reading font-semibold">
+          <p className="text-xs sm:text-sm text-theme-muted mt-1 max-w-sm mx-auto font-reading font-semibold">
             Quando a votação fica acirrada entre as camaradas, a roleta decide democraticamente a próxima leitura!
           </p>
         </div>
@@ -95,13 +95,13 @@ export default function RouletteModal({ isOpen, onClose, books = [] }) {
         <div className="relative my-6 flex flex-col items-center justify-center z-10">
           
           {/* Ponteiro Indicador Superior */}
-          <div className="z-30 -mb-3 text-[#D62828] filter drop-shadow-[0_2px_0px_#1E1E1E] animate-bounce">
-            <div className="w-0 h-0 border-l-[12px] border-l-transparent border-r-[12px] border-r-transparent border-t-[20px] border-t-[#D62828]" />
+          <div className="z-30 -mb-3 text-theme-red filter drop-shadow-[0_2px_0px_var(--shadow-color)] animate-bounce">
+            <div className="w-0 h-0 border-l-[12px] border-l-transparent border-r-[12px] border-r-transparent border-t-[20px] border-t-theme-red" />
           </div>
 
           {/* Disco da Roleta Estilizado */}
           <div 
-            className="w-64 h-64 sm:w-72 sm:h-72 rounded-full border-4 border-[#1E1E1E] bg-[#141414] relative overflow-hidden shadow-[4px_4px_0px_#1E1E1E] flex items-center justify-center transition-transform duration-[3500ms] cubic-bezier(0.12, 0.8, 0.32, 1)"
+            className="w-64 h-64 sm:w-72 sm:h-72 rounded-full border-4 border-theme-border bg-theme-card relative overflow-hidden shadow-[4px_4px_0px_var(--shadow-color)] flex items-center justify-center transition-transform duration-[3500ms] cubic-bezier(0.12, 0.8, 0.32, 1)"
             style={{ transform: `rotate(${rotationDegrees}deg)` }}
           >
             {candidateBooks.map((book, idx) => {
@@ -120,27 +120,27 @@ export default function RouletteModal({ isOpen, onClose, books = [] }) {
                     <span className="text-[10px] font-mono font-black uppercase tracking-wider text-white max-w-[80px] truncate drop-shadow">
                       {book.title}
                     </span>
-                    <span className="w-2.5 h-2.5 rounded-full bg-[#FEF08A] mt-1 border border-[#1E1E1E]" />
+                    <span className="w-2.5 h-2.5 rounded-full bg-[#FEF08A] mt-1 border border-theme-border" />
                   </div>
                 </div>
               );
             })}
 
             {/* Centro da Roleta com Estrela Vermelha */}
-            <div className="w-20 h-20 rounded-full bg-white border-4 border-[#1E1E1E] flex items-center justify-center shadow-lg z-20">
-              <span className="text-3xl font-black text-[#D62828]">★</span>
+            <div className="w-20 h-20 rounded-full bg-theme-card border-4 border-theme-border flex items-center justify-center shadow-lg z-20">
+              <span className="text-3xl font-black text-theme-red">★</span>
             </div>
           </div>
 
           {/* Foco Atual */}
-          <div className="mt-6 p-4 rounded-xl bg-white border-2 border-[#1E1E1E] shadow-[3px_3px_0px_#1E1E1E] w-full max-w-md">
-            <span className="text-[10px] font-mono font-black text-[#D62828] uppercase tracking-wider block mb-1">
+          <div className="mt-6 p-4 rounded-xl bg-theme-card border-2 border-theme-border shadow-[3px_3px_0px_var(--shadow-color)] w-full max-w-md">
+            <span className="text-[10px] font-mono font-black text-theme-red uppercase tracking-wider block mb-1">
               ★ Foco Atual do Sorteio:
             </span>
-            <p className="font-headline text-lg font-black text-[#141414] truncate">
+            <p className="font-headline text-lg font-black text-theme-primary truncate">
               {candidateBooks[selectedIndex]?.title || 'Gire a roleta'}
             </p>
-            <p className="text-xs text-[#57534E] italic font-reading">
+            <p className="text-xs text-theme-muted italic font-reading">
               {candidateBooks[selectedIndex] ? `por ${candidateBooks[selectedIndex].author}` : ''}
             </p>
           </div>
@@ -148,26 +148,26 @@ export default function RouletteModal({ isOpen, onClose, books = [] }) {
 
         {/* Vencedor Revelado com o Mascote Comemorando */}
         {winnerBook && !isSpinning && (
-          <div className="p-5 bg-white rounded-xl border-2 border-[#D62828] shadow-[4px_4px_0px_#D62828] mb-6 animate-pop relative z-10 flex flex-col items-center">
+          <div className="p-5 bg-theme-card rounded-xl border-2 border-theme-red shadow-[4px_4px_0px_var(--accent-red)] mb-6 animate-pop relative z-10 flex flex-col items-center">
             <div className="scale-75 -my-2">
               <ComradeCat pose="celebrating" size="sm" showBubble={false} />
             </div>
 
-            <div className="flex items-center justify-center gap-2 text-[#D62828] font-mono font-black text-xs uppercase mb-1">
-              <Trophy className="w-4 h-4 text-[#BC6C25]" />
+            <div className="flex items-center justify-center gap-2 text-theme-red font-mono font-black text-xs uppercase mb-1">
+              <Trophy className="w-4 h-4 text-theme-gold" />
               <span>OBRA ELEITA PELA ROLETA:</span>
             </div>
             
-            <h4 className="font-headline text-xl sm:text-2xl font-black text-[#141414]">
+            <h4 className="font-headline text-xl sm:text-2xl font-black text-theme-primary">
               {winnerBook.title}
             </h4>
-            <p className="text-xs text-[#57534E] italic font-reading">
+            <p className="text-xs text-theme-muted italic font-reading">
               por {winnerBook.author} ({winnerBook.pages} págs)
             </p>
 
             <button
               onClick={handlePromoteWinner}
-              className="mt-4 px-6 py-2.5 bg-[#D62828] hover:bg-[#9E2A2B] text-white font-mono font-black text-xs uppercase tracking-wider rounded-xl border-2 border-[#1E1E1E] shadow-[3px_3px_0px_#1E1E1E] transition-transform hover:-translate-x-0.5 hover:-translate-y-0.5 flex items-center justify-center gap-2 mx-auto"
+              className="mt-4 px-6 py-2.5 bg-theme-red hover:brightness-110 text-white font-mono font-black text-xs uppercase tracking-wider rounded-xl border-2 border-theme-border shadow-[3px_3px_0px_var(--shadow-color)] transition-transform hover:-translate-x-0.5 hover:-translate-y-0.5 flex items-center justify-center gap-2 mx-auto"
             >
               <CheckCircle className="w-4 h-4 text-[#FEF08A]" />
               <span>Promover a Livro do Mês ★</span>
@@ -180,7 +180,7 @@ export default function RouletteModal({ isOpen, onClose, books = [] }) {
           <button
             onClick={handleSpin}
             disabled={isSpinning || candidateBooks.length === 0}
-            className="px-8 py-3.5 bg-[#D62828] hover:bg-[#9E2A2B] disabled:opacity-50 text-white font-headline font-black text-sm uppercase tracking-wider rounded-xl border-2 border-[#1E1E1E] shadow-[4px_4px_0px_#1E1E1E] transition-transform hover:-translate-x-0.5 hover:-translate-y-0.5 active:translate-x-0.5 active:translate-y-0.5 flex items-center gap-2.5"
+            className="px-8 py-3.5 bg-theme-red hover:brightness-110 disabled:opacity-50 text-white font-headline font-black text-sm uppercase tracking-wider rounded-xl border-2 border-theme-border shadow-[4px_4px_0px_var(--shadow-color)] transition-transform hover:-translate-x-0.5 hover:-translate-y-0.5 active:translate-x-0.5 active:translate-y-0.5 flex items-center gap-2.5"
           >
             <RotateCw className={`w-5 h-5 text-[#FEF08A] ${isSpinning ? 'animate-spin' : ''}`} />
             <span>{isSpinning ? 'Consultando as camaradas...' : 'Girar a Roleta Popular! 🎲★'}</span>

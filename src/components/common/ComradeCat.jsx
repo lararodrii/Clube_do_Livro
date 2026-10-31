@@ -79,15 +79,15 @@ export default function ComradeCat({
     setTimeout(() => setIsWiggling(false), 300);
   };
 
-  // Dimensões do container SVG
+  // Dimensões do container SVG com responsividade Mobile-First
   const sizeMap = {
-    sm: { w: 90, h: 90, viewBox: "0 0 160 160" },
-    md: { w: 140, h: 140, viewBox: "0 0 160 160" },
-    lg: { w: 200, h: 200, viewBox: "0 0 160 160" },
-    xl: { w: 260, h: 260, viewBox: "0 0 160 160" },
+    sm: { sizeClass: "w-14 h-14 sm:w-20 sm:h-20", viewBox: "0 0 160 160" },
+    md: { sizeClass: "w-24 h-24 sm:w-32 sm:h-32", viewBox: "0 0 160 160" },
+    lg: { sizeClass: "w-36 h-36 sm:w-48 sm:h-48", viewBox: "0 0 160 160" },
+    xl: { sizeClass: "w-48 h-48 sm:w-60 sm:h-60", viewBox: "0 0 160 160" },
   };
 
-  const { w, h, viewBox } = sizeMap[size] || sizeMap.md;
+  const { sizeClass, viewBox } = sizeMap[size] || sizeMap.md;
 
   // Renderização SVG detalhada de acordo com a pose
   const renderCatPose = () => {
@@ -450,16 +450,15 @@ export default function ComradeCat({
   };
 
   return (
-    <div className={`relative inline-flex items-center select-none z-30 pointer-events-auto ${className}`}>
+    <div className={`relative inline-flex items-center select-none z-30 pointer-events-auto max-w-full ${className}`}>
       
       {/* Container SVG do Mascote */}
       <div 
         onClick={handleNextAdvice}
         title="Clique no camarada para ouvir conselhos revolucionários"
-        className={`cursor-pointer select-none pointer-events-auto transition-transform duration-200 hover:scale-105 active:scale-95 ${
+        className={`cursor-pointer select-none pointer-events-auto shrink-0 transition-transform duration-200 hover:scale-105 active:scale-95 ${sizeClass} ${
           isWiggling ? 'animate-wiggle' : ''
         }`}
-        style={{ width: `${w}px`, height: `${h}px` }}
       >
         <svg 
           viewBox={viewBox} 
@@ -476,28 +475,28 @@ export default function ComradeCat({
         <div 
           onClick={handleNextAdvice}
           title="Clique para outro conselho revolucionário"
-          className={`cursor-pointer select-none z-30 pointer-events-auto transition-all duration-200 hover:scale-102 ${
+          className={`cursor-pointer select-none z-30 pointer-events-auto transition-all duration-200 hover:scale-102 flex-1 min-w-0 ${
             bubblePosition === 'top' 
               ? 'absolute -top-16 left-1/2 -translate-x-1/2' 
               : bubblePosition === 'left'
-              ? 'mr-3'
-              : 'ml-3 sm:ml-4'
+              ? 'mr-2 sm:mr-3'
+              : 'ml-2 sm:ml-4'
           }`}
         >
-          <div className="relative bg-[#FAF7F0] text-[#141414] border-2 border-[#1E1E1E] shadow-[3px_3px_0px_#1E1E1E] px-3.5 py-2 rounded-xl max-w-xs sm:max-w-sm cursor-pointer select-none">
+          <div className="relative bg-theme-card text-theme-primary border-2 border-theme-border shadow-[3px_3px_0px_var(--shadow-color)] px-2.5 sm:px-3.5 py-1.5 sm:py-2 rounded-xl w-full max-w-full sm:max-w-sm cursor-pointer select-none">
             {/* Ponta da fala do balão */}
             {bubblePosition === 'right' && (
-              <div className="absolute top-1/2 -left-2 -translate-y-1/2 w-0 h-0 border-t-[6px] border-t-transparent border-b-[6px] border-b-transparent border-r-[8px] border-r-[#1E1E1E]" />
+              <div className="absolute top-1/2 -left-2 -translate-y-1/2 w-0 h-0 border-t-[6px] border-t-transparent border-b-[6px] border-b-transparent border-r-[8px] border-r-theme-border" />
             )}
             
-            <div className="flex items-start gap-2">
-              <span className="text-[#D62828] text-xs font-black shrink-0 mt-0.5">★</span>
-              <div>
-                <p className="font-serif italic font-extrabold text-xs sm:text-sm text-[#141414] leading-snug min-h-[2.2rem]">
+            <div className="flex items-start gap-1.5 sm:gap-2">
+              <span className="text-theme-red text-xs font-black shrink-0 mt-0.5">★</span>
+              <div className="min-w-0 flex-1">
+                <p className="font-serif italic font-extrabold text-xs sm:text-sm text-theme-primary leading-snug whitespace-normal break-words min-h-[1.8rem] sm:min-h-[2.2rem]">
                   "{displayedText}"
-                  {isTyping && <span className="inline-block text-[#D62828] font-mono animate-pulse ml-0.5">▌</span>}
+                  {isTyping && <span className="inline-block text-theme-red font-mono animate-pulse ml-0.5">▌</span>}
                 </p>
-                <span className="text-[9px] uppercase font-mono font-black text-[#9E2A2B] tracking-wider block mt-1 hover:underline flex items-center gap-1">
+                <span className="text-[8px] sm:text-[9px] uppercase font-mono font-black text-theme-red tracking-wider block mt-1 hover:underline flex items-center gap-1 truncate">
                   <span>★</span> O Gato Camarada • CLIQUE P/ OUTRO CONSELHO
                 </span>
               </div>

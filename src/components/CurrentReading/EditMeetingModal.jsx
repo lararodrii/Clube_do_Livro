@@ -86,28 +86,28 @@ export default function EditMeetingModal({ isOpen, onClose }) {
   const isPresentialOnly = modality.includes('Apenas Presencial');
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-stone-950/70 backdrop-blur-sm animate-fade-in overflow-y-auto">
-      <div className="relative bg-[#FAF7F0] rounded-2xl max-w-xl w-full p-6 sm:p-8 border-2 border-[#1E1E1E] shadow-[8px_8px_0px_#1E1E1E] my-8 max-h-[90vh] overflow-y-auto">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-stone-950/70 backdrop-blur-sm animate-fade-in overflow-y-auto">
+      <div className="relative bg-theme-container text-theme-primary rounded-2xl w-[95vw] max-w-lg max-h-[90vh] overflow-y-auto p-4 sm:p-6 mx-auto border-2 border-theme-border shadow-[8px_8px_0px_var(--shadow-color)] my-4 sm:my-8">
         
         {/* Fechar */}
         <button
           onClick={onClose}
-          className="absolute top-5 right-5 text-stone-500 hover:text-[#141414] p-2 rounded-lg border-2 border-[#1E1E1E] bg-white hover:bg-[#FEF08A] transition-colors shadow-[2px_2px_0px_#1E1E1E]"
+          className="absolute top-5 right-5 text-theme-muted hover:text-theme-primary p-2 rounded-lg border-2 border-theme-border bg-theme-card hover:bg-theme-gold/20 transition-colors shadow-[2px_2px_0px_var(--shadow-color)]"
         >
           <X className="w-5 h-5" />
         </button>
 
         {/* Cabeçalho */}
         <div className="mb-6">
-          <div className="flex items-center gap-2 text-[#D62828] text-xs font-mono font-black uppercase tracking-wider mb-1">
+          <div className="flex items-center gap-2 text-theme-red text-xs font-mono font-black uppercase tracking-wider mb-1">
             <span>★</span>
             <span>Assembleia do Coletivo</span>
-            <span className="text-[#283618]">• Não vai lutar contra o fascismo?</span>
+            <span className="text-theme-gold">• Não vai lutar contra o fascismo?</span>
           </div>
-          <h3 className="font-headline text-2xl sm:text-3xl font-black text-[#141414]">
+          <h3 className="font-headline text-2xl sm:text-3xl font-black text-theme-primary">
             Editar Detalhes do Encontro ★
           </h3>
-          <p className="text-sm text-[#57534E] mt-1 font-reading font-semibold">
+          <p className="text-sm text-theme-muted mt-1 font-reading font-semibold">
             Altere data, horário, modalidade (100% online, híbrida ou presencial) e link da reunião.
           </p>
         </div>
@@ -116,7 +116,7 @@ export default function EditMeetingModal({ isOpen, onClose }) {
           
           {/* Data e Hora */}
           <div>
-            <label className="block text-xs font-mono font-bold text-[#141414] uppercase tracking-wider mb-1">
+            <label className="block text-xs font-mono font-bold text-theme-primary uppercase tracking-wider mb-1">
               Data & Horário do Encontro *
             </label>
             <input
@@ -124,13 +124,13 @@ export default function EditMeetingModal({ isOpen, onClose }) {
               required
               value={dateTimeLocal}
               onChange={(e) => setDateTimeLocal(e.target.value)}
-              className="w-full text-sm bg-white border-2 border-[#1E1E1E] rounded-lg px-3.5 py-2.5 text-[#141414] focus:outline-none font-mono"
+              className="w-full text-sm bg-theme-input border-2 border-theme-border rounded-lg px-3.5 py-2.5 text-theme-primary placeholder:text-theme-muted focus:outline-none font-mono"
             />
           </div>
 
           {/* Modalidade */}
           <div>
-            <label className="block text-xs font-mono font-bold text-[#141414] uppercase tracking-wider mb-1.5">
+            <label className="block text-xs font-mono font-bold text-theme-primary uppercase tracking-wider mb-1.5">
               Modalidade do Encontro *
             </label>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
@@ -139,18 +139,18 @@ export default function EditMeetingModal({ isOpen, onClose }) {
                   key={mod}
                   type="button"
                   onClick={() => setModality(mod)}
-                  className={`p-3 rounded-xl text-xs font-mono font-bold border-2 border-[#1E1E1E] text-center transition-transform flex flex-col items-center justify-center gap-1.5 ${
+                  className={`p-3 rounded-xl text-xs font-mono font-bold border-2 border-theme-border text-center transition-transform flex flex-col items-center justify-center gap-1.5 ${
                     modality === mod
-                      ? 'bg-[#D62828] text-white shadow-[3px_3px_0px_#1E1E1E] -translate-y-0.5'
-                      : 'bg-white hover:bg-[#FAF7F0] text-[#141414] shadow-[2px_2px_0px_#1E1E1E]'
+                      ? 'bg-theme-red text-white shadow-[3px_3px_0px_var(--shadow-color)] -translate-y-0.5'
+                      : 'bg-theme-card hover:bg-theme-input text-theme-primary shadow-[2px_2px_0px_var(--shadow-color)]'
                   }`}
                 >
                   {mod.includes('Online') ? (
-                    <Video className={`w-4 h-4 ${modality === mod ? 'text-[#FEF08A]' : 'text-[#D62828]'}`} />
+                    <Video className={`w-4 h-4 ${modality === mod ? 'text-[#FEF08A]' : 'text-theme-red'}`} />
                   ) : mod.includes('Híbrida') ? (
-                    <Globe className={`w-4 h-4 ${modality === mod ? 'text-[#FEF08A]' : 'text-[#BC6C25]'}`} />
+                    <Globe className={`w-4 h-4 ${modality === mod ? 'text-[#FEF08A]' : 'text-theme-gold'}`} />
                   ) : (
-                    <MapPin className={`w-4 h-4 ${modality === mod ? 'text-[#FEF08A]' : 'text-[#283618]'}`} />
+                    <MapPin className={`w-4 h-4 ${modality === mod ? 'text-[#FEF08A]' : 'text-theme-red'}`} />
                   )}
                   <span>{mod.split('(')[0].trim()}</span>
                 </button>
@@ -161,7 +161,7 @@ export default function EditMeetingModal({ isOpen, onClose }) {
           {/* Link do Google Meet (apenas se online ou híbrida) */}
           {!isPresentialOnly && (
             <div>
-              <label className="block text-xs font-mono font-bold text-[#141414] uppercase tracking-wider mb-1">
+              <label className="block text-xs font-mono font-bold text-theme-primary uppercase tracking-wider mb-1">
                 Link da Reunião Virtual (Google Meet)
               </label>
               <div className="relative">
@@ -170,9 +170,9 @@ export default function EditMeetingModal({ isOpen, onClose }) {
                   value={virtualLink}
                   onChange={(e) => setVirtualLink(e.target.value)}
                   placeholder="https://meet.google.com/..."
-                  className="w-full text-xs sm:text-sm bg-white border-2 border-[#1E1E1E] rounded-lg pl-9 pr-3 py-2.5 text-[#141414] focus:outline-none font-mono"
+                  className="w-full text-xs sm:text-sm bg-theme-input border-2 border-theme-border rounded-lg pl-9 pr-3 py-2.5 text-theme-primary placeholder:text-theme-muted focus:outline-none font-mono"
                 />
-                <Video className="w-4 h-4 text-[#D62828] absolute left-3 top-3" />
+                <Video className="w-4 h-4 text-theme-red absolute left-3 top-3" />
               </div>
             </div>
           )}
@@ -181,7 +181,7 @@ export default function EditMeetingModal({ isOpen, onClose }) {
           {!isOnlineOnly ? (
             <div className="space-y-4 pt-1">
               <div>
-                <label className="block text-xs font-mono font-bold text-[#141414] uppercase tracking-wider mb-1">
+                <label className="block text-xs font-mono font-bold text-theme-primary uppercase tracking-wider mb-1">
                   Nome do Local Presencial
                 </label>
                 <input
@@ -189,12 +189,12 @@ export default function EditMeetingModal({ isOpen, onClose }) {
                   value={location}
                   onChange={(e) => setLocation(e.target.value)}
                   placeholder="Ex: Livraria ou Café"
-                  className="w-full text-sm bg-white border-2 border-[#1E1E1E] rounded-lg px-3.5 py-2.5 text-[#141414] focus:outline-none"
+                  className="w-full text-sm bg-theme-input border-2 border-theme-border rounded-lg px-3.5 py-2.5 text-theme-primary placeholder:text-theme-muted focus:outline-none"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-mono font-bold text-[#141414] uppercase tracking-wider mb-1">
+                <label className="block text-xs font-mono font-bold text-theme-primary uppercase tracking-wider mb-1">
                   Endereço Completo
                 </label>
                 <input
@@ -202,13 +202,13 @@ export default function EditMeetingModal({ isOpen, onClose }) {
                   value={address}
                   onChange={(e) => setAddress(e.target.value)}
                   placeholder="Ex: Rua das Flores, 123"
-                  className="w-full text-sm bg-white border-2 border-[#1E1E1E] rounded-lg px-3.5 py-2.5 text-[#141414] focus:outline-none"
+                  className="w-full text-sm bg-theme-input border-2 border-theme-border rounded-lg px-3.5 py-2.5 text-theme-primary placeholder:text-theme-muted focus:outline-none"
                 />
               </div>
             </div>
           ) : (
-            <div className="p-3.5 bg-white rounded-xl border-2 border-[#1E1E1E] shadow-[2px_2px_0px_#1E1E1E] text-xs text-[#141414] flex items-center gap-2">
-              <span className="text-[#D62828] font-bold text-sm">★</span>
+            <div className="p-3.5 bg-theme-card rounded-xl border-2 border-theme-border shadow-[2px_2px_0px_var(--shadow-color)] text-xs text-theme-primary flex items-center gap-2">
+              <span className="text-theme-red font-bold text-sm">★</span>
               <span>
                 Modalidade configurada como <strong>100% Online</strong>. O link do Google Meet conectará todo o Exército da Paty.
               </span>
@@ -216,17 +216,17 @@ export default function EditMeetingModal({ isOpen, onClose }) {
           )}
 
           {/* Botões de Ação */}
-          <div className="flex items-center justify-end gap-3 pt-4 border-t-2 border-[#1E1E1E]">
+          <div className="flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-end gap-2.5 sm:gap-3 pt-4 border-t-2 border-theme-border">
             <button
               type="button"
               onClick={onClose}
-              className="px-5 py-2.5 text-xs font-mono font-bold text-[#57534E] hover:bg-stone-200 rounded-lg border-2 border-[#1E1E1E] transition-colors"
+              className="w-full sm:w-auto px-5 py-2.5 text-xs font-mono font-bold text-theme-muted hover:bg-theme-card rounded-lg border-2 border-theme-border transition-colors text-center"
             >
               Cancelar
             </button>
             <button
               type="submit"
-              className="px-6 py-2.5 bg-[#D62828] hover:bg-[#9E2A2B] text-white text-xs font-headline font-black uppercase tracking-wider rounded-lg border-2 border-[#1E1E1E] shadow-[3px_3px_0px_#1E1E1E] transition-transform hover:-translate-x-0.5 hover:-translate-y-0.5 active:translate-x-0.5 active:translate-y-0.5 flex items-center gap-2"
+              className="w-full sm:w-auto justify-center px-6 py-2.5 bg-theme-red hover:brightness-110 text-white text-xs font-headline font-black uppercase tracking-wider rounded-lg border-2 border-theme-border shadow-[3px_3px_0px_var(--shadow-color)] transition-transform hover:-translate-x-0.5 hover:-translate-y-0.5 active:translate-x-0.5 active:translate-y-0.5 flex items-center gap-2"
             >
               <Save className="w-4 h-4 text-[#FEF08A]" />
               <span>Salvar Encontro ★</span>

@@ -25,8 +25,8 @@ export default function BookCover({
   const sizeClasses = {
     sm: 'w-24 h-36',
     md: 'w-36 h-52',
-    lg: 'w-52 h-76 sm:w-60 sm:h-88',
-    xl: 'w-64 h-92 sm:w-72 sm:h-104'
+    lg: 'w-44 h-64 sm:w-56 sm:h-80 max-w-[200px] sm:max-w-[240px]',
+    xl: 'w-52 h-76 sm:w-72 sm:h-104 max-w-[240px] sm:max-w-[280px]'
   };
 
   const show3DMockup = forceRealistic3D || hasError || !src;
@@ -183,9 +183,9 @@ export default function BookCover({
 
           {/* Shimmer de Carregamento com Mascote */}
           {isLoading && (
-            <div className="absolute inset-0 bg-[#FAF7F0] flex flex-col items-center justify-center p-3 text-center">
+            <div className="absolute inset-0 bg-theme-card flex flex-col items-center justify-center p-3 text-center">
               <ComradeCat pose="reading" size="sm" showBubble={false} />
-              <p className="text-[10px] text-[#EF4444] font-mono font-bold mt-1 animate-pulse">
+              <p className="text-[10px] text-theme-red font-mono font-bold mt-1 animate-pulse">
                 Carregando Obra...
               </p>
             </div>

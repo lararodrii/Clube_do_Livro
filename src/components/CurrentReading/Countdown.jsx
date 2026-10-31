@@ -66,50 +66,50 @@ export default function Countdown({ targetDate }) {
   }, [targetDate]);
 
   return (
-    <div className="w-full bg-[#FAF7F0] p-3 sm:p-4 rounded-2xl border-2 border-[#1E1E1E] shadow-[4px_4px_0px_#1E1E1E] flex flex-col justify-center items-center overflow-hidden">
-      <div className="flex items-center justify-center gap-1.5 text-center text-xs font-mono font-black uppercase tracking-wider text-[#D62828] mb-3">
-        <Timer className="w-3.5 h-3.5 text-[#D62828]" />
+    <div className="w-full bg-theme-card p-3 rounded-2xl border-2 border-theme-border shadow-[4px_4px_0px_var(--shadow-color)] flex flex-col justify-center items-center overflow-hidden transition-colors duration-300">
+      <div className="flex items-center justify-center gap-1.5 text-center text-xs font-mono font-black uppercase tracking-wider text-theme-red mb-2.5">
+        <Timer className="w-3.5 h-3.5 text-theme-red" />
         <span>Contagem Regressiva para o Debate ★</span>
       </div>
 
-      <div className="flex items-center justify-center gap-1.5 sm:gap-2 w-full mx-auto">
+      <div className="grid grid-cols-4 gap-1.5 sm:gap-2 w-full mx-auto">
         
         {/* Dias */}
-        <div className="flex-1 min-w-0 bg-[#141414] text-[#FEF08A] py-2 px-1 rounded-xl border-2 border-[#1E1E1E] shadow-[2px_2px_0px_#BC6C25] flex flex-col items-center justify-center text-center">
-          <span className="font-mono text-lg sm:text-2xl font-bold block leading-none tabular-nums text-center truncate">
+        <div className="w-full min-w-0 bg-theme-container text-theme-primary py-2 px-1 rounded-xl border-2 border-theme-border shadow-[2px_2px_0px_var(--shadow-color)] flex flex-col items-center justify-center text-center">
+          <span className="font-mono text-lg sm:text-2xl font-bold block leading-none tabular-nums text-center truncate text-theme-primary">
             {String(timeLeft.days).padStart(2, '0')}
           </span>
-          <span className="text-[9px] sm:text-[10px] font-semibold tracking-normal text-stone-300 font-mono mt-0.5 leading-none text-center">
+          <span className="text-[9px] sm:text-[10px] font-semibold tracking-normal text-theme-muted font-mono mt-0.5 leading-none text-center">
             DIAS
           </span>
         </div>
 
         {/* Hora */}
-        <div className="flex-1 min-w-0 bg-[#141414] text-[#FEF08A] py-2 px-1 rounded-xl border-2 border-[#1E1E1E] shadow-[2px_2px_0px_#BC6C25] flex flex-col items-center justify-center text-center">
-          <span className="font-mono text-lg sm:text-2xl font-bold block leading-none tabular-nums text-center truncate">
+        <div className="w-full min-w-0 bg-theme-container text-theme-primary py-2 px-1 rounded-xl border-2 border-theme-border shadow-[2px_2px_0px_var(--shadow-color)] flex flex-col items-center justify-center text-center">
+          <span className="font-mono text-lg sm:text-2xl font-bold block leading-none tabular-nums text-center truncate text-theme-primary">
             {String(timeLeft.hours).padStart(2, '0')}
           </span>
-          <span className="text-[9px] sm:text-[10px] font-semibold tracking-normal text-stone-300 font-mono mt-0.5 leading-none text-center">
+          <span className="text-[9px] sm:text-[10px] font-semibold tracking-normal text-theme-muted font-mono mt-0.5 leading-none text-center">
             HORA
           </span>
         </div>
 
         {/* Min */}
-        <div className="flex-1 min-w-0 bg-[#141414] text-[#FEF08A] py-2 px-1 rounded-xl border-2 border-[#1E1E1E] shadow-[2px_2px_0px_#BC6C25] flex flex-col items-center justify-center text-center">
-          <span className="font-mono text-lg sm:text-2xl font-bold block leading-none tabular-nums text-center truncate">
+        <div className="w-full min-w-0 bg-theme-container text-theme-primary py-2 px-1 rounded-xl border-2 border-theme-border shadow-[2px_2px_0px_var(--shadow-color)] flex flex-col items-center justify-center text-center">
+          <span className="font-mono text-lg sm:text-2xl font-bold block leading-none tabular-nums text-center truncate text-theme-primary">
             {String(timeLeft.minutes).padStart(2, '0')}
           </span>
-          <span className="text-[9px] sm:text-[10px] font-semibold tracking-normal text-stone-300 font-mono mt-0.5 leading-none text-center">
+          <span className="text-[9px] sm:text-[10px] font-semibold tracking-normal text-theme-muted font-mono mt-0.5 leading-none text-center">
             MIN
           </span>
         </div>
 
         {/* Seg */}
-        <div className="flex-1 min-w-0 bg-[#141414] text-[#FEF08A] py-2 px-1 rounded-xl border-2 border-[#1E1E1E] shadow-[2px_2px_0px_#BC6C25] flex flex-col items-center justify-center text-center">
-          <span className="font-mono text-lg sm:text-2xl font-bold text-[#EF4444] block leading-none tabular-nums text-center truncate">
+        <div className="w-full min-w-0 bg-theme-container text-theme-red py-2 px-1 rounded-xl border-2 border-theme-border shadow-[2px_2px_0px_var(--shadow-color)] flex flex-col items-center justify-center text-center">
+          <span className="font-mono text-lg sm:text-2xl font-bold text-theme-red block leading-none tabular-nums text-center truncate">
             {String(timeLeft.seconds).padStart(2, '0')}
           </span>
-          <span className="text-[9px] sm:text-[10px] font-semibold tracking-normal text-stone-300 font-mono mt-0.5 leading-none text-center">
+          <span className="text-[9px] sm:text-[10px] font-semibold tracking-normal text-theme-muted font-mono mt-0.5 leading-none text-center">
             SEG
           </span>
         </div>

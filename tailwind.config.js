@@ -7,6 +7,18 @@ export default {
   theme: {
     extend: {
       colors: {
+        theme: {
+          page: 'var(--bg-page)',
+          container: 'var(--bg-container)',
+          card: 'var(--bg-card)',
+          input: 'var(--bg-input)',
+          primary: 'var(--text-primary)',
+          secondary: 'var(--text-secondary)',
+          muted: 'var(--text-muted)',
+          red: 'var(--accent-red)',
+          gold: 'var(--accent-gold)',
+          border: 'var(--border-color)',
+        },
         // Paleta Editorial Retrô Revolucionário / Pôster Vintage
         retro: {
           bg: '#F6F2E9',          // Fundo papel antigo / marfim quente

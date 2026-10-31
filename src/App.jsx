@@ -29,7 +29,7 @@ function ClubApp() {
       <Header activeTab={activeTab} setActiveTab={setActiveTab} />
 
       {/* Conteúdo Principal com Layout Fluido e Responsivo */}
-      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-10">
+      <main className="flex-1 max-w-7xl w-full mx-auto px-3 sm:px-6 md:px-8 py-6 md:py-10">
         
         {/* TAB 1: LEITURA ATUAL & ENCONTRO */}
         {activeTab === 'current' && (
@@ -73,14 +73,14 @@ function ClubApp() {
       </main>
 
       {/* Rodapé Retrô Revolucionário do Exército da Paty */}
-      <footer className="mt-16 bg-[#141414] text-stone-200 border-t-4 border-[#D62828] py-12 relative overflow-hidden">
+      <footer className="mt-16 bg-theme-container text-theme-secondary border-t-4 border-theme-border py-12 relative overflow-hidden transition-colors duration-300">
         
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+        <div className="max-w-7xl mx-auto px-3 sm:px-6 md:px-8 relative z-10">
           <div className="flex flex-col md:flex-row items-center justify-between gap-6 text-center md:text-left">
             
             <div className="flex items-center gap-4">
               {/* O Gato Camarada comemorando no rodapé */}
-              <div className="shrink-0 bg-[#FAF7F0] p-1 rounded-xl border-2 border-[#D62828] shadow-[3px_3px_0px_#D62828]">
+              <div className="shrink-0 bg-theme-card p-1 rounded-xl border-2 border-theme-border shadow-[3px_3px_0px_var(--shadow-color)]">
                 <ComradeCat 
                   pose="celebrating" 
                   size="sm" 
@@ -89,27 +89,27 @@ function ClubApp() {
                 />
               </div>
               <div>
-                <p className="font-headline font-black text-xl text-white tracking-wider flex items-center justify-center md:justify-start gap-1.5">
-                  <span className="text-[#D62828]">★</span> Exército da Paty
+                <p className="font-headline font-black text-xl text-theme-primary tracking-wider flex items-center justify-center md:justify-start gap-1.5">
+                  <span className="text-theme-red">★</span> Exército da Paty
                 </p>
-                <p className="text-xs text-[#FEF08A] font-reading font-bold italic">
+                <p className="text-xs text-theme-muted font-reading font-bold italic">
                   "Não vai lutar contra o fascismo?" • Clube do Livro
                 </p>
               </div>
             </div>
 
-            <div className="text-xs text-stone-400 max-w-md leading-relaxed font-mono">
-              Integração nativa com a Google Books API. Persistência de dados local no navegador. Curadoria literária e debates entre camaradas.
+            <div className="text-xs text-theme-muted max-w-md leading-relaxed font-mono">
+              Curadoria coletiva, debates democráticos e literatura crítica. O Clube do Livro das camaradas.
             </div>
 
-            <div className="text-xs text-[#FEF08A] flex items-center gap-1.5 font-mono font-bold bg-[#283618] px-3.5 py-2 rounded-lg border border-[#DDA15E]">
-              <span className="text-[#D62828] text-sm">★</span>
+            <div className="text-xs text-[#111111] flex items-center gap-1.5 font-mono font-bold bg-[#FEF08A] px-3.5 py-2 rounded-lg border-2 border-theme-border shadow-[2px_2px_0px_var(--shadow-color)]">
+              <span className="text-theme-red text-sm">★</span>
               <span>"Não vai lutar contra o fascismo?"</span>
             </div>
 
           </div>
 
-          <div className="mt-8 pt-6 border-t border-stone-800 text-center text-[11px] font-mono text-stone-500">
+          <div className="mt-8 pt-6 border-t border-theme-border/20 text-center text-[11px] font-mono text-theme-muted">
             © {new Date().getFullYear()} Exército da Paty ★ O Comitê Literário dos Camaradas. Todos os direitos reservados.
           </div>
         </div>

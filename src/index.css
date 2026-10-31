@@ -12,92 +12,165 @@
 
 :root,
 [data-theme='clandestina'] {
-  --theme-bg: #F5F0E6;
-  --theme-header-bg: #FAF7F0;
-  --theme-sub-bg: #F6F2E9;
-  --theme-card: #FFFFFF;
-  --theme-card-subtle: #FAF7F0;
-  --theme-text: #141414;
-  --theme-text-muted: #57534E;
-  --theme-primary: #D62828;
-  --theme-primary-hover: #9E2A2B;
+  --bg-page: #F4EFE6;
+  --bg-container: #FAF6F0;
+  --bg-card: #FFFFFF;
+  --bg-input: #F4EFE6;
+  --border-color: #141414;
+  --shadow-color: #141414;
+  --text-primary: #111111;
+  --text-secondary: #262626;
+  --text-muted: #52504C;
+  --accent-red: #B91C1C;
+  --accent-gold: #92400E;
+
+  /* Aliases para compatibilidade */
+  --theme-bg: var(--bg-page);
+  --theme-header-bg: var(--bg-container);
+  --theme-sub-bg: var(--bg-page);
+  --theme-card: var(--bg-container);
+  --theme-card-subtle: var(--bg-card);
+  --theme-text: var(--text-primary);
+  --theme-text-muted: var(--text-muted);
+  --theme-primary: var(--accent-red);
+  --theme-primary-hover: #991B1B;
   --theme-primary-text: #FFFFFF;
-  --theme-border: #141414;
-  --theme-shadow: #141414;
+  --theme-border: var(--border-color);
+  --theme-shadow: var(--shadow-color);
   --theme-accent: #FEF08A;
-  --theme-accent-gold: #F59E0B;
+  --theme-accent-gold: var(--accent-gold);
   --theme-olive: #283618;
   --theme-font-mono: 'JetBrains Mono', 'Courier New', monospace;
 }
 
-[data-theme='sierra'] {
-  --theme-bg: #162419;
-  --theme-header-bg: #1B2B1F;
-  --theme-sub-bg: #131E15;
-  --theme-card: #231915;
-  --theme-card-subtle: #2D201A;
-  --theme-text: #EDE6D6;
-  --theme-text-muted: #B8ADA0;
-  --theme-primary: #D4A359;
-  --theme-primary-hover: #BF8E42;
-  --theme-primary-text: #162419;
-  --theme-border: #D4A359;
-  --theme-shadow: #0A110B;
-  --theme-accent: #DDA15E;
-  --theme-accent-gold: #EAB308;
-  --theme-olive: #3D5A2B;
-  --theme-font-mono: 'JetBrains Mono', 'Courier New', monospace;
-}
-
 [data-theme='carmim'] {
-  --theme-bg: #0F0F12;
-  --theme-header-bg: #141418;
-  --theme-sub-bg: #0B0B0E;
-  --theme-card: #18181C;
-  --theme-card-subtle: #222228;
-  --theme-text: #F3F4F6;
-  --theme-text-muted: #9CA3AF;
-  --theme-primary: #E11D48;
-  --theme-primary-hover: #BE123C;
+  --bg-page: #09090B;
+  --bg-container: #121216;
+  --bg-card: #1C1C22;
+  --bg-input: #1C1C22;
+  --border-color: #FF4D6D;
+  --shadow-color: #000000;
+  --text-primary: #FFFFFF;
+  --text-secondary: #E4E4E7;
+  --text-muted: #A1A1AA;
+  --accent-red: #FF4D6D;
+  --accent-gold: #FBBF24;
+
+  /* Aliases para compatibilidade */
+  --theme-bg: var(--bg-page);
+  --theme-header-bg: var(--bg-container);
+  --theme-sub-bg: var(--bg-page);
+  --theme-card: var(--bg-container);
+  --theme-card-subtle: var(--bg-card);
+  --theme-text: var(--text-primary);
+  --theme-text-muted: var(--text-muted);
+  --theme-primary: var(--accent-red);
+  --theme-primary-hover: #E11D48;
   --theme-primary-text: #FFFFFF;
-  --theme-border: #E11D48;
-  --theme-shadow: #000000;
+  --theme-border: var(--border-color);
+  --theme-shadow: var(--shadow-color);
   --theme-accent: #F59E0B;
-  --theme-accent-gold: #FBBF24;
+  --theme-accent-gold: var(--accent-gold);
   --theme-olive: #4C1D24;
   --theme-font-mono: 'JetBrains Mono', 'Courier New', monospace;
 }
 
+[data-theme='sierra'] {
+  --bg-page: #0F1912;
+  --bg-container: #16241B;
+  --bg-card: #211A16;
+  --bg-input: #211A16;
+  --border-color: #D4A359;
+  --shadow-color: #0A110B;
+  --text-primary: #FAF6EB;
+  --text-secondary: #E6DEC8;
+  --text-muted: #B8AD96;
+  --accent-red: #F87171;
+  --accent-gold: #F59E0B;
+
+  /* Aliases para compatibilidade */
+  --theme-bg: var(--bg-page);
+  --theme-header-bg: var(--bg-container);
+  --theme-sub-bg: var(--bg-page);
+  --theme-card: var(--bg-container);
+  --theme-card-subtle: var(--bg-card);
+  --theme-text: var(--text-primary);
+  --theme-text-muted: var(--text-muted);
+  --theme-primary: var(--accent-red);
+  --theme-primary-hover: #BF8E42;
+  --theme-primary-text: #162419;
+  --theme-border: var(--border-color);
+  --theme-shadow: var(--shadow-color);
+  --theme-accent: #DDA15E;
+  --theme-accent-gold: var(--accent-gold);
+  --theme-olive: #3D5A2B;
+  --theme-font-mono: 'JetBrains Mono', 'Courier New', monospace;
+}
+
 [data-theme='cybersyn'] {
-  --theme-bg: #0B132B;
-  --theme-header-bg: #111B38;
-  --theme-sub-bg: #070D1E;
-  --theme-card: #1C2541;
-  --theme-card-subtle: #263359;
-  --theme-text: #E0FBFC;
-  --theme-text-muted: #9BB1C8;
-  --theme-primary: #FF2A54;
+  --bg-page: #070B19;
+  --bg-container: #0F172A;
+  --bg-card: #1E293B;
+  --bg-input: #1E293B;
+  --border-color: #FF2A54;
+  --shadow-color: #050914;
+  --text-primary: #F8FAFC;
+  --text-secondary: #CBD5E1;
+  --text-muted: #94A3B8;
+  --accent-red: #FF2A54;
+  --accent-gold: #FFBE0B;
+
+  /* Aliases para compatibilidade */
+  --theme-bg: var(--bg-page);
+  --theme-header-bg: var(--bg-container);
+  --theme-sub-bg: var(--bg-page);
+  --theme-card: var(--bg-container);
+  --theme-card-subtle: var(--bg-card);
+  --theme-text: var(--text-primary);
+  --theme-text-muted: var(--text-muted);
+  --theme-primary: var(--accent-red);
   --theme-primary-hover: #E01E45;
   --theme-primary-text: #FFFFFF;
-  --theme-border: #FF2A54;
-  --theme-shadow: #050914;
+  --theme-border: var(--border-color);
+  --theme-shadow: var(--shadow-color);
   --theme-accent: #FFBE0B;
-  --theme-accent-gold: #FFBE0B;
+  --theme-accent-gold: var(--accent-gold);
   --theme-olive: #1F4E5B;
   --theme-font-mono: 'JetBrains Mono', 'Courier New', monospace;
 }
 
 @layer base {
+  html,
+  body,
+  #root {
+    overflow-x: hidden;
+    max-width: 100vw;
+  }
+  
   html {
     scroll-behavior: smooth;
   }
   
   body {
-    background-color: var(--theme-bg);
-    color: var(--theme-text);
+    background-color: var(--bg-page);
+    color: var(--text-primary);
     font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
     min-height: 100vh;
     transition: background-color 0.3s ease, color 0.3s ease;
+  }
+
+  input,
+  textarea,
+  select {
+    color: var(--text-primary);
+    background-color: var(--bg-input);
+    border-color: var(--border-color);
+  }
+
+  input::placeholder,
+  textarea::placeholder {
+    color: var(--text-muted);
+    opacity: 0.85;
   }
 
   /* Toque monoespaçado no tema Cybersyn */
@@ -108,7 +181,7 @@
   }
 
   ::selection {
-    background: var(--theme-primary);
+    background: var(--accent-red);
     color: #FFFFFF;
   }
 }
@@ -119,12 +192,12 @@
   height: 9px;
 }
 ::-webkit-scrollbar-track {
-  background: var(--theme-bg);
-  border-left: 2px solid var(--theme-border);
+  background: var(--bg-page);
+  border-left: 2px solid var(--border-color);
 }
 ::-webkit-scrollbar-thumb {
-  background: var(--theme-primary);
-  border: 2px solid var(--theme-border);
+  background: var(--accent-red);
+  border: 2px solid var(--border-color);
   border-radius: 0px;
 }
 ::-webkit-scrollbar-thumb:hover {
@@ -141,34 +214,34 @@
 
 /* Neo-Brutalist Revolutionary Poster Card */
 .retro-card {
-  background-color: var(--theme-card);
-  color: var(--theme-text);
-  border: 2px solid var(--theme-border);
-  box-shadow: 4px 4px 0px 0px var(--theme-shadow);
+  background-color: var(--bg-container);
+  color: var(--text-primary);
+  border: 2px solid var(--border-color);
+  box-shadow: 4px 4px 0px 0px var(--shadow-color);
   transition: transform 0.15s ease, box-shadow 0.15s ease, background-color 0.25s ease, border-color 0.25s ease;
 }
 
 .retro-card-hover:hover {
   transform: translate(-2px, -2px);
-  box-shadow: 6px 6px 0px 0px var(--theme-shadow);
+  box-shadow: 6px 6px 0px 0px var(--shadow-color);
 }
 
 /* Interactive Button Neo-Brutalist */
 .retro-btn {
-  border: 2px solid var(--theme-border);
-  box-shadow: 3px 3px 0px 0px var(--theme-shadow);
+  border: 2px solid var(--border-color);
+  box-shadow: 3px 3px 0px 0px var(--shadow-color);
   font-weight: 800;
   transition: all 0.12s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .retro-btn:hover {
   transform: translate(-1px, -1px);
-  box-shadow: 4px 4px 0px 0px var(--theme-shadow);
+  box-shadow: 4px 4px 0px 0px var(--shadow-color);
 }
 
 .retro-btn:active {
   transform: translate(2px, 2px);
-  box-shadow: 1px 1px 0px 0px var(--theme-shadow);
+  box-shadow: 1px 1px 0px 0px var(--shadow-color);
 }
 
 /* ═══════════════════════════════════════════════════════════════
