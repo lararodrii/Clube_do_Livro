@@ -5,7 +5,8 @@ import {
   isWordYellowOnCanvas,
   groupConsecutiveWords,
   extractHighlightsFromFile,
-  mergeCrossPageHighlights
+  mergeCrossPageHighlights,
+  deduplicateHighlights
 } from '../src/services/pdfHighlightExtractor.js';
 const palette={gray:{name:'Cinza'},yellow:{name:'Amarelo Revolucionário',hex:'#FDE047'}};
 const word=(text,x,y)=>({text,box:{x,y,width:text.length*6,height:12},color:palette.gray});
@@ -92,5 +93,50 @@ test('páginas não consecutivas não se unem',()=>{
   const merged = mergeCrossPageHighlights([h1, h2]);
   assert.equal(merged.length, 2);
 });
+
+test('elimina repetição idêntica de grifo na mesma página (caso página 5 repetida)',()=>{
+  const h1 = {
+    id: 'native-5-1',
+    page: 5,
+    text: 'Por que as mulheres e minorias étnicas são representadas em maior número em alguns países?',
+    color: palette.yellow,
+    source: 'pdf_annotation',
+    box: { minY: 680, maxY: 710 }
+  };
+  const h2 = {
+    id: 'hl-scan-5-2',
+    page: 5,
+    text: 'Por que as mulheres e minorias étnicas são representadas em maior número em alguns países?',
+    color: palette.yellow,
+    source: 'pdf_verified_scan',
+    box: { minY: 680, maxY: 710 }
+  };
+  const deduped = deduplicateHighlights([h1, h2]);
+  assert.equal(deduped.length, 1);
+  assert.equal(deduped[0].page, 5);
+  assert.equal(deduped[0].text, 'Por que as mulheres e minorias étnicas são representadas em maior número em alguns países?');
+  assert.equal(deduped[0].source, 'pdf_annotation');
+});
+
+test('elimina fragmento quando o trecho completo já foi extraído na mesma página',()=>{
+  const h1 = {
+    id: '1',
+    page: 5,
+    text: 'Por que as mulheres e minorias étnicas são representadas em maior número em alguns países? Existe',
+    color: palette.yellow,
+    box: { minY: 680, maxY: 710 }
+  };
+  const h2 = {
+    id: '2',
+    page: 5,
+    text: 'Por que as mulheres e minorias étnicas são representadas em maior número em alguns países?',
+    color: palette.yellow,
+    box: { minY: 680, maxY: 710 }
+  };
+  const deduped = deduplicateHighlights([h1, h2]);
+  assert.equal(deduped.length, 1);
+  assert.equal(deduped[0].text, 'Por que as mulheres e minorias étnicas são representadas em maior número em alguns países? Existe');
+});
+
 
 

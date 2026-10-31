@@ -491,7 +491,7 @@ async function extractFromPdf(file, onProgress = () => {}) {
       // 4. Verificação visual via Canvas para trechos desenhados diretamente (StarNote / tablets)
       if (canvasData && ctx) {
         // Filtra palavras que já foram cobertas pelas anotações nativas
-        const remainingWords = allWords.filter(w => !nativeAreas.some(area => wordOverlapsBox(w.box, area, 0.2)));
+        const remainingWords = allWords.filter(w => !nativeAreas.some(area => wordOverlapsBox(w.box, area, 0.05)));
 
         if (remainingWords.length > 0) {
           const linesMap = new Map();
@@ -528,7 +528,25 @@ async function extractFromPdf(file, onProgress = () => {}) {
             'pdf_verified_scan'
           );
 
-          pageHighlights.push(...visualHighlights.map(h => ({
+          // Descarta qualquer grifo visual cujo texto ou linha já foi coberto por anotação nativa na mesma página
+          const nonDuplicateVisuals = visualHighlights.filter(vh => {
+            const vText = normalizeForComparison(vh.text);
+            if (!vText || vText.length < 3) return false;
+
+            return !pageHighlights.some(nh => {
+              const nText = normalizeForComparison(nh.text);
+              if (nText === vText || nText.includes(vText) || vText.includes(nText)) return true;
+              if (calculateTextSimilarity(nh.text, vh.text) >= 0.65) return true;
+              if (nh.box && vh.box) {
+                const yOverlap = Math.max(0, Math.min(nh.box.maxY, vh.box.maxY) - Math.max(nh.box.minY, vh.box.minY));
+                const minH = Math.min(nh.box.maxY - nh.box.minY, vh.box.maxY - vh.box.minY);
+                if (minH > 0 && (yOverlap / minH) > 0.40) return true;
+              }
+              return false;
+            });
+          });
+
+          pageHighlights.push(...nonDuplicateVisuals.map(h => ({
             ...h,
             confidence: 0.85,
             box: {
@@ -540,9 +558,10 @@ async function extractFromPdf(file, onProgress = () => {}) {
         }
       }
 
-      // Ordena os grifos da página pelo fluxo de leitura de cima para baixo
-      pageHighlights.sort((a, b) => (a.box?.minY ?? 0) - (b.box?.minY ?? 0));
-      allExtractedHighlights.push(...pageHighlights);
+      // Deduplica grifos na mesma página (remove duplicatas puras e sobreposições)
+      const dedupedPageHighlights = deduplicateHighlights(pageHighlights);
+      dedupedPageHighlights.sort((a, b) => (a.box?.minY ?? 0) - (b.box?.minY ?? 0));
+      allExtractedHighlights.push(...dedupedPageHighlights);
 
     } catch (pageErr) {
       console.warn(`[pdfHighlightExtractor] Erro ao processar página ${pageNum}:`, pageErr.message);
@@ -550,7 +569,8 @@ async function extractFromPdf(file, onProgress = () => {}) {
   }
 
   onProgress({ current: numPages, total: numPages, stage: 'completed', message: 'Extração concluída com sucesso!' });
-  return mergeCrossPageHighlights(allExtractedHighlights);
+  const crossMerged = mergeCrossPageHighlights(allExtractedHighlights);
+  return deduplicateHighlights(crossMerged);
 }
 
 /**
@@ -673,6 +693,133 @@ async function extractFromKindle(file, onProgress = () => {}) {
 
   onProgress({ current: 100, total: 100, stage: 'completed', message: 'Notas do Kindle extraídas com sucesso!' });
   return highlights;
+}
+
+/**
+ * Normaliza uma string para comparação textual robusta
+ */
+export function normalizeForComparison(str) {
+  if (!str) return '';
+  return str
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^\w\s]/gi, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+/**
+ * Calcula a taxa de similaridade textual entre dois trechos (0 a 1.0)
+ */
+export function calculateTextSimilarity(text1, text2) {
+  const s1 = normalizeForComparison(text1);
+  const s2 = normalizeForComparison(text2);
+
+  if (!s1 || !s2) return 0;
+  if (s1 === s2) return 1.0;
+
+  if (s1.includes(s2) || s2.includes(s1)) {
+    const minLen = Math.min(s1.length, s2.length);
+    const maxLen = Math.max(s1.length, s2.length);
+    return minLen / maxLen >= 0.35 ? 0.90 : 0.70;
+  }
+
+  const words1 = s1.split(' ').filter(w => w.length > 2);
+  const words2 = s2.split(' ').filter(w => w.length > 2);
+
+  if (words1.length === 0 || words2.length === 0) return 0;
+
+  const set1 = new Set(words1);
+  const set2 = new Set(words2);
+  const intersection = new Set([...set1].filter(x => set2.has(x)));
+  const union = new Set([...set1, ...set2]);
+
+  return union.size > 0 ? (intersection.size / union.size) : 0;
+}
+
+/**
+ * Deduplica grifos na mesma página ou no documento, eliminando repetições idênticas,
+ * subconjuntos e sobreposições indesejadas (ex: sobreposição de nativo com scanner de canvas).
+ */
+export function deduplicateHighlights(highlights) {
+  if (!Array.isArray(highlights) || highlights.length <= 1) {
+    return highlights || [];
+  }
+
+  const result = [];
+
+  for (const hl of highlights) {
+    const textNorm = normalizeForComparison(hl.text);
+    if (!textNorm || textNorm.length < 3) continue;
+
+    const pageStr = String(hl.page || '1');
+    const pStart = parseInt(pageStr.split('-')[0], 10);
+    const pEnd = parseInt(pageStr.split('-').pop(), 10);
+
+    const existingIdx = result.findIndex(existing => {
+      const existingPageStr = String(existing.page || '1');
+      const exStart = parseInt(existingPageStr.split('-')[0], 10);
+      const exEnd = parseInt(existingPageStr.split('-').pop(), 10);
+
+      const samePage = (pStart === exStart && pEnd === exEnd) || (pStart === exStart);
+      if (!samePage) return false;
+
+      const exNorm = normalizeForComparison(existing.text);
+
+      const hasBoxes = existing.box?.minY !== undefined && hl.box?.minY !== undefined;
+      const yDiff = hasBoxes ? Math.abs(existing.box.minY - hl.box.minY) : 0;
+      const isSameLine = !hasBoxes || yDiff < 15;
+
+      // 1. Textos idênticos na mesma linha ou mesmo trecho
+      if (exNorm === textNorm) {
+        // Se ambos forem anotações com notas diferentes em linhas distantes (como no teste 5), não deduplica
+        if (hasBoxes && yDiff >= 15 && existing.note !== hl.note && existing.note && hl.note) {
+          return false;
+        }
+        return true;
+      }
+
+      // 2. Um contém o outro na mesma linha/região
+      if ((exNorm.includes(textNorm) || textNorm.includes(exNorm)) && isSameLine) {
+        return true;
+      }
+
+      // 3. Alta similaridade lexical (>= 80%) na mesma linha
+      if (isSameLine && calculateTextSimilarity(existing.text, hl.text) >= 0.80) {
+        return true;
+      }
+
+      return false;
+    });
+
+    if (existingIdx === -1) {
+      result.push(hl);
+    } else {
+      const existing = result[existingIdx];
+      const exNorm = normalizeForComparison(existing.text);
+
+      const isNewLonger = textNorm.length > exNorm.length;
+      const isNative = existing.source === 'pdf_annotation' || hl.source === 'pdf_annotation';
+
+      let mergedNote = existing.note || '';
+      if (hl.note && !mergedNote.includes(hl.note)) {
+        mergedNote = mergedNote ? `${mergedNote} | ${hl.note}` : hl.note;
+      }
+
+      result[existingIdx] = {
+        ...existing,
+        text: isNewLonger ? hl.text : existing.text,
+        note: mergedNote.trim(),
+        source: isNative ? 'pdf_annotation' : (existing.source || hl.source),
+        confidence: Math.max(existing.confidence || 0.8, hl.confidence || 0.8),
+        color: existing.color || hl.color,
+        page: String(existing.page).length >= String(hl.page).length ? existing.page : hl.page
+      };
+    }
+  }
+
+  return result;
 }
 
 const COMMON_ABBREVIATIONS = new Set([
@@ -888,5 +1035,6 @@ export async function extractHighlightsFromFile(file, onProgress = () => {}) {
     throw new Error(`Formato .${ext} não suportado. Utilize arquivos .pdf, .txt (My Clippings) ou .html (Kindle Notebook).`);
   }
 
-  return mergeCrossPageHighlights(raw);
+  const merged = mergeCrossPageHighlights(raw);
+  return deduplicateHighlights(merged);
 }
