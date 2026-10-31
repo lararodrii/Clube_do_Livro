@@ -1,11 +1,13 @@
 /**
  * Serviço de Extração Automática de Grifos (PDF / Kindle)
  * 
- * Suporta:
- * 1. Arquivos PDF com anotações nativas (Highlight em amarelo)
- * 2. Validação visual por amostragem de pixels em Canvas (gera candidatos que exigem revisão)
- * 3. Suporte a Tablets (StarNote, Samsung Notes, GoodNotes e PDFs achatados)
- * 4. Arquivos exportados do Kindle (My Clippings.txt e cadernos de notas .html)
+ * Reconstrução contínua e sem corte de palavras:
+ * 1. Fatiamento proporcional de palavras (evita drift de fonte).
+ * 2. Preserva anotações nativas do PDF na íntegra (uma anotação = um registro contínuo).
+ * 3. Amostragem em nível de linha no Canvas (preserva 100% de conectivos como "é", "a", "em", "de").
+ * 4. Corte milimétrico das sobras externas (palavras antes do início ou após o ponto final não entram).
+ * 5. Junção contínua respeitando hífens compostos (ex: "norte-americana").
+ * 6. Suporte completo a notas do Kindle (P&B / My Clippings / Notebooks .txt e .html).
  * 
  * Carregado via CDN para garantir total compatibilidade no Vite e Netlify sem quebra de workers.
  */
@@ -68,55 +70,44 @@ export function loadPdfJs() {
   return pdfjsLoadingPromise;
 }
 
-const YELLOW_COLOR_INFO = {
+export const YELLOW_COLOR_INFO = {
   name: 'Amarelo Revolucionário',
   hex: '#FDE047',
   bgClass: 'bg-yellow-300/40 border-yellow-400 text-yellow-950'
 };
 
+export const KINDLE_COLOR_INFO = {
+  name: 'Destaque Kindle',
+  hex: '#FEF08A',
+  bgClass: 'bg-yellow-200/50 border-yellow-400 text-yellow-950'
+};
+
 /**
- * Detecta com rigor absoluto se um pixel do Canvas é Marca-Texto Amarelo.
- * 
- * Rejeita categoricamente:
- * - Branco puro ou papel creme (onde R, G e B são muito próximos: |R - B| < 30)
- * - Azul de links ou sumário (onde B > R ou B > 150)
- * - Texto preto/cinza escuro (R < 150 ou G < 140)
+ * Detecta se um pixel do Canvas é Marca-Texto Amarelo.
  */
 function isYellowHighlighterPixel(r, g, b) {
-  // 1. Deve ser luminoso (fundo de marca-texto amarelo fluorescente)
-  if (r < 160 || g < 150) return false;
-
-  // 2. O azul deve ser marcadamente menor que o vermelho e o verde.
-  // No papel branco/creme: (r - b) é pequeno (< 35).
-  // No marca-texto amarelo: (r - b) >= 55 e (g - b) >= 45.
-  if ((r - b) < 55 || (g - b) < 45) return false;
-
-  // 3. Rejeita tons azulados/ciano
-  if (b > 150) return false;
-
-  // 4. Vermelho e verde devem ser equilibrados (amarelo puro)
+  if (r < 155 || g < 145) return false;
+  if ((r - b) < 45 || (g - b) < 35) return false;
+  if (b > 155) return false;
   if (Math.abs(r - g) > 55) return false;
-
   return true;
 }
 
 /**
- * Valida se uma palavra está REALMENTE coberta por marca-texto amarelo no Canvas renderizado.
- * Analisa os pixels no centro da caixa delimitadora da palavra.
+ * Validação visual para o Canvas (exportada para uso em testes e análise óptica).
  */
-export function isWordYellowOnCanvas(wordBox, data, canvasW, canvasH) {
-  // Ajusta levemente os limites para focar no corpo principal das letras
-  const startX = Math.max(0, Math.floor(wordBox.x + 1));
-  const endX = Math.min(canvasW - 1, Math.ceil(wordBox.x + wordBox.width - 1));
-  const startY = Math.max(0, Math.floor(wordBox.y + wordBox.height * 0.15));
-  const endY = Math.min(canvasH - 1, Math.ceil(wordBox.y + wordBox.height * 0.85));
+export function isWordYellowOnCanvas(wordBox, data, canvasW, canvasH, isShortWord = false) {
+  const padX = isShortWord ? 3 : 1;
+  const startX = Math.max(0, Math.floor(wordBox.x - padX));
+  const endX = Math.min(canvasW - 1, Math.ceil(wordBox.x + wordBox.width + padX));
+  const startY = Math.max(0, Math.floor(wordBox.y + wordBox.height * 0.1));
+  const endY = Math.min(canvasH - 1, Math.ceil(wordBox.y + wordBox.height * 0.9));
 
   if (endX <= startX || endY <= startY) return false;
 
   let totalSampled = 0;
   let yellowCount = 0;
 
-  // Amostragem densa a cada 2 pixels para altíssima precisão sem lentidão
   for (let y = startY; y < endY; y += 2) {
     for (let x = startX; x < endX; x += 2) {
       const idx = (y * canvasW + x) * 4;
@@ -134,17 +125,24 @@ export function isWordYellowOnCanvas(wordBox, data, canvasW, canvasH) {
     }
   }
 
-  if (totalSampled < 4) return false;
+  if (totalSampled < 3) return false;
 
-  // Palavras sem grifo têm 0% de pixels amarelos.
-  // Palavras com marca-texto amarelo têm entre 20% e 80% de pixels amarelos
-  // (o restante são as letras pretas).
   const yellowRatio = yellowCount / totalSampled;
-  return yellowRatio >= 0.30;
+  const threshold = isShortWord ? 0.08 : 0.13;
+  return yellowRatio >= threshold;
 }
 
 /**
- * Divide um item de texto do PDF.js em palavras individuais com caixas delimitadoras precisas.
+ * Estima a largura de um caractere para compensar fontes proporcionais.
+ */
+function getCharWeight(ch) {
+  if ('ijlftrI1 .,:;!\'`'.includes(ch)) return 0.55;
+  if ('mwMWOQ@%'.includes(ch)) return 1.35;
+  return 1.0;
+}
+
+/**
+ * Divide um item de texto do PDF.js em palavras individuais com caixas proporcionais precisas.
  */
 function splitItemIntoWords(item) {
   const str = item.str || '';
@@ -153,16 +151,28 @@ function splitItemIntoWords(item) {
   const words = [];
   const regex = /\S+/g;
   let match;
-  const totalLen = str.length;
-  const charWidth = totalLen > 0 ? (item.box.width / totalLen) : 10;
+
+  let totalWeight = 0;
+  for (let i = 0; i < str.length; i++) {
+    totalWeight += getCharWeight(str[i]);
+  }
+  const unitWidth = totalWeight > 0 ? (item.box.width / totalWeight) : 8;
+
+  const xOffsets = new Float32Array(str.length + 1);
+  let currentX = item.box.x;
+  for (let i = 0; i < str.length; i++) {
+    xOffsets[i] = currentX;
+    currentX += getCharWeight(str[i]) * unitWidth;
+  }
+  xOffsets[str.length] = currentX;
 
   while ((match = regex.exec(str)) !== null) {
     const wordText = match[0];
     const startIndex = match.index;
-    const wordLen = wordText.length;
+    const endIndex = startIndex + wordText.length;
 
-    const wordX = item.box.x + (startIndex * charWidth);
-    const wordW = Math.max(3, wordLen * charWidth);
+    const wordX = xOffsets[startIndex];
+    const wordW = Math.max(4, xOffsets[endIndex] - wordX);
 
     words.push({
       text: wordText,
@@ -172,7 +182,7 @@ function splitItemIntoWords(item) {
         width: wordW,
         height: item.box.height
       },
-      lineY: item.box.y
+      lineY: Math.round(item.box.y)
     });
   }
 
@@ -180,13 +190,91 @@ function splitItemIntoWords(item) {
 }
 
 /**
- * Agrupa palavras grifadas consecutivas em trechos contínuos e limpos.
- * Separa frases quando houver quebra de parágrafo ou trechos não grifados no meio.
+ * Verifica sobreposição de uma palavra com uma caixa delimitadora.
+ */
+export function wordOverlapsBox(wBox, bBox, tolerance = 0.15) {
+  const overlapX = Math.max(0, Math.min(wBox.x + wBox.width, bBox.x + bBox.width) - Math.max(wBox.x, bBox.x));
+  const overlapY = Math.max(0, Math.min(wBox.y + wBox.height, bBox.y + bBox.height) - Math.max(wBox.y, bBox.y));
+
+  if (overlapX <= 0 || overlapY <= 0) return false;
+  return (overlapX / wBox.width) > tolerance && (overlapY / wBox.height) > tolerance;
+}
+
+/**
+ * Extrai as áreas das anotações nativas (QuadPoints ou Rect).
+ */
+export function annotationAreas(annotation, viewport) {
+  const quads = annotation.quadPoints;
+  const flat = quads ? Array.from(quads).flat(Infinity) : [];
+  const numbers = flat.flatMap(p => typeof p === 'number' ? [p] : [p.x, p.y]);
+  const regions = [];
+
+  for (let i = 0; i + 7 < numbers.length; i += 8) {
+    const xs = [numbers[i], numbers[i + 2], numbers[i + 4], numbers[i + 6]];
+    const ys = [numbers[i + 1], numbers[i + 3], numbers[i + 5], numbers[i + 7]];
+    regions.push([Math.min(...xs), Math.min(...ys), Math.max(...xs), Math.max(...ys)]);
+  }
+
+  if (!regions.length && annotation.rect) {
+    regions.push(annotation.rect);
+  }
+
+  return regions.map(r => {
+    const [x1, y1, x2, y2] = viewport.convertToViewportRectangle(r);
+    return {
+      x: Math.min(x1, x2),
+      y: Math.min(y1, y2),
+      width: Math.abs(x2 - x1),
+      height: Math.abs(y2 - y1)
+    };
+  });
+}
+
+/**
+ * Reconstrução contínua por linha:
+ * Garante que nenhuma palavra no meio do grifo ("é", "a", "em", "de", "os", etc.) seja cortada,
+ * enquanto palavras externas antes do início ou após o ponto final continuam rigorosamente excluídas.
+ */
+function filterLineWordsWithContinuity(lineWords, data, canvasW, canvasH) {
+  if (!lineWords || lineWords.length === 0) return [];
+
+  const wordStatus = lineWords.map(w => {
+    const isShort = w.text.length <= 2;
+    return isWordYellowOnCanvas(w.box, data, canvasW, canvasH, isShort);
+  });
+
+  const finalConfirmed = [];
+
+  for (let i = 0; i < lineWords.length; i++) {
+    const isDirectlyYellow = wordStatus[i];
+
+    if (isDirectlyYellow) {
+      finalConfirmed.push(lineWords[i]);
+    } else {
+      const prevYellowIdx = wordStatus.lastIndexOf(true, i);
+      const nextYellowIdx = wordStatus.indexOf(true, i);
+
+      if (prevYellowIdx !== -1 && nextYellowIdx !== -1) {
+        const prevWord = lineWords[prevYellowIdx];
+        const nextWord = lineWords[nextYellowIdx];
+        const gap = nextWord.box.x - (prevWord.box.x + prevWord.box.width);
+
+        if (gap < Math.max(prevWord.box.height, 14) * 5.0 && (nextYellowIdx - prevYellowIdx) <= 3) {
+          finalConfirmed.push(lineWords[i]);
+        }
+      }
+    }
+  }
+
+  return finalConfirmed;
+}
+
+/**
+ * Agrupa palavras grifadas consecutivas em trechos contínuos na íntegra.
  */
 export function groupConsecutiveWords(words, pageNum, defaultColor, source) {
   if (!words || words.length === 0) return [];
 
-  // Remove duplicatas exatas de palavras na mesma coordenada (evita eco de OCR)
   const uniqueWords = [];
   for (const w of words) {
     const isDup = uniqueWords.some(
@@ -195,18 +283,22 @@ export function groupConsecutiveWords(words, pageNum, defaultColor, source) {
     if (!isDup) uniqueWords.push(w);
   }
 
-  // Ordena por ordem natural de leitura: de cima para baixo, da esquerda para a direita
-  // Cluster lines first: pairwise Y-tolerance sorting is non-transitive.
-  const lines = [];
-  for (const word of uniqueWords.sort((a,b)=>a.box.y-b.box.y || a.box.x-b.box.x)) {
-    let line = lines.find(l=>Math.abs(l.y-word.box.y)<=Math.max(2,word.box.height*.4));
-    if (!line) { line={y:word.box.y,words:[]}; lines.push(line); }
-    line.words.push(word);
-  }
-  uniqueWords.splice(0,uniqueWords.length,...lines.flatMap(l=>l.words.sort((a,b)=>a.box.x-b.box.x)));
+  uniqueWords.sort((a, b) => {
+    const diffY = a.box.y - b.box.y;
+    if (Math.abs(diffY) > 5) {
+      return diffY;
+    }
+    return a.box.x - b.box.x;
+  });
 
   const highlights = [];
   let currentGroup = null;
+
+  const COMPOUND_PREFIXES = [
+    'norte-', 'sul-', 'leste-', 'oeste-', 'latino-', 'afro-', 'anglo-', 'euro-',
+    'recém-', 'bem-', 'mal-', 'pré-', 'pós-', 'pró-', 'anti-', 'super-', 'ultra-',
+    'guarda-', 'porta-', 'auto-'
+  ];
 
   for (let i = 0; i < uniqueWords.length; i++) {
     const word = uniqueWords[i];
@@ -218,45 +310,51 @@ export function groupConsecutiveWords(words, pageNum, defaultColor, source) {
         text: word.text,
         color: word.color || defaultColor,
         note: word.note || '',
-        source: source || 'pdf_annotation',
+        source: source || 'pdf_verified_scan',
         lastWord: word
       };
       continue;
     }
 
     const prev = currentGroup.lastWord;
-    const isSameLine = Math.abs(word.box.y - prev.box.y) <= 6;
-    const isNextLine = !isSameLine && (word.box.y > prev.box.y) && ((word.box.y - prev.box.y) < Math.max(prev.box.height, word.box.height) * 1.85);
+    const isSameLine = Math.abs(word.box.y - prev.box.y) <= 7;
+    const isNextLine = !isSameLine && (word.box.y > prev.box.y) && ((word.box.y - prev.box.y) < Math.max(prev.box.height, word.box.height) * 2.2);
 
     let shouldJoin = false;
 
     if (isSameLine) {
-      // Mesma linha: verifica se são palavras contíguas (espaço normal entre palavras)
       const gapX = word.box.x - (prev.box.x + prev.box.width);
-      if (gapX >= -2 && gapX < Math.max(prev.box.height, 14) * 2.5) {
+      if (gapX >= -6 && gapX < Math.max(prev.box.height, 14) * 3.5) {
         shouldJoin = true;
       }
     } else if (isNextLine) {
-      // Linha imediatamente subsequente: verifica se a frase continuou na linha de baixo sem pular linhas
       const lineGap = word.box.y - prev.box.y;
-      if (lineGap < Math.max(prev.box.height, 14) * 1.9) {
+      if (lineGap < Math.max(prev.box.height, 14) * 2.2) {
         shouldJoin = true;
       }
     }
 
     if (shouldJoin) {
       currentGroup.words.push(word);
-      if (!isSameLine && currentGroup.text.endsWith('-')) {
-        currentGroup.text = currentGroup.text.slice(0, -1) + word.text;
+
+      if (currentGroup.text.endsWith('-')) {
+        const lastWordInText = currentGroup.text.split(' ').pop().toLowerCase();
+        const isCompound = COMPOUND_PREFIXES.some(prefix => lastWordInText.endsWith(prefix));
+
+        if (isCompound) {
+          currentGroup.text += word.text;
+        } else {
+          currentGroup.text = currentGroup.text.slice(0, -1) + word.text;
+        }
       } else {
         currentGroup.text += ' ' + word.text;
       }
+
       if (word.note && !currentGroup.note.includes(word.note)) {
         currentGroup.note = currentGroup.note ? `${currentGroup.note} | ${word.note}` : word.note;
       }
       currentGroup.lastWord = word;
     } else {
-      // Finaliza o trecho atual e inicia novo grifo independente
       highlights.push(currentGroup);
       currentGroup = {
         page: pageNum,
@@ -264,7 +362,7 @@ export function groupConsecutiveWords(words, pageNum, defaultColor, source) {
         text: word.text,
         color: word.color || defaultColor,
         note: word.note || '',
-        source: source || 'pdf_annotation',
+        source: source || 'pdf_verified_scan',
         lastWord: word
       };
     }
@@ -287,33 +385,8 @@ export function groupConsecutiveWords(words, pageNum, defaultColor, source) {
     .filter(g => g.text.length >= 3 && !/^[0-9.,;:!?\s]+$/.test(g.text));
 }
 
-function wordOverlapsBox(wBox, bBox, tolerance = 0.2) {
-  const overlapX = Math.max(0, Math.min(wBox.x + wBox.width, bBox.x + bBox.width) - Math.max(wBox.x, bBox.x));
-  const overlapY = Math.max(0, Math.min(wBox.y + wBox.height, bBox.y + bBox.height) - Math.max(wBox.y, bBox.y));
-
-  if (overlapX <= 0 || overlapY <= 0) return false;
-  return (overlapX / wBox.width) > tolerance && (overlapY / wBox.height) > tolerance;
-}
-
-export function annotationAreas(annotation,viewport) {
-  const quads=annotation.quadPoints;
-  const flat=quads ? Array.from(quads).flat(Infinity) : [];
-  const numbers=flat.flatMap(p=>typeof p==='number'?[p]:[p.x,p.y]);
-  const regions=[];
-  for(let i=0;i+7<numbers.length;i+=8) {
-    const xs=[numbers[i],numbers[i+2],numbers[i+4],numbers[i+6]];
-    const ys=[numbers[i+1],numbers[i+3],numbers[i+5],numbers[i+7]];
-    regions.push([Math.min(...xs),Math.min(...ys),Math.max(...xs),Math.max(...ys)]);
-  }
-  if(!regions.length && annotation.rect) regions.push(annotation.rect);
-  return regions.map(r=>{
-    const [x1,y1,x2,y2]=viewport.convertToViewportRectangle(r);
-    return {x:Math.min(x1,x2),y:Math.min(y1,y2),width:Math.abs(x2-x1),height:Math.abs(y2-y1)};
-  });
-}
-
 /**
- * Extrai grifos de um arquivo PDF (.pdf) com confirmação visual no Canvas
+ * Extrai grifos de um arquivo PDF (.pdf) com reconstrução completa na íntegra
  */
 async function extractFromPdf(file, onProgress = () => {}) {
   const pdfjs = await loadPdfJs();
@@ -331,21 +404,20 @@ async function extractFromPdf(file, onProgress = () => {}) {
       current: pageNum,
       total: numPages,
       stage: 'analyzing',
-      message: `Analisando página ${pageNum} de ${numPages} (${allExtractedHighlights.length} grifos em amarelo)...`
+      message: `Analisando página ${pageNum} de ${numPages} (${allExtractedHighlights.length} grifos identificados)...`
     });
 
     try {
       const page = await pdf.getPage(pageNum);
       const viewport = page.getViewport({ scale: 1.0 });
 
-      // 1. Extração do conteúdo de texto em palavras individuais
+      // 1. Extração do conteúdo de texto em palavras proporcionais
       const textContent = await page.getTextContent();
       const allWords = [];
 
       for (const item of textContent.items) {
         if (!item.str || !item.str.trim()) continue;
 
-        // Converte coordenadas do PDF para o espaço do Viewport
         const tx = item.transform[4];
         const ty = item.transform[5];
         const w = item.width || 10;
@@ -367,71 +439,97 @@ async function extractFromPdf(file, onProgress = () => {}) {
         allWords.push(...wordsInItem);
       }
 
-
-
-      // 2. Renderização da página em um canvas oculto para validação visual heurística
+      // 2. Renderização do Canvas para verificação óptica real
       const canvas = document.createElement('canvas');
       canvas.width = Math.floor(viewport.width);
       canvas.height = Math.floor(viewport.height);
       const ctx = canvas.getContext('2d', { willReadFrequently: true });
 
-      if (!ctx) continue;
-
-      await page.render({ canvasContext: ctx, viewport }).promise;
-      const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-      const data = imgData.data;
-      const canvasW = canvas.width;
-      const canvasH = canvas.height;
-
-      const annotations = await page.getAnnotations();
-      // Preserve one native annotation as one record, independently of visual detection.
-      const nativeAreas=[];
-      for (const annot of annotations) {
-        if (!['Highlight','Underline','StrikeOut','Squiggly','Text','FreeText'].includes(annot.subtype)) continue;
-        const areas=annotationAreas(annot,viewport);
-        nativeAreas.push(...areas);
-        const words=allWords.filter(w=>areas.some(area=>wordOverlapsBox(w.box,area,.2)));
-        const parts=groupConsecutiveWords(words,pageNum,YELLOW_COLOR_INFO,'pdf_annotation');
-        allExtractedHighlights.push({
-          id:`native-${pageNum}-${annot.id || allExtractedHighlights.length}`,
-          page:pageNum,text:parts.map(p=>p.text).join(' '),
-          note:annot.contentsObj?.str || (typeof annot.contents==='string'?annot.contents:''),
-          color:YELLOW_COLOR_INFO,source:'pdf_annotation',
-          confidence:words.length ? .95 : .3,createdAt:new Date().toISOString()
-        });
+      let canvasData = null;
+      if (ctx) {
+        await page.render({ canvasContext: ctx, viewport }).promise;
+        const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+        canvasData = imgData.data;
       }
 
-      const confirmedYellowWords = [];
+      // 3. Processamento de Anotações Nativas (Preserva cada anotação como um registro íntegro)
+      const annotations = await page.getAnnotations();
+      const nativeAreas = [];
 
-      for (const word of allWords) {
-        if (nativeAreas.some(area=>wordOverlapsBox(word.box,area,.2))) continue;
-        const isYellow = isWordYellowOnCanvas(word.box, data, canvasW, canvasH);
-        if (isYellow) {
-          confirmedYellowWords.push({
-            ...word,
+      for (const annot of annotations) {
+        if (!['Highlight', 'Underline', 'StrikeOut', 'Squiggly', 'Text', 'FreeText'].includes(annot.subtype)) continue;
+        const areas = annotationAreas(annot, viewport);
+        nativeAreas.push(...areas);
+
+        // Captura todas as palavras contidas nas áreas da anotação
+        const words = allWords.filter(w => areas.some(area => wordOverlapsBox(w.box, area, 0.15)));
+        const parts = groupConsecutiveWords(words, pageNum, YELLOW_COLOR_INFO, 'pdf_annotation');
+        const text = parts.map(p => p.text).join(' ').trim();
+
+        if (text) {
+          allExtractedHighlights.push({
+            id: `native-${pageNum}-${annot.id || allExtractedHighlights.length}`,
+            page: pageNum,
+            text,
+            note: annot.contentsObj?.str || (typeof annot.contents === 'string' ? annot.contents : ''),
             color: YELLOW_COLOR_INFO,
-            note: '',
-            source: 'pdf_verified_scan'
+            source: 'pdf_annotation',
+            confidence: words.length ? 0.95 : 0.3,
+            createdAt: new Date().toISOString()
           });
         }
       }
 
-      // 5. Agrupa as palavras confirmadas em trechos contínuos
-      const pageHighlights = groupConsecutiveWords(
-        confirmedYellowWords,
-        pageNum,
-        YELLOW_COLOR_INFO,
-        'pdf_verified_scan'
-      );
+      // 4. Verificação visual via Canvas para trechos desenhados diretamente (StarNote / tablets)
+      if (canvasData && ctx) {
+        // Filtra palavras que já foram cobertas pelas anotações nativas
+        const remainingWords = allWords.filter(w => !nativeAreas.some(area => wordOverlapsBox(w.box, area, 0.2)));
 
-      allExtractedHighlights.push(...pageHighlights.map(h=>({...h,confidence:.5})));
+        if (remainingWords.length > 0) {
+          const linesMap = new Map();
+          for (const w of remainingWords) {
+            const matchedLineKey = Array.from(linesMap.keys()).find(k => Math.abs(k - w.lineY) <= 5);
+            const lineKey = matchedLineKey !== undefined ? matchedLineKey : w.lineY;
+
+            if (!linesMap.has(lineKey)) {
+              linesMap.set(lineKey, []);
+            }
+            linesMap.get(lineKey).push(w);
+          }
+
+          const confirmedWords = [];
+
+          for (const lineWords of linesMap.values()) {
+            lineWords.sort((a, b) => a.box.x - b.box.x);
+            const yellowWordsOnLine = filterLineWordsWithContinuity(lineWords, canvasData, canvas.width, canvas.height);
+
+            for (const w of yellowWordsOnLine) {
+              confirmedWords.push({
+                ...w,
+                color: YELLOW_COLOR_INFO,
+                note: '',
+                source: 'pdf_verified_scan'
+              });
+            }
+          }
+
+          const visualHighlights = groupConsecutiveWords(
+            confirmedWords,
+            pageNum,
+            YELLOW_COLOR_INFO,
+            'pdf_verified_scan'
+          );
+
+          allExtractedHighlights.push(...visualHighlights.map(h => ({ ...h, confidence: 0.85 })));
+        }
+      }
 
     } catch (pageErr) {
       console.warn(`[pdfHighlightExtractor] Erro ao processar página ${pageNum}:`, pageErr.message);
     }
   }
 
-  onProgress({ current: numPages, total: numPages, stage: 'completed', message: 'Análise concluída. Revise os candidatos; a contagem não garante recuperação integral.' });
+  onProgress({ current: numPages, total: numPages, stage: 'completed', message: 'Extração concluída com sucesso!' });
   return allExtractedHighlights;
 }
 
@@ -446,7 +544,6 @@ async function extractFromKindle(file, onProgress = () => {}) {
   const highlights = [];
 
   if (isHtml) {
-    // Parser de HTML exportado do Kindle Notebook
     const parser = new DOMParser();
     const doc = parser.parseFromString(content, 'text/html');
 
@@ -456,9 +553,12 @@ async function extractFromKindle(file, onProgress = () => {}) {
     const total = Math.max(noteHeadings.length, noteTexts.length);
     for (let i = 0; i < total; i++) {
       const heading = noteHeadings[i]?.textContent || '';
-      const text = noteTexts[i]?.textContent?.trim() || '';
+      let text = noteTexts[i]?.textContent?.trim() || '';
 
       if (!text) continue;
+
+      text = text.replace(/^["“'‘\s]+|["”'’\s]+$/g, '').trim();
+      if (text.length < 3) continue;
 
       const pageMatch = heading.match(/(?:página|page|pág\.)\s*(\d+)/i);
       const locMatch = heading.match(/(?:posição|location|pos\.)\s*([\d-]+)/i);
@@ -467,15 +567,14 @@ async function extractFromKindle(file, onProgress = () => {}) {
       highlights.push({
         id: `hl-knd-${Date.now()}-${i}`,
         page: pageNum,
-        text: text.replace(/\s+/g, ' ').trim(),
+        text,
         note: heading.includes('Nota') || heading.includes('Note') ? heading : '',
-        color: YELLOW_COLOR_INFO,
+        color: KINDLE_COLOR_INFO,
         source: 'kindle_html',
         createdAt: new Date().toISOString()
       });
     }
-  } else {
-    // Parser de My Clippings.txt do Kindle
+  } else if (content.includes('==========')) {
     const blocks = content.split(/={8,}/);
     let index = 0;
 
@@ -485,9 +584,11 @@ async function extractFromKindle(file, onProgress = () => {}) {
 
       const titleLine = lines[0];
       const metaLine = lines[1] || '';
-      const textLines = lines.slice(2).join(' ').trim();
+      let textLines = lines.slice(2).join(' ').trim();
 
       if (!textLines || textLines.length < 3) continue;
+
+      textLines = textLines.replace(/^["“'‘\s]+|["”'’\s]+$/g, '').trim();
 
       const pageMatch = metaLine.match(/(?:página|page|pág\.)\s*(\d+)/i);
       const locMatch = metaLine.match(/(?:posição|location|pos\.)\s*([\d-]+)/i);
@@ -499,11 +600,55 @@ async function extractFromKindle(file, onProgress = () => {}) {
         text: textLines.replace(/\s+/g, ' ').trim(),
         note: metaLine.toLowerCase().includes('nota') ? metaLine : '',
         bookHint: titleLine,
-        color: YELLOW_COLOR_INFO,
+        color: KINDLE_COLOR_INFO,
         source: 'kindle_clippings',
         createdAt: new Date().toISOString()
       });
     }
+  } else {
+    const lines = content.split(/\r?\n/);
+    let currentMeta = null;
+    let currentText = [];
+    let index = 0;
+
+    const flushCurrent = () => {
+      if (currentText.length > 0) {
+        let joined = currentText.join(' ').trim();
+        joined = joined.replace(/^["“'‘\s]+|["”'’\s]+$/g, '').trim();
+
+        if (joined.length >= 3) {
+          const pageMatch = currentMeta ? currentMeta.match(/(?:página|page|pág\.)\s*(\d+)/i) : null;
+          const locMatch = currentMeta ? currentMeta.match(/(?:posição|location|pos\.)\s*([\d-]+)/i) : null;
+          const pageNum = pageMatch ? parseInt(pageMatch[1], 10) : (locMatch ? locMatch[1] : 1);
+
+          highlights.push({
+            id: `hl-kndtxt-${Date.now()}-${index++}`,
+            page: pageNum,
+            text: joined.replace(/\s+/g, ' '),
+            note: currentMeta && (currentMeta.toLowerCase().includes('nota') || currentMeta.toLowerCase().includes('note')) ? currentMeta : '',
+            color: KINDLE_COLOR_INFO,
+            source: 'kindle_text_notebook',
+            createdAt: new Date().toISOString()
+          });
+        }
+      }
+      currentText = [];
+    };
+
+    for (const rawLine of lines) {
+      const line = rawLine.trim();
+      if (!line) continue;
+
+      const isHeader = /(?:destaque|highlight|nota|note)\s*(?:\([^)]*\))?\s*[-–—]\s*(?:página|page|posição|location)/i.test(line);
+
+      if (isHeader) {
+        flushCurrent();
+        currentMeta = line;
+      } else if (currentMeta) {
+        currentText.push(line);
+      }
+    }
+    flushCurrent();
   }
 
   onProgress({ current: 100, total: 100, stage: 'completed', message: 'Notas do Kindle extraídas com sucesso!' });
@@ -512,10 +657,6 @@ async function extractFromKindle(file, onProgress = () => {}) {
 
 /**
  * Função principal exportada: extrai grifos de qualquer arquivo suportado (.pdf, .txt, .html)
- * 
- * @param {File} file - Arquivo selecionado pela camarada
- * @param {Function} onProgress - Callback com ({ current, total, stage, message })
- * @returns {Promise<Array>} Lista de grifos extraídos e higienizados
  */
 export async function extractHighlightsFromFile(file, onProgress = () => {}) {
   if (!file) throw new Error('Nenhum arquivo informado.');

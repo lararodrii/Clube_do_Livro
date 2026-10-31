@@ -269,12 +269,12 @@ export default function ReviewHighlightsModal({
                             </button>
                           </div>
 
-                          {/* Trecho Grifado Editável */}
+                          {/* Trecho Grifado Editável (Exibição Completa na Íntegra) */}
                           <textarea
-                            rows={2}
+                            rows={Math.max(2, Math.min(7, Math.ceil((item.text || '').length / 60)))}
                             value={item.text}
                             onChange={(e) => handleTextChange(item.id, e.target.value)}
-                            className="w-full text-xs sm:text-sm font-reading italic leading-relaxed p-2.5 rounded-lg border-2 border-theme-border/60 bg-theme-input text-theme-primary focus:outline-none focus:border-theme-red shadow-inner"
+                            className="w-full text-xs sm:text-sm font-reading italic leading-relaxed p-2.5 rounded-lg border-2 border-theme-border/60 bg-theme-input text-theme-primary focus:outline-none focus:border-theme-red shadow-inner whitespace-pre-wrap break-words resize-y"
                           />
 
                           {/* Campo de Nota Pessoal / Observação Crítica */}
