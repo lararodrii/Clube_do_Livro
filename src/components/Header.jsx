@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useClub } from '../context/ClubContext';
 import { useTheme } from '../context/ThemeContext';
 import EditProfileModal from './Members/EditProfileModal';
+import NotificationsModal from './common/NotificationsModal';
 import ComradeCat from './common/ComradeCat';
 import { 
   BookOpen, 
@@ -14,17 +15,21 @@ import {
   X,
   Check,
   Pencil,
-  HelpCircle
+  HelpCircle,
+  Bell
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
 export default function Header({ activeTab, setActiveTab, onOpenTour }) {
-  const { activeMember, ballot, showToast } = useClub();
+  const { activeMember, ballot, showToast, notifications = [] } = useClub();
   const { currentUser, isAuthenticated, logout, openAuthModal } = useAuth();
   const { theme, setTheme, themes, currentThemeInfo } = useTheme();
 
   const [isEditProfileOpen, setIsEditProfileOpen] = useState(false);
+  const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const [showThemeSelector, setShowThemeSelector] = useState(false);
+
+  const unreadNotificationsCount = notifications.filter(n => !(n.readBy || []).includes(activeMember?.id)).length;
 
   const handleLogoutClick = async () => {
     await logout();
@@ -108,6 +113,21 @@ export default function Header({ activeTab, setActiveTab, onOpenTour }) {
                 <HelpCircle className="w-3 h-3 sm:w-4 sm:h-4 text-theme-red" />
               </button>
             )}
+
+            {/* BOTÃO CENTRAL DE NOTIFICAÇÕES (SININHO) */}
+            <button
+              type="button"
+              onClick={() => setIsNotificationsOpen(true)}
+              title={`Central de Alertas e Atividades (${unreadNotificationsCount} novas)`}
+              className="relative flex items-center justify-center w-6 h-6 sm:w-8 sm:h-8 rounded-xl text-[10px] sm:text-xs font-mono font-black text-theme-primary bg-theme-card hover:bg-theme-container border-2 border-theme-border shadow-[2px_2px_0px_var(--shadow-color)] transition-transform hover:-translate-x-0.5 hover:-translate-y-0.5 active:translate-x-0.5 active:translate-y-0.5 shrink-0 cursor-pointer"
+            >
+              <Bell className="w-3 h-3 sm:w-4 sm:h-4 text-theme-red" />
+              {unreadNotificationsCount > 0 && (
+                <span className="absolute -top-1.5 -right-1.5 min-w-[14px] h-[14px] sm:min-w-[17px] sm:h-[17px] px-0.5 rounded-full bg-theme-red text-white text-[7.5px] sm:text-[9px] font-mono font-black flex items-center justify-center border border-theme-border shadow-xs animate-bounce">
+                  {unreadNotificationsCount > 9 ? '9+' : unreadNotificationsCount}
+                </span>
+              )}
+            </button>
           </div>
 
           {/* GRUPO DIREITA: PERFIL ATIVO + BOTÃO SAIR */}
@@ -270,6 +290,13 @@ export default function Header({ activeTab, setActiveTab, onOpenTour }) {
       <EditProfileModal
         isOpen={isEditProfileOpen}
         onClose={() => setIsEditProfileOpen(false)}
+      />
+
+      {/* Central de Notificações do Coletivo */}
+      <NotificationsModal
+        isOpen={isNotificationsOpen}
+        onClose={() => setIsNotificationsOpen(false)}
+        onNavigateTab={setActiveTab}
       />
 
     </header>

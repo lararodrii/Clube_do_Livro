@@ -14,13 +14,14 @@ import {
   Trash2,
   Pencil,
   ShieldAlert,
-  Lock
+  Lock,
+  Quote
 } from 'lucide-react';
 import ConfidentialSpoiler from '../common/ConfidentialSpoiler';
 import { formatTextWithBold } from '../../utils/textFormat';
 
 export default function BookDetailsModal({ book, isOpen, onClose }) {
-  const { activeMember, members, addOrUpdateReview, deleteReview } = useClub();
+  const { activeMember, members, quotes = [], addOrUpdateReview, deleteReview } = useClub();
   const { isAuthenticated, openAuthModal } = useAuth();
 
   if (!isOpen || !book) return null;
@@ -52,6 +53,17 @@ export default function BookDetailsModal({ book, isOpen, onClose }) {
   const avgRating = reviewsCount > 0
     ? (book.reviews.reduce((acc, r) => acc + r.rating, 0) / reviewsCount).toFixed(1)
     : '5.0';
+
+  // Citações vinculadas a esta obra
+  const savedBookQuotes = Array.isArray(book.quotes) ? book.quotes : [];
+  const activeBookQuotes = (quotes || []).filter(q => 
+    q.isBookSpecific !== false && (q.bookId === book.id || q.bookTitle === book.title)
+  );
+  const allBookQuotesMap = new Map();
+  [...savedBookQuotes, ...activeBookQuotes].forEach(q => {
+    if (q && q.id) allBookQuotesMap.set(q.id, q);
+  });
+  const bookQuotes = Array.from(allBookQuotesMap.values());
 
   const handleReviewSubmit = (e) => {
     e.preventDefault();
@@ -350,6 +362,94 @@ export default function BookDetailsModal({ book, isOpen, onClose }) {
                         </div>
                       </ConfidentialSpoiler>
                     </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+
+        {/* SEÇÃO DE CITAÇÕES E PASSAGENS DESTACADAS DA OBRA */}
+        <div className="mt-8 pt-6 border-t-2 border-theme-border">
+          <div className="flex items-center justify-between gap-2 mb-4">
+            <h4 className="font-headline text-lg font-black text-theme-primary flex items-center gap-2">
+              <Quote className="w-5 h-5 text-theme-red" />
+              <span>Passagens & Citações da Obra ({bookQuotes.length})</span>
+            </h4>
+            <span className="text-[10px] font-mono text-theme-muted font-bold">
+              ★ Acervo Coletivo
+            </span>
+          </div>
+
+          {bookQuotes.length === 0 ? (
+            <div className="p-4 rounded-xl bg-theme-card border-2 border-theme-border text-center">
+              <p className="text-xs font-reading italic text-theme-muted">
+                Nenhuma citação foi vinculada diretamente a este livro ainda. As citações marcadas no Mural durante a leitura são arquivadas aqui automaticamente!
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {bookQuotes.map((q) => {
+                const author = members.find(m => m.id === q.memberId) || {
+                  name: q.authorName || 'Camarada',
+                  avatar: q.authorAvatar || ''
+                };
+                const likerIds = q.likedBy || q.likes || [];
+                const likerMembers = likerIds.map(id => members.find(m => m.id === id)).filter(Boolean);
+
+                return (
+                  <div 
+                    key={q.id}
+                    className="p-3.5 sm:p-4 rounded-xl bg-theme-card border-2 border-theme-border shadow-[3px_3px_0px_var(--shadow-color)]"
+                  >
+                    <div className="flex items-center justify-between gap-2 mb-2">
+                      <div className="flex items-center gap-2">
+                        <img
+                          src={author.avatar || q.authorAvatar}
+                          alt={author.name}
+                          className="w-7 h-7 rounded-lg object-cover border border-theme-border"
+                        />
+                        <div>
+                          <span className="text-xs font-headline font-bold text-theme-primary block leading-tight">
+                            {author.name}
+                          </span>
+                          <span className="text-[9.5px] font-mono text-theme-muted">
+                            {q.date || 'Leitura Coletiva'}
+                          </span>
+                        </div>
+                      </div>
+
+                      {q.page && (
+                        <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded bg-theme-container text-theme-red border border-theme-border">
+                          {q.page}
+                        </span>
+                      )}
+                    </div>
+
+                    <ConfidentialSpoiler isSpoiler={q.isSpoiler}>
+                      <div className="text-xs sm:text-sm text-theme-secondary leading-relaxed font-reading italic pl-3 border-l-2 border-theme-red my-2 whitespace-pre-line">
+                        "{formatTextWithBold(q.text)}"
+                      </div>
+                    </ConfidentialSpoiler>
+
+                    {likerMembers.length > 0 && (
+                      <div className="flex items-center gap-1.5 pt-2 border-t border-theme-border/30 mt-2">
+                        <div className="flex items-center -space-x-1.5 shrink-0">
+                          {likerMembers.slice(0, 3).map((m, i) => (
+                            <img
+                              key={m.id || i}
+                              src={m.avatar}
+                              alt={m.name}
+                              title={m.name}
+                              className="w-4 h-4 rounded-full object-cover border border-theme-border"
+                            />
+                          ))}
+                        </div>
+                        <span className="text-[9.5px] font-mono text-theme-muted">
+                          Curtido por {likerMembers.map(m => m.name.split(' ')[0]).join(', ')}
+                        </span>
+                      </div>
+                    )}
                   </div>
                 );
               })}

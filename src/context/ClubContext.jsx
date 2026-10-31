@@ -8,7 +8,8 @@ import {
   INITIAL_MEETING,
   INITIAL_QUOTES,
   INITIAL_BALLOT,
-  INITIAL_ARCHIVE
+  INITIAL_ARCHIVE,
+  INITIAL_NOTIFICATIONS
 } from '../data/initialData';
 import { useAuth } from './AuthContext';
 import {
@@ -79,7 +80,8 @@ export function ClubProvider({ children }) {
     meeting: INITIAL_MEETING,
     quotes: INITIAL_QUOTES,
     ballot: INITIAL_BALLOT,
-    archive: INITIAL_ARCHIVE
+    archive: INITIAL_ARCHIVE,
+    notifications: INITIAL_NOTIFICATIONS
   });
 
   const authContext = useAuth();
@@ -149,7 +151,8 @@ export function ClubProvider({ children }) {
               meeting: cloud.meeting || prev.meeting || INITIAL_MEETING,
               ballot: cleanBallot,
               archive: cloud.archive || prev.archive || INITIAL_ARCHIVE,
-              quotes: cloud.quotes || prev.quotes || INITIAL_QUOTES
+              quotes: cloud.quotes || prev.quotes || INITIAL_QUOTES,
+              notifications: cloud.notifications || prev.notifications || INITIAL_NOTIFICATIONS
             }));
           } else {
             // Se o documento no Firestore ainda estiver vazio no primeiro acesso,
@@ -161,6 +164,7 @@ export function ClubProvider({ children }) {
               ballot: INITIAL_BALLOT,
               archive: INITIAL_ARCHIVE,
               quotes: INITIAL_QUOTES,
+              notifications: INITIAL_NOTIFICATIONS,
               createdAt: new Date().toISOString()
             };
             setDoc(docRef, defaultInitialPayload).catch(err => {
@@ -286,6 +290,8 @@ export function ClubProvider({ children }) {
       memberProgress: updatedProgress
     };
 
+    let updatedNotifications = data.notifications || [];
+
     if (!hasCompleted && newGoals.length === current.readingGoals?.length) {
       triggerComradeConfetti(90);
       showToast('Parabéns, camarada! Você concluiu todas as 4 semanas do livro! 📚👑🐾', 'pink');
@@ -293,11 +299,30 @@ export function ClubProvider({ children }) {
       showToast('Meta semanal concluída! Avanço revolucionário registrado! ★', 'success');
     }
 
+    if (!hasCompleted) {
+      const actorMember = data.members.find(m => m.id === memberId) || activeMember;
+      const targetGoal = current.readingGoals?.find(g => g.id === goalId);
+      const goalNotif = {
+        id: `notif-goal-${Date.now()}`,
+        type: 'goal_completed',
+        title: `${actorMember.name} bateu uma meta! 🎯`,
+        message: `${targetGoal ? targetGoal.week + ' (' + targetGoal.label + ')' : 'Meta semanal cumprida'} de "${current.title}"!`,
+        linkTab: 'current',
+        actorId: memberId,
+        actorName: actorMember.name,
+        actorAvatar: actorMember.avatar,
+        createdAt: new Date().toISOString(),
+        readBy: [memberId]
+      };
+      updatedNotifications = [goalNotif, ...updatedNotifications].slice(0, 40);
+    }
+
     setData(prev => ({
       ...prev,
-      currentReading: updatedReading
+      currentReading: updatedReading,
+      notifications: updatedNotifications
     }));
-    syncToCloud({ currentReading: updatedReading });
+    syncToCloud({ currentReading: updatedReading, notifications: updatedNotifications });
   };
 
   // === EDIÇÃO DO LIVRO ATUAL ===
@@ -403,7 +428,7 @@ export function ClubProvider({ children }) {
   };
 
   // === MURAL DE CITAÇÕES ===
-  const addQuote = ({ page, text, isSpoiler = false }) => {
+  const addQuote = ({ page, text, isSpoiler = false, isBookSpecific = true }) => {
     if (!currentUser || !isAuthenticated || !userProfile?.memberId) {
       openAuthModal('Faça login para pregar citações no Mural Revolucionário!', 'login');
       return;
@@ -418,7 +443,9 @@ export function ClubProvider({ children }) {
 
     const newQuote = {
       id: `q-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
-      bookTitle: data.currentReading?.title || 'Leitura Coletiva',
+      bookId: isBookSpecific ? (data.currentReading?.id || 'current') : null,
+      bookTitle: isBookSpecific ? (data.currentReading?.title || 'Leitura Coletiva') : null,
+      isBookSpecific: !!isBookSpecific,
       page: formattedPage,
       text: text.trim(),
       isSpoiler: !!isSpoiler,
@@ -434,17 +461,36 @@ export function ClubProvider({ children }) {
 
     const updatedQuotes = [newQuote, ...(data.quotes || [])];
 
+    // Cria notificação de nova publicação para os camaradas
+    const quoteNotification = {
+      id: `notif-quote-${Date.now()}`,
+      type: 'new_quote',
+      title: `${authorMember.name} pregou no Mural! ★`,
+      message: isBookSpecific 
+        ? `"${text.trim().substring(0, 50)}${text.length > 50 ? '...' : ''}" sobre ${data.currentReading?.title || 'o livro atual'}`
+        : `"${text.trim().substring(0, 50)}${text.length > 50 ? '...' : ''}" (Comentário Geral)`,
+      linkTab: 'current',
+      actorId: userProfile.memberId,
+      actorName: authorMember.name,
+      actorAvatar: authorMember.avatar,
+      createdAt: new Date().toISOString(),
+      readBy: [userProfile.memberId]
+    };
+
+    const updatedNotifications = [quoteNotification, ...(data.notifications || [])].slice(0, 40);
+
     setData(prev => ({
       ...prev,
-      quotes: updatedQuotes
+      quotes: updatedQuotes,
+      notifications: updatedNotifications
     }));
-    syncToCloud({ quotes: updatedQuotes });
+    syncToCloud({ quotes: updatedQuotes, notifications: updatedNotifications });
 
     triggerComradeConfetti(40);
-    showToast('Citação pregada no mural com sucesso! ★📝', 'success');
+    showToast(isBookSpecific ? 'Citação vinculada à leitura pregada no mural! ★📖' : 'Comentário geral pregado no mural! ★💬', 'success');
   };
 
-  const updateQuote = (quoteId, { text, page, isSpoiler }) => {
+  const updateQuote = (quoteId, { text, page, isSpoiler, isBookSpecific }) => {
     if (!currentUser || !isAuthenticated || !userProfile?.memberId) {
       openAuthModal('Faça login para editar sua citação!', 'login');
       return;
@@ -458,11 +504,15 @@ export function ClubProvider({ children }) {
 
     const updatedQuotes = (data.quotes || []).map(q => {
       if (q.id === quoteId) {
+        const nextIsBookSpecific = isBookSpecific !== undefined ? !!isBookSpecific : (q.isBookSpecific !== false);
         return {
           ...q,
           text: text.trim(),
           page: page ? (String(page).trim().startsWith('p.') ? String(page).trim() : `p. ${String(page).trim()}`) : null,
-          ...(isSpoiler !== undefined ? { isSpoiler: !!isSpoiler } : {})
+          ...(isSpoiler !== undefined ? { isSpoiler: !!isSpoiler } : {}),
+          isBookSpecific: nextIsBookSpecific,
+          bookId: nextIsBookSpecific ? (q.bookId || data.currentReading?.id || 'current') : null,
+          bookTitle: nextIsBookSpecific ? (q.bookTitle || data.currentReading?.title || 'Leitura Coletiva') : null
         };
       }
       return q;
@@ -522,20 +572,48 @@ export function ClubProvider({ children }) {
     }
 
     const likerId = userProfile.memberId;
+    const likerMember = data.members.find(m => m.id === likerId) || activeMember;
+    let targetQuoteAuthor = null;
+    let isNowLiked = false;
+    let quoteSnippet = '';
+
     const updatedQuotes = (data.quotes || []).map(q => {
       if (q.id === quoteId) {
         const currentLikes = q.likedBy || q.likes || [];
         const hasLiked = currentLikes.includes(likerId);
+        isNowLiked = !hasLiked;
         const newLikes = hasLiked
           ? currentLikes.filter(id => id !== likerId)
           : [...currentLikes, likerId];
+        targetQuoteAuthor = q.memberId;
+        quoteSnippet = q.text ? (q.text.substring(0, 45) + (q.text.length > 45 ? '...' : '')) : 'sua citação';
         return { ...q, likes: newLikes, likedBy: newLikes };
       }
       return q;
     });
 
-    setData(prev => ({ ...prev, quotes: updatedQuotes }));
-    syncToCloud({ quotes: updatedQuotes });
+    let updatedNotifications = data.notifications || [];
+
+    // Se curtiu e não é a própria citação, envia notificação de curtida:
+    if (isNowLiked && targetQuoteAuthor && targetQuoteAuthor !== likerId) {
+      const likeNotif = {
+        id: `notif-like-${Date.now()}`,
+        type: 'quote_like',
+        title: `${likerMember.name} curtiu seu comentário! ❤️`,
+        message: `"${quoteSnippet}"`,
+        linkTab: 'current',
+        actorId: likerId,
+        actorName: likerMember.name,
+        actorAvatar: likerMember.avatar,
+        targetMemberId: targetQuoteAuthor,
+        createdAt: new Date().toISOString(),
+        readBy: [likerId]
+      };
+      updatedNotifications = [likeNotif, ...updatedNotifications].slice(0, 40);
+    }
+
+    setData(prev => ({ ...prev, quotes: updatedQuotes, notifications: updatedNotifications }));
+    syncToCloud({ quotes: updatedQuotes, notifications: updatedNotifications });
   };
 
   // === URNA DE VOTAÇÃO ===
@@ -659,6 +737,21 @@ export function ClubProvider({ children }) {
     // Deduplica preventivamente ao montar a nova lista
     const { dedupedBooks } = deduplicateBallotBooks([...currentBooks, newBook]);
 
+    const nominatorMember = data.members.find(m => m.id === nominatorId) || activeMember;
+    const nominationNotif = {
+      id: `notif-nomination-${Date.now()}`,
+      type: 'ballot_nomination',
+      title: `${nominatorMember.name} indicou um livro! 🗳️`,
+      message: `"${newBook.title}" (${newBook.author}) está concorrendo na Urna Popular!`,
+      linkTab: 'ballot',
+      actorId: nominatorId,
+      actorName: nominatorMember.name,
+      actorAvatar: nominatorMember.avatar,
+      createdAt: new Date().toISOString(),
+      readBy: [nominatorId]
+    };
+    const updatedNotifications = [nominationNotif, ...(data.notifications || [])].slice(0, 40);
+
     const updatedBallot = {
       ...data.ballot,
       books: dedupedBooks
@@ -666,9 +759,10 @@ export function ClubProvider({ children }) {
 
     setData(prev => ({
       ...prev,
-      ballot: updatedBallot
+      ballot: updatedBallot,
+      notifications: updatedNotifications
     }));
-    syncToCloud({ ballot: updatedBallot });
+    syncToCloud({ ballot: updatedBallot, notifications: updatedNotifications });
 
     triggerComradeConfetti(65);
     showToast(`"${newBook.title}" foi adicionado à urna popular! 📚★`, 'pink');
@@ -779,8 +873,12 @@ export function ClubProvider({ children }) {
     const nextMonthName = nextMeetingDate.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
     const formattedMonth = nextMonthName.charAt(0).toUpperCase() + nextMonthName.slice(1);
 
-    // Salvar o livro anterior no acervo histórico preservando suas resenhas
+    // Salvar o livro anterior no acervo histórico preservando suas resenhas e citações associadas
     const oldBook = data.currentReading;
+    const oldBookQuotes = (data.quotes || []).filter(q => 
+      q.isBookSpecific !== false && (q.bookId === oldBook.id || q.bookTitle === oldBook.title)
+    );
+
     const archivedOldBook = {
       id: `arch-${Date.now()}`,
       title: oldBook.title,
@@ -791,7 +889,8 @@ export function ClubProvider({ children }) {
       year: new Date().getFullYear().toString(),
       coverUrl: oldBook.coverUrl,
       synopsis: oldBook.synopsis,
-      reviews: oldBook.reviews || []
+      reviews: oldBook.reviews || [],
+      quotes: oldBookQuotes
     };
 
     const newCurrentReading = {
@@ -817,6 +916,9 @@ export function ClubProvider({ children }) {
       votes: []
     }));
 
+    // Citações gerais permanecem no mural, apenas as citações específicas da obra anterior foram para o acervo
+    const remainingQuotes = (data.quotes || []).filter(q => q.isBookSpecific === false);
+
     const updatedArchive = [archivedOldBook, ...(data.archive || [])];
     const updatedMeeting = {
       ...data.meeting,
@@ -836,7 +938,7 @@ export function ClubProvider({ children }) {
       currentReading: newCurrentReading,
       archive: updatedArchive,
       meeting: updatedMeeting,
-      quotes: [],
+      quotes: remainingQuotes,
       ballot: updatedBallot
     }));
 
@@ -844,7 +946,7 @@ export function ClubProvider({ children }) {
       currentReading: newCurrentReading,
       archive: updatedArchive,
       meeting: updatedMeeting,
-      quotes: [],
+      quotes: remainingQuotes,
       ballot: updatedBallot
     });
 
@@ -882,6 +984,11 @@ export function ClubProvider({ children }) {
         })
       : new Date().toLocaleDateString('pt-BR');
 
+    // Citações associadas a este livro são anexadas ao acervo
+    const bookQuotes = (data.quotes || []).filter(q => 
+      q.isBookSpecific !== false && (q.bookId === current.id || q.bookTitle === current.title)
+    );
+
     const archivedBook = {
       id: `archived-${current.id || Date.now()}`,
       title: current.title,
@@ -894,6 +1001,7 @@ export function ClubProvider({ children }) {
       status: 'Concluído',
       synopsis: current.synopsis,
       reviews: reviews,
+      quotes: bookQuotes,
       averageRating: avgRating,
       archivedAt: new Date().toISOString()
     };
@@ -917,10 +1025,54 @@ export function ClubProvider({ children }) {
 
     if (manual) {
       triggerComradeConfetti(90);
-      showToast(`"${current.title}" arquivado no Acervo Coletivo com status Concluído! 📚★`, 'pink');
+      showToast(`"${current.title}" arquivado no Acervo Coletivo com suas citações salvas! 📚★`, 'pink');
     } else {
-      showToast(`Prazo encerrado! "${current.title}" arquivado automaticamente no Acervo! 🏛️★`, 'pink');
+      showToast(`Prazo encerrado! "${current.title}" arquivado automaticamente no Acervo com suas citações! 🏛️★`, 'pink');
     }
+  };
+
+  // === GERENCIAMENTO DE NOTIFICAÇÕES DO COLETIVO ===
+  const addNotification = (notifPayload) => {
+    const newNotif = {
+      id: `notif-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+      createdAt: new Date().toISOString(),
+      readBy: [],
+      ...notifPayload
+    };
+    const updatedNotifications = [newNotif, ...(data.notifications || [])].slice(0, 40);
+    setData(prev => ({ ...prev, notifications: updatedNotifications }));
+    syncToCloud({ notifications: updatedNotifications });
+  };
+
+  const markNotificationAsRead = (notifId) => {
+    const memberId = userProfile?.memberId || activeMemberId;
+    const updatedNotifications = (data.notifications || []).map(n => {
+      if (n.id === notifId) {
+        const readBy = n.readBy || [];
+        if (!readBy.includes(memberId)) {
+          return { ...n, readBy: [...readBy, memberId] };
+        }
+      }
+      return n;
+    });
+
+    setData(prev => ({ ...prev, notifications: updatedNotifications }));
+    syncToCloud({ notifications: updatedNotifications });
+  };
+
+  const markAllNotificationsAsRead = () => {
+    const memberId = userProfile?.memberId || activeMemberId;
+    const updatedNotifications = (data.notifications || []).map(n => {
+      const readBy = n.readBy || [];
+      if (!readBy.includes(memberId)) {
+        return { ...n, readBy: [...readBy, memberId] };
+      }
+      return n;
+    });
+
+    setData(prev => ({ ...prev, notifications: updatedNotifications }));
+    syncToCloud({ notifications: updatedNotifications });
+    showToast('Todas as notificações foram marcadas como lidas! ★', 'info');
   };
 
   // Verificação de prazo da assembleia para arquivamento automático
@@ -1114,6 +1266,11 @@ export function ClubProvider({ children }) {
         archive: data.archive || [],
         addOrUpdateReview,
         deleteReview,
+        notifications: data.notifications || [],
+        addNotification,
+        markNotificationAsRead,
+        markAllNotificationsAsRead,
+        triggerComradeConfetti,
         stats,
         resetToDefaults,
         toast,

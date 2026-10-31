@@ -138,3 +138,17 @@ export const INITIAL_BALLOT = {
 // Acervo Histórico Inicial Limpo
 export const INITIAL_ARCHIVE = [];
 
+// Notificações Iniciais do Coletivo
+export const INITIAL_NOTIFICATIONS = [
+  {
+    id: 'notif-welcome-1',
+    type: 'welcome',
+    title: 'Comitê em Sessão Plenária! ★',
+    message: 'Bem-vinda ao Exército da Paty! Aqui você recebe alertas de quem curtiu suas citações, metas batidas e novidades na urna.',
+    linkTab: 'current',
+    createdAt: new Date().toISOString(),
+    readBy: []
+  }
+];
+
+
