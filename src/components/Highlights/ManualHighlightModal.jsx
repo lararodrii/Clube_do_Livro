@@ -10,6 +10,7 @@ import {
 
 const HIGHLIGHT_COLORS = [
   { name: 'Amarelo Revolucionário', hex: '#FDE047', bgClass: 'bg-yellow-300/40 border-yellow-400 text-yellow-950', borderHex: '#CA8A04' },
+  { name: 'Cinza E-Ink', hex: '#9CA3AF', bgClass: 'bg-gray-300/50 border-gray-400 text-gray-950', borderHex: '#6B7280' },
   { name: 'Rosa Carmim (StarNote)', hex: '#F472B6', bgClass: 'bg-pink-300/40 border-pink-400 text-pink-950', borderHex: '#DB2777' },
   { name: 'Verde Sierra', hex: '#4ADE80', bgClass: 'bg-emerald-300/40 border-emerald-400 text-emerald-950', borderHex: '#059669' },
   { name: 'Azul Cibernético', hex: '#38BDF8', bgClass: 'bg-cyan-300/40 border-cyan-400 text-cyan-950', borderHex: '#0284C7' },

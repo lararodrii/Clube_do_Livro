@@ -1,11 +1,20 @@
 /**
  * Serviço de Extração Automática de Grifos (PDF / Kindle)
  * 
- * Suporta:
- * 1. Arquivos PDF com anotações nativas (Highlight em amarelo)
- * 2. Validação visual por amostragem de pixels em Canvas (elimina 100% de palavras antes ou depois do grifo)
- * 3. Suporte a Tablets (StarNote, Samsung Notes, GoodNotes e PDFs achatados)
- * 4. Arquivos exportados do Kindle (My Clippings.txt e cadernos de notas .html)
+ * Regras estritas:
+ * 1. Filtro exato de cores para marca-textos (alta luminosidade e saturação controlada):
+ *    - Amarelo / Laranja (alta presença de vermelho/verde, baixo azul)
+ *    - Rosa / Magenta (alto vermelho e azul, baixo verde)
+ *    - Verde Limão / Claro (verde predominante)
+ *    - Azul Claro / Ciano Pastel (luminosidade > 80%, rejeitando azuis escuros)
+ *    - Roxo / Lilás Pastel (luminosidade alta)
+ *    - Cinza E-Ink (leitores de e-ink e tons de cinza)
+ *    - Bloqueio definitivo de links azuis (#1a0dab, #0000ff, #0066cc)
+ * 2. Bloqueio definitivo de links e metadados:
+ *    - Ignora anotações de links (annot.subtype === 'Link')
+ *    - Ignora URLs, rodapés de sites ("LeLivros", "LeLivros.site", etc.) e avisos de copyright
+ * 3. Suporte completo a notas do Kindle (P&B / My Clippings / Notebook .txt e .html):
+ *    - Extrai trechos destacados, páginas e posições, mesmo sem cor de fundo
  * 
  * Carregado via CDN para garantir total compatibilidade no Vite e Netlify sem quebra de workers.
  */
@@ -68,55 +77,148 @@ export function loadPdfJs() {
   return pdfjsLoadingPromise;
 }
 
-const YELLOW_COLOR_INFO = {
-  name: 'Amarelo Revolucionário',
-  hex: '#FDE047',
-  bgClass: 'bg-yellow-300/40 border-yellow-400 text-yellow-950'
+// Paleta padrão de cores de marca-texto permitidas
+export const HIGHLIGHTER_PALETTE = {
+  yellow: {
+    name: 'Amarelo Revolucionário',
+    hex: '#FDE047',
+    bgClass: 'bg-yellow-300/40 border-yellow-400 text-yellow-950'
+  },
+  orange: {
+    name: 'Laranja Manifesto',
+    hex: '#FB923C',
+    bgClass: 'bg-orange-300/40 border-orange-400 text-orange-950'
+  },
+  pink: {
+    name: 'Rosa Carmim (StarNote)',
+    hex: '#F472B6',
+    bgClass: 'bg-pink-300/40 border-pink-400 text-pink-950'
+  },
+  green: {
+    name: 'Verde Sierra',
+    hex: '#4ADE80',
+    bgClass: 'bg-emerald-300/40 border-emerald-400 text-emerald-950'
+  },
+  cyan: {
+    name: 'Azul Claro Pastel',
+    hex: '#7DD3FC',
+    bgClass: 'bg-sky-200/50 border-sky-400 text-sky-950'
+  },
+  purple: {
+    name: 'Lilás Pastel',
+    hex: '#C084FC',
+    bgClass: 'bg-purple-300/40 border-purple-400 text-purple-950'
+  },
+  gray: {
+    name: 'Cinza E-Ink',
+    hex: '#9CA3AF',
+    bgClass: 'bg-gray-300/50 border-gray-400 text-gray-950'
+  },
+  kindle: {
+    name: 'Destaque Kindle',
+    hex: '#FEF08A',
+    bgClass: 'bg-yellow-200/50 border-yellow-400 text-yellow-950'
+  }
 };
 
 /**
- * Detecta com rigor absoluto se um pixel do Canvas é Marca-Texto Amarelo.
+ * Classifica rigorosamente se um pixel pertence à paleta de marca-texto permitida.
  * 
  * Rejeita categoricamente:
- * - Branco puro ou papel creme (onde R, G e B são muito próximos: |R - B| < 30)
- * - Azul de links ou sumário (onde B > R ou B > 150)
- * - Texto preto/cinza escuro (R < 150 ou G < 140)
+ * - Branco puro ou papel creme (avg > 240 ou saturação quase nula em tons claros)
+ * - Texto preto/cinza escuro (avg < 110)
+ * - Links azuis escuros / médios (ex: #1a0dab, #0000ff, #0066cc, #0000ee)
  */
-function isYellowHighlighterPixel(r, g, b) {
-  // 1. Deve ser luminoso (fundo de marca-texto amarelo fluorescente)
-  if (r < 160 || g < 150) return false;
+function classifyHighlighterPixel(r, g, b) {
+  const avg = (r + g + b) / 3;
 
-  // 2. O azul deve ser marcadamente menor que o vermelho e o verde.
-  // No papel branco/creme: (r - b) é pequeno (< 35).
-  // No marca-texto amarelo: (r - b) >= 55 e (g - b) >= 45.
-  if ((r - b) < 55 || (g - b) < 45) return false;
+  // 1. Rejeita preto ou tinta escura
+  if (avg < 105) return null;
 
-  // 3. Rejeita tons azulados/ciano
-  if (b > 150) return false;
+  // 2. Rejeita papel branco puro ou creme sem grifo
+  if (avg > 245 && Math.abs(r - g) < 14 && Math.abs(r - b) < 18) {
+    return null;
+  }
 
-  // 4. Vermelho e verde devem ser equilibrados (amarelo puro)
-  if (Math.abs(r - g) > 55) return false;
+  // 3. BLOQUEIO DEFINITIVO DE AZUL DE LINKS (#1a0dab, #0000ff, #0066cc):
+  // Se o azul predominar sobre o vermelho com saturação escura ou média (não pastel claro), REJEITA!
+  if (b > r + 25) {
+    // Para ser aceito como Azul Claro / Ciano Pastel de marca-texto, a luminosidade deve ser alta (> 80% = avg > 204)
+    const isPastelCyan = avg >= 204 && b >= 195 && g >= 185 && r >= 155;
+    if (!isPastelCyan) {
+      return null; // Descarta links escuros e azuis de rodapé/sumário
+    }
+  }
 
-  return true;
+  // 4. AMARELO / LARANJA
+  // Alta presença de vermelho e verde, com azul marcadamente baixo
+  if (r >= 160 && g >= 145 && b <= 145) {
+    if ((r - b) >= 45 && (g - b) >= 30) {
+      // Amarelo clássico
+      if (Math.abs(r - g) <= 55) {
+        return HIGHLIGHTER_PALETTE.yellow;
+      }
+      // Laranja se o vermelho predominar sobre o verde
+      if ((r - g) > 55) {
+        return HIGHLIGHTER_PALETTE.orange;
+      }
+    }
+  }
+
+  // Laranja manifesto (tons mais quentes)
+  if (r >= 185 && g >= 85 && g <= 175 && b <= 120 && (r - g) >= 25 && (r - b) >= 65) {
+    return HIGHLIGHTER_PALETTE.orange;
+  }
+
+  // 5. ROSA / MAGENTA (Típico do StarNote / Tablets)
+  // Alto vermelho e azul, com verde menor
+  if (r >= 170 && b >= 125 && g <= 185 && (r - g) >= 28) {
+    return HIGHLIGHTER_PALETTE.pink;
+  }
+
+  // 6. VERDE LIMÃO / CLARO
+  // Verde marcadamente predominante
+  if (g >= 145 && g > r + 15 && g > b + 18) {
+    return HIGHLIGHTER_PALETTE.green;
+  }
+
+  // 7. AZUL CLARO / CIANO PASTEL (Luminosidade > 80%)
+  if (avg >= 204 && b >= 195 && g >= 185 && r >= 155 && b > r + 10) {
+    return HIGHLIGHTER_PALETTE.cyan;
+  }
+
+  // 8. ROXO / LILÁS PASTEL (Luminosidade alta)
+  if (avg >= 180 && r >= 155 && b >= 175 && g >= 135 && (b - g) >= 15 && (r - g) >= 10) {
+    return HIGHLIGHTER_PALETTE.purple;
+  }
+
+  // 9. CINZA E-INK (Leitores em escala de cinza / E-Ink)
+  // Faixa intermediária neutra
+  if (avg >= 125 && avg <= 222) {
+    if (Math.abs(r - g) <= 15 && Math.abs(r - b) <= 15 && Math.abs(g - b) <= 15) {
+      return HIGHLIGHTER_PALETTE.gray;
+    }
+  }
+
+  return null;
 }
 
 /**
- * Valida se uma palavra está REALMENTE coberta por marca-texto amarelo no Canvas renderizado.
- * Analisa os pixels no centro da caixa delimitadora da palavra.
+ * Valida visualmente se uma palavra está REALMENTE coberta por marca-texto no Canvas.
+ * Retorna o objeto de cor predominante da paleta ou null se não houver grifo.
  */
-function isWordYellowOnCanvas(wordBox, data, canvasW, canvasH) {
-  // Ajusta levemente os limites para focar no corpo principal das letras
+function checkWordHighlightOnCanvas(wordBox, data, canvasW, canvasH) {
   const startX = Math.max(0, Math.floor(wordBox.x + 1));
   const endX = Math.min(canvasW - 1, Math.ceil(wordBox.x + wordBox.width - 1));
   const startY = Math.max(0, Math.floor(wordBox.y + wordBox.height * 0.15));
   const endY = Math.min(canvasH - 1, Math.ceil(wordBox.y + wordBox.height * 0.85));
 
-  if (endX <= startX || endY <= startY) return false;
+  if (endX <= startX || endY <= startY) return null;
 
   let totalSampled = 0;
-  let yellowCount = 0;
+  const colorCounts = {};
 
-  // Amostragem densa a cada 2 pixels para altíssima precisão sem lentidão
+  // Amostragem densa a cada 2 pixels para máxima precisão
   for (let y = startY; y < endY; y += 2) {
     for (let x = startX; x < endX; x += 2) {
       const idx = (y * canvasW + x) * 4;
@@ -128,19 +230,68 @@ function isWordYellowOnCanvas(wordBox, data, canvasW, canvasH) {
       if (a < 120) continue;
 
       totalSampled++;
-      if (isYellowHighlighterPixel(r, g, b)) {
-        yellowCount++;
+      const detected = classifyHighlighterPixel(r, g, b);
+      if (detected) {
+        colorCounts[detected.name] = (colorCounts[detected.name] || { count: 0, color: detected });
+        colorCounts[detected.name].count++;
       }
     }
   }
 
-  if (totalSampled < 4) return false;
+  if (totalSampled < 4) return null;
 
-  // Palavras sem grifo têm 0% de pixels amarelos.
-  // Palavras com marca-texto amarelo têm entre 20% e 80% de pixels amarelos
-  // (o restante são as letras pretas).
-  const yellowRatio = yellowCount / totalSampled;
-  return yellowRatio >= 0.18;
+  // Localiza a cor mais abundante na caixa da palavra
+  let bestEntry = null;
+  let maxCount = 0;
+
+  for (const entry of Object.values(colorCounts)) {
+    if (entry.count > maxCount) {
+      maxCount = entry.count;
+      bestEntry = entry;
+    }
+  }
+
+  // A cobertura mínima da cor deve ser de pelo menos 18% da caixa da palavra
+  if (bestEntry && (maxCount / totalSampled) >= 0.18) {
+    return bestEntry.color;
+  }
+
+  return null;
+}
+
+/**
+ * Verifica se um trecho de texto é metadado, URL ou rodapé de site que deve ser ignorado.
+ */
+function isMetadataOrLinkText(text) {
+  if (!text) return true;
+  const lower = text.toLowerCase().trim();
+
+  // URLs e endereços da web
+  if (/https?:\/\/|www\.|\.site|\.com|\.org|\.net|\.br|\.io|doi\.org|\.html|\.php|mailto:/i.test(lower)) {
+    return true;
+  }
+
+  // Rodapés conhecidos de sites e distribuição de e-books (ex: LeLivros.site, Docero, etc.)
+  if (lower.includes('lelivros') || lower.includes('docero') || lower.includes('z-library') || lower.includes('annas-archive') || lower.includes('epub') || lower.includes('mobi')) {
+    return true;
+  }
+
+  // Metadados editoriais e avisos de copyright iniciais
+  if (
+    lower.includes('todos os direitos reservados') ||
+    lower.includes('copyright') ||
+    lower.includes('ficha catalográfica') ||
+    lower.includes('dados internacionais de catalogação') ||
+    lower.includes('câmara brasileira do livro') ||
+    lower.includes('direitos desta edição') ||
+    lower.includes('reprodução proibida') ||
+    lower.includes('grafia atualizada') ||
+    lower.includes('isbn')
+  ) {
+    return true;
+  }
+
+  return false;
 }
 
 /**
@@ -180,8 +331,19 @@ function splitItemIntoWords(item) {
 }
 
 /**
+ * Verifica sobreposição de caixa com uma caixa delimitadora de link
+ */
+function wordOverlapsBox(wBox, bBox, tolerance = 0.2) {
+  const overlapX = Math.max(0, Math.min(wBox.x + wBox.width, bBox.x + bBox.width) - Math.max(wBox.x, bBox.x));
+  const overlapY = Math.max(0, Math.min(wBox.y + wBox.height, bBox.y + bBox.height) - Math.max(wBox.y, bBox.y));
+
+  if (overlapX <= 0 || overlapY <= 0) return false;
+  return (overlapX / wBox.width) > tolerance && (overlapY / wBox.height) > tolerance;
+}
+
+/**
  * Agrupa palavras grifadas consecutivas em trechos contínuos e limpos.
- * Separa frases quando houver quebra de parágrafo ou trechos não grifados no meio.
+ * Separa frases quando houver quebra de parágrafo, trechos não grifados ou mudança de cor.
  */
 function groupConsecutiveWords(words, pageNum, defaultColor, source) {
   if (!words || words.length === 0) return [];
@@ -224,22 +386,25 @@ function groupConsecutiveWords(words, pageNum, defaultColor, source) {
     }
 
     const prev = currentGroup.lastWord;
+    const isSameColor = prev.color?.name === word.color?.name;
     const isSameLine = Math.abs(word.box.y - prev.box.y) <= 6;
     const isNextLine = !isSameLine && (word.box.y > prev.box.y) && ((word.box.y - prev.box.y) < Math.max(prev.box.height, word.box.height) * 1.85);
 
     let shouldJoin = false;
 
-    if (isSameLine) {
-      // Mesma linha: verifica se são palavras contíguas (espaço normal entre palavras)
-      const gapX = word.box.x - (prev.box.x + prev.box.width);
-      if (gapX >= -2 && gapX < Math.max(prev.box.height, 14) * 2.5) {
-        shouldJoin = true;
-      }
-    } else if (isNextLine) {
-      // Linha imediatamente subsequente: verifica se a frase continuou na linha de baixo sem pular linhas
-      const lineGap = word.box.y - prev.box.y;
-      if (lineGap < Math.max(prev.box.height, 14) * 1.9) {
-        shouldJoin = true;
+    if (isSameColor) {
+      if (isSameLine) {
+        // Mesma linha: verifica se são palavras contíguas (espaço normal entre palavras)
+        const gapX = word.box.x - (prev.box.x + prev.box.width);
+        if (gapX >= -2 && gapX < Math.max(prev.box.height, 14) * 2.5) {
+          shouldJoin = true;
+        }
+      } else if (isNextLine) {
+        // Linha imediatamente subsequente sem pular linhas
+        const lineGap = word.box.y - prev.box.y;
+        if (lineGap < Math.max(prev.box.height, 14) * 1.9) {
+          shouldJoin = true;
+        }
       }
     }
 
@@ -283,11 +448,17 @@ function groupConsecutiveWords(words, pageNum, defaultColor, source) {
       source: g.source,
       createdAt: new Date().toISOString()
     }))
-    .filter(g => g.text.length >= 3 && !/^[0-9.,;:!?\s]+$/.test(g.text));
+    .filter(g => {
+      // Descarta fragmentos muito curtos, pontuação isolada ou sobras de metadados/links
+      if (g.text.length < 3) return false;
+      if (/^[0-9.,;:!?\s]+$/.test(g.text)) return false;
+      if (isMetadataOrLinkText(g.text)) return false;
+      return true;
+    });
 }
 
 /**
- * Extrai grifos de um arquivo PDF (.pdf) com confirmação visual no Canvas
+ * Extrai grifos de um arquivo PDF (.pdf) com confirmação visual no Canvas e bloqueio de links
  */
 async function extractFromPdf(file, onProgress = () => {}) {
   const pdfjs = await loadPdfJs();
@@ -305,21 +476,63 @@ async function extractFromPdf(file, onProgress = () => {}) {
       current: pageNum,
       total: numPages,
       stage: 'analyzing',
-      message: `Analisando página ${pageNum} de ${numPages} (${allExtractedHighlights.length} grifos em amarelo)...`
+      message: `Analisando página ${pageNum} de ${numPages} (${allExtractedHighlights.length} grifos identificados)...`
     });
 
     try {
       const page = await pdf.getPage(pageNum);
       const viewport = page.getViewport({ scale: 1.0 });
 
-      // 1. Extração do conteúdo de texto em palavras individuais
+      // 1. Coleta todas as anotações da página (Links e Destaques)
+      const annotations = await page.getAnnotations();
+      const linkBoxes = [];
+      const notesByArea = [];
+
+      for (const annot of annotations) {
+        const subtype = (annot.subtype || '').toLowerCase();
+
+        // Identifica anotações de links clicáveis (TOC, hyperlinks externos, etc.)
+        const isLink = subtype === 'link' || annot.url || annot.action || annot.dest;
+        if (isLink && annot.rect && Array.isArray(annot.rect) && annot.rect.length === 4) {
+          const [vx1, vy1, vx2, vy2] = viewport.convertToViewportRectangle(annot.rect);
+          linkBoxes.push({
+            x: Math.min(vx1, vx2),
+            y: Math.min(vy1, vy2),
+            width: Math.abs(vx2 - vx1),
+            height: Math.abs(vy2 - vy1)
+          });
+          continue;
+        }
+
+        // Destaques com notas anexadas
+        if (subtype === 'highlight' || subtype === 'underline') {
+          const annotNote = annot.contents || annot.richText || '';
+          if (annotNote && annot.rect && Array.isArray(annot.rect) && annot.rect.length === 4) {
+            const [vx1, vy1, vx2, vy2] = viewport.convertToViewportRectangle(annot.rect);
+            notesByArea.push({
+              box: {
+                x: Math.min(vx1, vx2),
+                y: Math.min(vy1, vy2),
+                width: Math.abs(vx2 - vx1),
+                height: Math.abs(vy2 - vy1)
+              },
+              note: annotNote
+            });
+          }
+        }
+      }
+
+      // 2. Extração do conteúdo de texto em palavras individuais, ignorando metadados
       const textContent = await page.getTextContent();
       const allWords = [];
 
       for (const item of textContent.items) {
-        if (!item.str || !item.str.trim()) continue;
+        const rawStr = (item.str || '').trim();
+        if (!rawStr) continue;
 
-        // Converte coordenadas do PDF para o espaço do Viewport
+        // Ignora linhas inteiras que sejam rodapés conhecidos ou URLs
+        if (isMetadataOrLinkText(rawStr)) continue;
+
         const tx = item.transform[4];
         const ty = item.transform[5];
         const w = item.width || 10;
@@ -338,12 +551,20 @@ async function extractFromPdf(file, onProgress = () => {}) {
           box: itemBox
         });
 
-        allWords.push(...wordsInItem);
+        // Filtra palavras que caem dentro de links clicáveis ou contêm metadados
+        for (const wObj of wordsInItem) {
+          if (isMetadataOrLinkText(wObj.text)) continue;
+
+          const isInsideLink = linkBoxes.some(lb => wordOverlapsBox(wObj.box, lb, 0.25));
+          if (isInsideLink) continue;
+
+          allWords.push(wObj);
+        }
       }
 
       if (allWords.length === 0) continue;
 
-      // 2. Renderização da página em um canvas oculto para verdade visual absoluta dos pixels
+      // 3. Renderização da página em Canvas oculto para verificação óptica real
       const canvas = document.createElement('canvas');
       canvas.width = Math.floor(viewport.width);
       canvas.height = Math.floor(viewport.height);
@@ -357,50 +578,22 @@ async function extractFromPdf(file, onProgress = () => {}) {
       const canvasW = canvas.width;
       const canvasH = canvas.height;
 
-      // 3. Leitura de anotações nativas do PDF para capturar comentários anexados
-      const annotations = await page.getAnnotations();
-      const notesByArea = [];
-
-      for (const annot of annotations) {
-        const subtype = (annot.subtype || '').toLowerCase();
-        if (subtype !== 'highlight' && subtype !== 'underline') continue;
-
-        const annotNote = annot.contents || annot.richText || '';
-        if (!annotNote) continue;
-
-        if (annot.rect && Array.isArray(annot.rect) && annot.rect.length === 4) {
-          const [vx1, vy1, vx2, vy2] = viewport.convertToViewportRectangle(annot.rect);
-          notesByArea.push({
-            box: {
-              x: Math.min(vx1, vx2),
-              y: Math.min(vy1, vy2),
-              width: Math.abs(vx2 - vx1),
-              height: Math.abs(vy2 - vy1)
-            },
-            note: annotNote
-          });
-        }
-      }
-
-      // 4. Verificação RIGOROSA palavra por palavra contra o Canvas:
-      // Apenas palavras com pixels amarelos reais de marca-texto no Canvas são aceitas.
-      // Qualquer palavra antes do ponto, depois do ponto ou em parágrafos vizinhos sem amarelo é descartada!
-      const confirmedYellowWords = [];
+      // 4. Verificação rigorosa contra a paleta de marca-texto no Canvas:
+      const confirmedHighlights = [];
 
       for (const word of allWords) {
-        const isYellow = isWordYellowOnCanvas(word.box, data, canvasW, canvasH);
-        if (isYellow) {
-          // Verifica se há alguma anotação de texto correspondente
-          const matchingNote = notesByArea.find(n => 
-            word.box.x >= n.box.x - 10 && 
+        const detectedColor = checkWordHighlightOnCanvas(word.box, data, canvasW, canvasH);
+        if (detectedColor) {
+          const matchingNote = notesByArea.find(n =>
+            word.box.x >= n.box.x - 10 &&
             word.box.x <= (n.box.x + n.box.width + 10) &&
-            word.box.y >= n.box.y - 10 && 
+            word.box.y >= n.box.y - 10 &&
             word.box.y <= (n.box.y + n.box.height + 10)
           );
 
-          confirmedYellowWords.push({
+          confirmedHighlights.push({
             ...word,
-            color: YELLOW_COLOR_INFO,
+            color: detectedColor,
             note: matchingNote ? matchingNote.note : '',
             source: 'pdf_verified_scan'
           });
@@ -409,9 +602,9 @@ async function extractFromPdf(file, onProgress = () => {}) {
 
       // 5. Agrupa as palavras confirmadas em trechos contínuos
       const pageHighlights = groupConsecutiveWords(
-        confirmedYellowWords,
+        confirmedHighlights,
         pageNum,
-        YELLOW_COLOR_INFO,
+        HIGHLIGHTER_PALETTE.yellow,
         'pdf_verified_scan'
       );
 
@@ -427,7 +620,8 @@ async function extractFromPdf(file, onProgress = () => {}) {
 }
 
 /**
- * Extrai notas e destaques de arquivo Kindle (My Clippings.txt ou HTML Notebook)
+ * Parser robusto para arquivos exportados do Kindle (My Clippings.txt ou Cadernos .txt / .html)
+ * Suporta formatos em preto e branco sem cor de fundo, identificando citações, posições e notas.
  */
 async function extractFromKindle(file, onProgress = () => {}) {
   onProgress({ current: 0, total: 100, stage: 'reading', message: 'Lendo arquivo do Kindle...' });
@@ -437,9 +631,13 @@ async function extractFromKindle(file, onProgress = () => {}) {
   const highlights = [];
 
   if (isHtml) {
-    // Parser de HTML exportado do Kindle Notebook
+    // 1. Caderno de Notas HTML exportado pelo aplicativo Kindle
     const parser = new DOMParser();
     const doc = parser.parseFromString(content, 'text/html');
+
+    // Título do livro no cabeçalho do documento Kindle
+    const bookTitleEl = doc.querySelector('.bookTitle, h1, .kp-notebook-book-title');
+    const bookTitle = bookTitleEl ? bookTitleEl.textContent.trim() : '';
 
     const noteHeadings = doc.querySelectorAll('.noteHeading, .kp-notebook-metadata, h3');
     const noteTexts = doc.querySelectorAll('.noteText, .kp-notebook-highlight, p.body-text');
@@ -447,26 +645,35 @@ async function extractFromKindle(file, onProgress = () => {}) {
     const total = Math.max(noteHeadings.length, noteTexts.length);
     for (let i = 0; i < total; i++) {
       const heading = noteHeadings[i]?.textContent || '';
-      const text = noteTexts[i]?.textContent?.trim() || '';
+      let text = noteTexts[i]?.textContent?.trim() || '';
 
       if (!text) continue;
 
+      // Limpa aspas ao redor do trecho se houver
+      text = text.replace(/^["“'‘\s]+|["”'’\s]+$/g, '').trim();
+      if (text.length < 3) continue;
+
+      // Identifica número da página ou posição
       const pageMatch = heading.match(/(?:página|page|pág\.)\s*(\d+)/i);
       const locMatch = heading.match(/(?:posição|location|pos\.)\s*([\d-]+)/i);
       const pageNum = pageMatch ? parseInt(pageMatch[1], 10) : (locMatch ? locMatch[1] : 1);
 
+      // Identifica se havia nota pessoal do leitor
+      const isPersonalNote = heading.toLowerCase().includes('nota') || heading.toLowerCase().includes('note');
+
       highlights.push({
         id: `hl-knd-${Date.now()}-${i}`,
         page: pageNum,
-        text: text.replace(/\s+/g, ' ').trim(),
-        note: heading.includes('Nota') || heading.includes('Note') ? heading : '',
-        color: YELLOW_COLOR_INFO,
+        text,
+        note: isPersonalNote ? heading.trim() : '',
+        bookHint: bookTitle,
+        color: HIGHLIGHTER_PALETTE.kindle,
         source: 'kindle_html',
         createdAt: new Date().toISOString()
       });
     }
-  } else {
-    // Parser de My Clippings.txt do Kindle
+  } else if (content.includes('==========')) {
+    // 2. Arquivo padrão "My Clippings.txt" do leitor Kindle
     const blocks = content.split(/={8,}/);
     let index = 0;
 
@@ -474,27 +681,79 @@ async function extractFromKindle(file, onProgress = () => {}) {
       const lines = block.trim().split(/\r?\n/).map(l => l.trim()).filter(Boolean);
       if (lines.length < 2) continue;
 
-      const titleLine = lines[0];
-      const metaLine = lines[1] || '';
-      const textLines = lines.slice(2).join(' ').trim();
+      const titleLine = lines[0]; // Título da Obra (Autor)
+      const metaLine = lines[1] || ''; // - Seu destaque na página X | posição Y-Z | Adicionado em...
+      let textLines = lines.slice(2).join(' ').trim();
 
       if (!textLines || textLines.length < 3) continue;
 
+      // Limpa aspas decorativas
+      textLines = textLines.replace(/^["“'‘\s]+|["”'’\s]+$/g, '').trim();
+
+      // Extrai número da página e posição
       const pageMatch = metaLine.match(/(?:página|page|pág\.)\s*(\d+)/i);
       const locMatch = metaLine.match(/(?:posição|location|pos\.)\s*([\d-]+)/i);
       const pageNum = pageMatch ? parseInt(pageMatch[1], 10) : (locMatch ? locMatch[1] : 1);
+
+      const isPersonalNote = metaLine.toLowerCase().includes('nota') || metaLine.toLowerCase().includes('note');
 
       highlights.push({
         id: `hl-clp-${Date.now()}-${index++}`,
         page: pageNum,
         text: textLines.replace(/\s+/g, ' ').trim(),
-        note: metaLine.toLowerCase().includes('nota') ? metaLine : '',
+        note: isPersonalNote ? metaLine : '',
         bookHint: titleLine,
-        color: YELLOW_COLOR_INFO,
+        color: HIGHLIGHTER_PALETTE.kindle,
         source: 'kindle_clippings',
         createdAt: new Date().toISOString()
       });
     }
+  } else {
+    // 3. Caderno de Notas exportado em texto puro (.txt)
+    // Padrão: Blocos contendo "Destaque (cor) - Página X" ou "Highlight - Page X" seguidos de citação
+    const lines = content.split(/\r?\n/);
+    let currentMeta = null;
+    let currentText = [];
+    let index = 0;
+
+    const flushCurrent = () => {
+      if (currentText.length > 0) {
+        let joined = currentText.join(' ').trim();
+        joined = joined.replace(/^["“'‘\s]+|["”'’\s]+$/g, '').trim();
+
+        if (joined.length >= 3 && !isMetadataOrLinkText(joined)) {
+          const pageMatch = currentMeta ? currentMeta.match(/(?:página|page|pág\.)\s*(\d+)/i) : null;
+          const locMatch = currentMeta ? currentMeta.match(/(?:posição|location|pos\.)\s*([\d-]+)/i) : null;
+          const pageNum = pageMatch ? parseInt(pageMatch[1], 10) : (locMatch ? locMatch[1] : 1);
+
+          highlights.push({
+            id: `hl-kndtxt-${Date.now()}-${index++}`,
+            page: pageNum,
+            text: joined.replace(/\s+/g, ' '),
+            note: currentMeta && (currentMeta.toLowerCase().includes('nota') || currentMeta.toLowerCase().includes('note')) ? currentMeta : '',
+            color: HIGHLIGHTER_PALETTE.kindle,
+            source: 'kindle_text_notebook',
+            createdAt: new Date().toISOString()
+          });
+        }
+      }
+      currentText = [];
+    };
+
+    for (const rawLine of lines) {
+      const line = rawLine.trim();
+      if (!line) continue;
+
+      const isHeader = /(?:destaque|highlight|nota|note)\s*(?:\([^)]*\))?\s*[-–—]\s*(?:página|page|posição|location)/i.test(line);
+
+      if (isHeader) {
+        flushCurrent();
+        currentMeta = line;
+      } else if (currentMeta) {
+        currentText.push(line);
+      }
+    }
+    flushCurrent();
   }
 
   onProgress({ current: 100, total: 100, stage: 'completed', message: 'Notas do Kindle extraídas com sucesso!' });
@@ -503,10 +762,6 @@ async function extractFromKindle(file, onProgress = () => {}) {
 
 /**
  * Função principal exportada: extrai grifos de qualquer arquivo suportado (.pdf, .txt, .html)
- * 
- * @param {File} file - Arquivo selecionado pela camarada
- * @param {Function} onProgress - Callback com ({ current, total, stage, message })
- * @returns {Promise<Array>} Lista de grifos extraídos e higienizados
  */
 export async function extractHighlightsFromFile(file, onProgress = () => {}) {
   if (!file) throw new Error('Nenhum arquivo informado.');
