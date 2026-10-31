@@ -19,6 +19,7 @@ import {
 } from 'lucide-react';
 import ConfidentialSpoiler from '../common/ConfidentialSpoiler';
 import { formatTextWithBold } from '../../utils/textFormat';
+import CollectiveHighlights from '../Highlights/CollectiveHighlights';
 
 export default function BookDetailsModal({ book, isOpen, onClose }) {
   const { activeMember, members, quotes = [], addOrUpdateReview, deleteReview } = useClub();
@@ -455,6 +456,15 @@ export default function BookDetailsModal({ book, isOpen, onClose }) {
               })}
             </div>
           )}
+        </div>
+
+        {/* SEÇÃO DE DOSSIÊ COLETIVO DE GRIFOS DA OBRA */}
+        <div className="mt-8 pt-6 border-t-2 border-theme-border">
+          <CollectiveHighlights
+            isArchiveView={true}
+            customHighlights={book.highlights || []}
+            archivedBook={book}
+          />
         </div>
 
       </div>

@@ -151,4 +151,71 @@ export const INITIAL_NOTIFICATIONS = [
   }
 ];
 
+// Dossiê Coletivo de Grifos Inicial
+export const INITIAL_HIGHLIGHTS = [
+  {
+    id: 'hl-sample-1',
+    page: 24,
+    text: 'A trágica ironia da via eleitoral para o autoritarismo é que os assassinos da democracia usam as próprias instituições da democracia — gradual, sutil e até legalmente — para matá-la.',
+    color: { name: 'Amarelo Revolucionário', hex: '#FDE047', bgClass: 'bg-yellow-300/40 border-yellow-400 text-yellow-950' },
+    isConsensus: true,
+    isSpoiler: false,
+    highlightedBy: [
+      {
+        id: 'm1',
+        name: 'Lara',
+        avatar: '/avatars/gato1.jpg',
+        roleBadge: '★ Comissária',
+        note: 'Ponto crucial para a tese do livro. Discutir na assembleia!',
+        color: { name: 'Amarelo Revolucionário', hex: '#FDE047', bgClass: 'bg-yellow-300/40 border-yellow-400 text-yellow-950' },
+        date: '30/10/2026'
+      },
+      {
+        id: 'm2',
+        name: 'Stephany',
+        avatar: '/avatars/gato2.jpg',
+        roleBadge: '★ Estrategista',
+        note: 'Grifei exatamente a mesma passagem no meu Kindle!',
+        color: { name: 'Rosa Carmim', hex: '#F472B6', bgClass: 'bg-pink-300/40 border-pink-400 text-pink-950' },
+        date: '31/10/2026'
+      }
+    ],
+    comments: [
+      {
+        id: 'c-hl-1',
+        memberId: 'm1',
+        authorName: 'Lara',
+        authorAvatar: '/avatars/gato1.jpg',
+        text: 'Atenção para o paralelismo histórico que os autores traçam com as décadas de 1930 e o presente.',
+        date: '31/10/2026',
+        createdAt: new Date().toISOString()
+      }
+    ],
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString()
+  },
+  {
+    id: 'hl-sample-2',
+    page: 68,
+    text: 'Instituições sozinhas não são suficientes para conter autocratas eleitos. Elas devem ser defendidas por normas democráticas compartilhadas: a contenção institucional e a tolerância mútua.',
+    color: { name: 'Rosa Carmim', hex: '#F472B6', bgClass: 'bg-pink-300/40 border-pink-400 text-pink-950' },
+    isConsensus: false,
+    isSpoiler: false,
+    highlightedBy: [
+      {
+        id: 'm1',
+        name: 'Lara',
+        avatar: '/avatars/gato1.jpg',
+        roleBadge: '★ Comissária',
+        note: 'Conceito chave: as duas guardas de trânsito da democracia.',
+        color: { name: 'Rosa Carmim', hex: '#F472B6', bgClass: 'bg-pink-300/40 border-pink-400 text-pink-950' },
+        date: '31/10/2026'
+      }
+    ],
+    comments: [],
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString()
+  }
+];
+
 

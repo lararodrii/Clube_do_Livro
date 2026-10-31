@@ -9,7 +9,8 @@ import {
   INITIAL_QUOTES,
   INITIAL_BALLOT,
   INITIAL_ARCHIVE,
-  INITIAL_NOTIFICATIONS
+  INITIAL_NOTIFICATIONS,
+  INITIAL_HIGHLIGHTS
 } from '../data/initialData';
 import { useAuth } from './AuthContext';
 import {
@@ -17,6 +18,7 @@ import {
   isCurrentReadingBook,
   deduplicateBallotBooks
 } from '../utils/bookDuplicateCheck';
+import { mergeHighlightsIntoDossier } from '../utils/highlightMatcher';
 
 const ClubContext = createContext(null);
 
@@ -81,7 +83,8 @@ export function ClubProvider({ children }) {
     quotes: INITIAL_QUOTES,
     ballot: INITIAL_BALLOT,
     archive: INITIAL_ARCHIVE,
-    notifications: INITIAL_NOTIFICATIONS
+    notifications: INITIAL_NOTIFICATIONS,
+    highlights: INITIAL_HIGHLIGHTS
   });
 
   const authContext = useAuth();
@@ -152,7 +155,8 @@ export function ClubProvider({ children }) {
               ballot: cleanBallot,
               archive: cloud.archive || prev.archive || INITIAL_ARCHIVE,
               quotes: cloud.quotes || prev.quotes || INITIAL_QUOTES,
-              notifications: cloud.notifications || prev.notifications || INITIAL_NOTIFICATIONS
+              notifications: cloud.notifications || prev.notifications || INITIAL_NOTIFICATIONS,
+              highlights: cloud.highlights || prev.highlights || INITIAL_HIGHLIGHTS
             }));
           } else {
             // Se o documento no Firestore ainda estiver vazio no primeiro acesso,
@@ -165,6 +169,7 @@ export function ClubProvider({ children }) {
               archive: INITIAL_ARCHIVE,
               quotes: INITIAL_QUOTES,
               notifications: INITIAL_NOTIFICATIONS,
+              highlights: INITIAL_HIGHLIGHTS,
               createdAt: new Date().toISOString()
             };
             setDoc(docRef, defaultInitialPayload).catch(err => {
@@ -873,7 +878,7 @@ export function ClubProvider({ children }) {
     const nextMonthName = nextMeetingDate.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
     const formattedMonth = nextMonthName.charAt(0).toUpperCase() + nextMonthName.slice(1);
 
-    // Salvar o livro anterior no acervo histórico preservando suas resenhas e citações associadas
+    // Salvar o livro anterior no acervo histórico preservando suas resenhas, citações e grifos associados
     const oldBook = data.currentReading;
     const oldBookQuotes = (data.quotes || []).filter(q => 
       q.isBookSpecific !== false && (q.bookId === oldBook.id || q.bookTitle === oldBook.title)
@@ -890,7 +895,8 @@ export function ClubProvider({ children }) {
       coverUrl: oldBook.coverUrl,
       synopsis: oldBook.synopsis,
       reviews: oldBook.reviews || [],
-      quotes: oldBookQuotes
+      quotes: oldBookQuotes,
+      highlights: data.highlights || []
     };
 
     const newCurrentReading = {
@@ -939,6 +945,7 @@ export function ClubProvider({ children }) {
       archive: updatedArchive,
       meeting: updatedMeeting,
       quotes: remainingQuotes,
+      highlights: [],
       ballot: updatedBallot
     }));
 
@@ -947,6 +954,7 @@ export function ClubProvider({ children }) {
       archive: updatedArchive,
       meeting: updatedMeeting,
       quotes: remainingQuotes,
+      highlights: [],
       ballot: updatedBallot
     });
 
@@ -1002,6 +1010,7 @@ export function ClubProvider({ children }) {
       synopsis: current.synopsis,
       reviews: reviews,
       quotes: bookQuotes,
+      highlights: data.highlights || [],
       averageRating: avgRating,
       archivedAt: new Date().toISOString()
     };
@@ -1073,6 +1082,206 @@ export function ClubProvider({ children }) {
     setData(prev => ({ ...prev, notifications: updatedNotifications }));
     syncToCloud({ notifications: updatedNotifications });
     showToast('Todas as notificações foram marcadas como lidas! ★', 'info');
+  };
+
+  // === DOSSIÊ COLETIVO DE GRIFOS & COMPARADOR DE PDF/KINDLE ===
+  const addHighlightsToDossier = (incomingHighlights) => {
+    if (!currentUser || !isAuthenticated || !userProfile?.memberId) {
+      openAuthModal('Faça login com seu perfil para contribuir com o Dossiê de Grifos!', 'login');
+      return { success: false };
+    }
+
+    if (!incomingHighlights || incomingHighlights.length === 0) {
+      showToast('Nenhum grifo válido para adicionar.', 'info');
+      return { success: false };
+    }
+
+    const { updatedDossier, newCount, newConsensusCount, consensusHighlights } = mergeHighlightsIntoDossier(
+      data.highlights || [],
+      incomingHighlights,
+      activeMember
+    );
+
+    let updatedNotifications = data.notifications || [];
+
+    if (newConsensusCount > 0) {
+      triggerComradeConfetti(110);
+      showToast(`🔥 ${newConsensusCount} trecho(s) atingiram CONSENSO REVOLUCIONÁRIO no Dossiê!`, 'pink');
+
+      const consensusNotif = {
+        id: `notif-consensus-${Date.now()}`,
+        type: 'highlight_consensus',
+        title: `🔥 Consenso Revolucionário Detectado!`,
+        message: `${activeMember.name} e outras camaradas grifaram as mesmas passagens em "${data.currentReading?.title}"!`,
+        linkTab: 'current',
+        actorId: userProfile.memberId,
+        actorName: activeMember.name,
+        actorAvatar: activeMember.avatar,
+        createdAt: new Date().toISOString(),
+        readBy: [userProfile.memberId]
+      };
+      updatedNotifications = [consensusNotif, ...updatedNotifications].slice(0, 40);
+    } else {
+      triggerComradeConfetti(45);
+      showToast(`${newCount} grifo(s) adicionados ao Dossiê Coletivo com sucesso! 📄★`, 'success');
+
+      const highlightNotif = {
+        id: `notif-hl-${Date.now()}`,
+        type: 'new_highlight',
+        title: `${activeMember.name} adicionou grifos ao Dossiê! ★`,
+        message: `${incomingHighlights.length} passagem(ns) analisada(s) em "${data.currentReading?.title}".`,
+        linkTab: 'current',
+        actorId: userProfile.memberId,
+        actorName: activeMember.name,
+        actorAvatar: activeMember.avatar,
+        createdAt: new Date().toISOString(),
+        readBy: [userProfile.memberId]
+      };
+      updatedNotifications = [highlightNotif, ...updatedNotifications].slice(0, 40);
+    }
+
+    setData(prev => ({
+      ...prev,
+      highlights: updatedDossier,
+      notifications: updatedNotifications
+    }));
+
+    syncToCloud({
+      highlights: updatedDossier,
+      notifications: updatedNotifications
+    });
+
+    return {
+      success: true,
+      newCount,
+      newConsensusCount,
+      consensusHighlights
+    };
+  };
+
+  const addManualHighlight = ({ page, text, note = '', color, isSpoiler = false }) => {
+    return addHighlightsToDossier([{
+      id: `hl-manual-${Date.now()}`,
+      page: parseInt(page, 10) || 1,
+      text: text.trim(),
+      note: note.trim(),
+      color: color || { name: 'Amarelo Revolucionário', hex: '#FDE047', bgClass: 'bg-yellow-300/40 border-yellow-400 text-yellow-950' },
+      isSpoiler: !!isSpoiler,
+      source: 'manual'
+    }]);
+  };
+
+  const toggleHighlightSpoiler = (highlightId) => {
+    if (!currentUser || !isAuthenticated || !userProfile?.memberId) {
+      openAuthModal('Faça login para alterar a tarja confidencial deste grifo!', 'login');
+      return;
+    }
+
+    let isNowSpoiler = false;
+    const updatedHighlights = (data.highlights || []).map(h => {
+      if (h.id === highlightId) {
+        isNowSpoiler = !h.isSpoiler;
+        return { ...h, isSpoiler: isNowSpoiler };
+      }
+      return h;
+    });
+
+    setData(prev => ({ ...prev, highlights: updatedHighlights }));
+    syncToCloud({ highlights: updatedHighlights });
+    showToast(isNowSpoiler ? 'Tarja confidencial ativada no grifo! 🔒' : 'Tarja confidencial desativada! 📖', 'info');
+  };
+
+  const deleteHighlight = (highlightId) => {
+    if (!currentUser || !isAuthenticated || !userProfile?.memberId) {
+      openAuthModal('Faça login para remover este grifo!', 'login');
+      return;
+    }
+
+    const currentMemberId = userProfile.memberId;
+    const target = (data.highlights || []).find(h => h.id === highlightId);
+    if (!target) return;
+
+    let updatedHighlights;
+    if (target.highlightedBy.length > 1) {
+      const remainingHighlightedBy = target.highlightedBy.filter(m => m.id !== currentMemberId);
+      const isStillConsensus = new Set(remainingHighlightedBy.map(m => m.id)).size >= 2;
+      updatedHighlights = (data.highlights || []).map(h => {
+        if (h.id === highlightId) {
+          return {
+            ...h,
+            highlightedBy: remainingHighlightedBy,
+            isConsensus: isStillConsensus
+          };
+        }
+        return h;
+      });
+      showToast('Sua participação neste grifo foi removida.', 'info');
+    } else {
+      if (target.highlightedBy[0]?.id !== currentMemberId) {
+        showToast('Você só pode excluir grifos adicionados por você!', 'error');
+        return;
+      }
+      updatedHighlights = (data.highlights || []).filter(h => h.id !== highlightId);
+      showToast('Grifo removido do dossiê coletivo.', 'info');
+    }
+
+    setData(prev => ({ ...prev, highlights: updatedHighlights }));
+    syncToCloud({ highlights: updatedHighlights });
+  };
+
+  const addHighlightComment = (highlightId, commentText) => {
+    if (!currentUser || !isAuthenticated || !userProfile?.memberId) {
+      openAuthModal('Faça login para debater e comentar neste grifo coletivo!', 'login');
+      return;
+    }
+
+    if (!commentText || !commentText.trim()) return;
+
+    const newComment = {
+      id: `c-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+      memberId: userProfile.memberId,
+      authorName: activeMember.name,
+      authorAvatar: activeMember.avatar,
+      authorRole: activeMember.roleBadge || '★ Camarada',
+      text: commentText.trim(),
+      date: new Date().toLocaleDateString('pt-BR'),
+      createdAt: new Date().toISOString()
+    };
+
+    const updatedHighlights = (data.highlights || []).map(h => {
+      if (h.id === highlightId) {
+        return {
+          ...h,
+          comments: [...(h.comments || []), newComment]
+        };
+      }
+      return h;
+    });
+
+    setData(prev => ({ ...prev, highlights: updatedHighlights }));
+    syncToCloud({ highlights: updatedHighlights });
+    showToast('Anotação crítica adicionada ao debate do grifo! 💬★', 'success');
+  };
+
+  const deleteHighlightComment = (highlightId, commentId) => {
+    if (!currentUser || !isAuthenticated || !userProfile?.memberId) {
+      openAuthModal('Faça login para remover seu comentário!', 'login');
+      return;
+    }
+
+    const updatedHighlights = (data.highlights || []).map(h => {
+      if (h.id === highlightId) {
+        return {
+          ...h,
+          comments: (h.comments || []).filter(c => c.id !== commentId || c.memberId !== userProfile.memberId)
+        };
+      }
+      return h;
+    });
+
+    setData(prev => ({ ...prev, highlights: updatedHighlights }));
+    syncToCloud({ highlights: updatedHighlights });
+    showToast('Anotação removida do debate.', 'info');
   };
 
   // Verificação de prazo da assembleia para arquivamento automático
@@ -1266,6 +1475,13 @@ export function ClubProvider({ children }) {
         archive: data.archive || [],
         addOrUpdateReview,
         deleteReview,
+        highlights: data.highlights || [],
+        addHighlightsToDossier,
+        addManualHighlight,
+        toggleHighlightSpoiler,
+        deleteHighlight,
+        addHighlightComment,
+        deleteHighlightComment,
         notifications: data.notifications || [],
         addNotification,
         markNotificationAsRead,

@@ -13,6 +13,7 @@ import AuthModal from './components/Auth/AuthModal';
 import OnboardingTour from './components/common/OnboardingTour';
 import ComradeCat from './components/common/ComradeCat';
 import Toast from './components/common/Toast';
+import CollectiveHighlights from './components/Highlights/CollectiveHighlights';
 
 function ClubApp() {
   const [activeTab, setActiveTab] = useState('current');
@@ -67,6 +68,9 @@ function ClubApp() {
                 <QuotesWall />
               </div>
             </div>
+
+            {/* Dossiê Coletivo de Grifos & Comparador de PDFs */}
+            <CollectiveHighlights />
           </div>
         )}
 
