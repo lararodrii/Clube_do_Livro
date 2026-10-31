@@ -380,6 +380,7 @@ export function groupConsecutiveWords(words, pageNum, defaultColor, source) {
       note: g.note?.trim() || '',
       color: g.color || defaultColor,
       source: g.source,
+      words: g.words,
       createdAt: new Date().toISOString()
     }))
     .filter(g => g.text.length >= 3 && !/^[0-9.,;:!?\s]+$/.test(g.text));
@@ -455,6 +456,7 @@ async function extractFromPdf(file, onProgress = () => {}) {
       // 3. Processamento de Anotações Nativas (Preserva cada anotação como um registro íntegro)
       const annotations = await page.getAnnotations();
       const nativeAreas = [];
+      const pageHighlights = [];
 
       for (const annot of annotations) {
         if (!['Highlight', 'Underline', 'StrikeOut', 'Squiggly', 'Text', 'FreeText'].includes(annot.subtype)) continue;
@@ -467,15 +469,21 @@ async function extractFromPdf(file, onProgress = () => {}) {
         const text = parts.map(p => p.text).join(' ').trim();
 
         if (text) {
-          allExtractedHighlights.push({
-            id: `native-${pageNum}-${annot.id || allExtractedHighlights.length}`,
+          const minY = words.length ? Math.min(...words.map(w => w.box.y)) : (areas.length ? Math.min(...areas.map(a => a.y)) : 0);
+          const maxY = words.length ? Math.max(...words.map(w => w.box.y + w.box.height)) : (areas.length ? Math.max(...areas.map(a => a.y + a.height)) : 0);
+
+          pageHighlights.push({
+            id: `native-${pageNum}-${annot.id || pageHighlights.length}`,
             page: pageNum,
             text,
             note: annot.contentsObj?.str || (typeof annot.contents === 'string' ? annot.contents : ''),
             color: YELLOW_COLOR_INFO,
             source: 'pdf_annotation',
             confidence: words.length ? 0.95 : 0.3,
-            createdAt: new Date().toISOString()
+            createdAt: new Date().toISOString(),
+            annotDate: annot.modificationDate || annot.date || null,
+            box: { minY, maxY },
+            viewportHeight: viewport.height
           });
         }
       }
@@ -520,9 +528,21 @@ async function extractFromPdf(file, onProgress = () => {}) {
             'pdf_verified_scan'
           );
 
-          allExtractedHighlights.push(...visualHighlights.map(h => ({ ...h, confidence: 0.85 })));
+          pageHighlights.push(...visualHighlights.map(h => ({
+            ...h,
+            confidence: 0.85,
+            box: {
+              minY: h.words?.length ? Math.min(...h.words.map(w => w.box.y)) : 0,
+              maxY: h.words?.length ? Math.max(...h.words.map(w => w.box.y + w.box.height)) : 0
+            },
+            viewportHeight: viewport.height
+          })));
         }
       }
+
+      // Ordena os grifos da página pelo fluxo de leitura de cima para baixo
+      pageHighlights.sort((a, b) => (a.box?.minY ?? 0) - (b.box?.minY ?? 0));
+      allExtractedHighlights.push(...pageHighlights);
 
     } catch (pageErr) {
       console.warn(`[pdfHighlightExtractor] Erro ao processar página ${pageNum}:`, pageErr.message);
@@ -530,7 +550,7 @@ async function extractFromPdf(file, onProgress = () => {}) {
   }
 
   onProgress({ current: numPages, total: numPages, stage: 'completed', message: 'Extração concluída com sucesso!' });
-  return allExtractedHighlights;
+  return mergeCrossPageHighlights(allExtractedHighlights);
 }
 
 /**
@@ -655,6 +675,202 @@ async function extractFromKindle(file, onProgress = () => {}) {
   return highlights;
 }
 
+const COMMON_ABBREVIATIONS = new Set([
+  'art', 'pág', 'pag', 'p', 'pp', 'vol', 'cap', 'ed', 'ex', 'etc',
+  'séc', 'sec', 'dr', 'dra', 'sr', 'sra', 'prof', 'profa', 'gov',
+  'min', 'pres', 'vs', 'v', 'av', 'núm', 'num', 'nº', 'al', 'eg', 'ie'
+]);
+
+const CONNECTIVES = new Set([
+  'de', 'da', 'do', 'das', 'dos', 'em', 'na', 'no', 'nas', 'nos',
+  'por', 'pela', 'pelo', 'pelas', 'pelos', 'com', 'para', 'pra', 'pro',
+  'sob', 'sobre', 'a', 'o', 'as', 'os', 'um', 'uma', 'uns', 'umas',
+  'e', 'ou', 'mas', 'que', 'se', 'como', 'quando', 'onde', 'qual', 'quais',
+  'cujo', 'cuja', 'cujos', 'cujas', 'nem', 'sem', 'até'
+]);
+
+/**
+ * Avalia se dois trechos em páginas consecutivas compõem a mesma frase contínua
+ */
+export function isTextContinuousAcrossPages(textA, textB, hlA = {}, hlB = {}) {
+  const cleanA = (textA || '').trim();
+  const cleanB = (textB || '').trim();
+
+  if (!cleanA || !cleanB) return false;
+
+  // 1. Terminação com hífen (palavra cortada entre páginas, ex: "democrá-" + "ticas")
+  if (cleanA.endsWith('-') || cleanA.endsWith('‐') || cleanA.endsWith('–')) {
+    return true;
+  }
+
+  // 2. Início de B com letra minúscula: em livros diagramados, uma nova frase nunca inicia com minúscula
+  const bWithoutLeadingQuotes = cleanB.replace(/^["'“‘«(\s]+/, '');
+  const startsWithLowerB = /^[a-záàâãéèêíïóôõöúçñ]/.test(bWithoutLeadingQuotes);
+  if (startsWithLowerB) {
+    return true;
+  }
+
+  // 3. Pontuação não terminal no final de A (vírgula, dois pontos, ponto e vírgula, travessão)
+  const endsWithNonTerminalPunct = /[,;:\-—–]["'”’»)]*$/.test(cleanA);
+  if (endsWithNonTerminalPunct) {
+    return true;
+  }
+
+  // 4. Terminação com conectivo no final de A (ex: "de", "em", "o papel de")
+  const wordsA = cleanA.split(/\s+/);
+  const lastWordA = wordsA[wordsA.length - 1].replace(/^[("“‘«]+|[.,;:!?)"”’»]+$/g, '').toLowerCase();
+  if (CONNECTIVES.has(lastWordA)) {
+    return true;
+  }
+
+  // 5. Terminação com abreviação comum com ponto (ex: "art.", "pág.")
+  if (cleanA.endsWith('.')) {
+    const wordBeforeDot = lastWordA.replace(/\.$/, '');
+    if (COMMON_ABBREVIATIONS.has(wordBeforeDot)) {
+      return true;
+    }
+  }
+
+  // 6. Terminação sem pontuação terminal (. ! ?): a frase não terminou na página A
+  const endsWithTerminalPunct = /[.!?…]["'”’»)]*$/.test(cleanA);
+  if (!endsWithTerminalPunct) {
+    return true;
+  }
+
+  // 7. Mesmo timestamp exato de anotação no PDF (mesmo gesto contínuo de arrastar)
+  if (hlA.annotDate && hlB.annotDate && hlA.annotDate === hlB.annotDate) {
+    const isABottom = !hlA.viewportHeight || (hlA.box?.maxY / hlA.viewportHeight) > 0.60;
+    const isBTop = !hlB.viewportHeight || (hlB.box?.minY / hlB.viewportHeight) < 0.40;
+    if (isABottom && isBTop) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
+/**
+ * Verifica se dois grifos devem ser unificados através de uma quebra de página
+ */
+export function shouldMergeAcrossPages(prevHl, nextHl) {
+  if (!prevHl || !nextHl) return false;
+
+  const prevPageStr = String(prevHl.page || '0');
+  const nextPageStr = String(nextHl.page || '0');
+
+  const p1End = parseInt(prevPageStr.split('-').pop(), 10);
+  const p2Start = parseInt(nextPageStr.split('-')[0], 10);
+
+  if (isNaN(p1End) || isNaN(p2Start) || p2Start !== p1End + 1) {
+    return false;
+  }
+
+  if (prevHl.color?.name && nextHl.color?.name) {
+    const isYellow1 = prevHl.color.name.toLowerCase().includes('amarel');
+    const isYellow2 = nextHl.color.name.toLowerCase().includes('amarel');
+    if (isYellow1 !== isYellow2) {
+      return false;
+    }
+  }
+
+  return isTextContinuousAcrossPages(prevHl.text, nextHl.text, prevHl, nextHl);
+}
+
+/**
+ * Une dois grifos contíguos de páginas consecutivas em uma passagem única
+ */
+export function mergeTwoHighlights(h1, h2) {
+  const p1 = String(h1.page || '1').split('-')[0];
+  const p2 = String(h2.page || '1').split('-').pop();
+  const pageLabel = p1 === p2 ? p1 : `${p1}-${p2}`;
+
+  const text1 = (h1.text || '').trim();
+  const text2 = (h2.text || '').trim();
+
+  let mergedText = '';
+
+  const COMPOUND_PREFIXES = [
+    'norte-', 'sul-', 'leste-', 'oeste-', 'latino-', 'afro-', 'anglo-', 'euro-',
+    'recém-', 'bem-', 'mal-', 'pré-', 'pós-', 'pró-', 'anti-', 'super-', 'ultra-',
+    'guarda-', 'porta-', 'auto-'
+  ];
+
+  if (text1.endsWith('-') || text1.endsWith('‐') || text1.endsWith('–')) {
+    const rawPrefix = text1.slice(0, -1);
+    const lastWord = rawPrefix.split(/\s+/).pop().toLowerCase() + '-';
+    const isCompound = COMPOUND_PREFIXES.some(prefix => lastWord.endsWith(prefix));
+
+    if (isCompound) {
+      mergedText = rawPrefix + '-' + text2;
+    } else {
+      mergedText = rawPrefix + text2;
+    }
+  } else if (/["'“‘«(]$/.test(text1) || /^[)"'”’».,;:!?]/.test(text2)) {
+    mergedText = text1 + text2;
+  } else {
+    mergedText = text1 + ' ' + text2;
+  }
+
+  let mergedNote = h1.note || '';
+  if (h2.note && !mergedNote.includes(h2.note)) {
+    mergedNote = mergedNote ? `${mergedNote} | ${h2.note}` : h2.note;
+  }
+
+  return {
+    ...h1,
+    id: h1.id,
+    page: pageLabel,
+    text: mergedText.replace(/\s+/g, ' ').trim(),
+    note: mergedNote.trim(),
+    confidence: Math.max(h1.confidence || 0.8, h2.confidence || 0.8),
+    source: (h1.source === 'pdf_annotation' || h2.source === 'pdf_annotation') ? 'pdf_annotation' : (h1.source || h2.source),
+    color: h1.color || h2.color,
+    box: {
+      minY: h1.box?.minY ?? 0,
+      maxY: h2.box?.maxY ?? h1.box?.maxY ?? 0
+    }
+  };
+}
+
+/**
+ * Reúne grifos consecutivos que atravessam quebras de página em uma única frase contínua
+ */
+export function mergeCrossPageHighlights(highlights) {
+  if (!Array.isArray(highlights) || highlights.length <= 1) {
+    return highlights || [];
+  }
+
+  // Ordena por página e depois pela posição vertical de leitura
+  const sorted = [...highlights].sort((a, b) => {
+    const pA = parseInt(String(a.page || '0').split('-')[0], 10) || 0;
+    const pB = parseInt(String(b.page || '0').split('-')[0], 10) || 0;
+    if (pA !== pB) return pA - pB;
+    const yA = a.box?.minY ?? 0;
+    const yB = b.box?.minY ?? 0;
+    return yA - yB;
+  });
+
+  const merged = [];
+
+  for (let i = 0; i < sorted.length; i++) {
+    let item = sorted[i];
+
+    while (merged.length > 0) {
+      const prev = merged[merged.length - 1];
+      if (shouldMergeAcrossPages(prev, item)) {
+        merged.pop();
+        item = mergeTwoHighlights(prev, item);
+      } else {
+        break;
+      }
+    }
+
+    merged.push(item);
+  }
+
+  return merged;
+}
+
 /**
  * Função principal exportada: extrai grifos de qualquer arquivo suportado (.pdf, .txt, .html)
  */
@@ -662,14 +878,15 @@ export async function extractHighlightsFromFile(file, onProgress = () => {}) {
   if (!file) throw new Error('Nenhum arquivo informado.');
 
   const ext = file.name.split('.').pop().toLowerCase();
+  let raw = [];
 
   if (ext === 'pdf' || file.type === 'application/pdf') {
-    return await extractFromPdf(file, onProgress);
+    raw = await extractFromPdf(file, onProgress);
+  } else if (ext === 'txt' || ext === 'html' || ext === 'htm' || file.type.includes('text') || file.type.includes('html')) {
+    raw = await extractFromKindle(file, onProgress);
+  } else {
+    throw new Error(`Formato .${ext} não suportado. Utilize arquivos .pdf, .txt (My Clippings) ou .html (Kindle Notebook).`);
   }
 
-  if (ext === 'txt' || ext === 'html' || ext === 'htm' || file.type.includes('text') || file.type.includes('html')) {
-    return await extractFromKindle(file, onProgress);
-  }
-
-  throw new Error(`Formato .${ext} não suportado. Utilize arquivos .pdf, .txt (My Clippings) ou .html (Kindle Notebook).`);
+  return mergeCrossPageHighlights(raw);
 }

@@ -226,13 +226,13 @@ export default function CollectiveHighlights({ isArchiveView = false, customHigh
         const aCount = a.highlightedBy?.length || 1;
         const bCount = b.highlightedBy?.length || 1;
         if (bCount !== aCount) return bCount - aCount;
-        return (Number(a.page) || 0) - (Number(b.page) || 0);
+        return (parseInt(a.page, 10) || 0) - (parseInt(b.page, 10) || 0);
       }
       if (sortOrder === 'page_desc') {
-        return (Number(b.page) || 0) - (Number(a.page) || 0);
+        return (parseInt(b.page, 10) || 0) - (parseInt(a.page, 10) || 0);
       }
       // Padrão: page_asc
-      return (Number(a.page) || 0) - (Number(b.page) || 0);
+      return (parseInt(a.page, 10) || 0) - (parseInt(b.page, 10) || 0);
     });
 
     return list;
