@@ -72,11 +72,11 @@ export default function Countdown({ targetDate }) {
         <span>Contagem Regressiva para o Debate ★</span>
       </div>
 
-      <div className="flex items-center justify-center gap-1.5 sm:gap-2 w-full max-w-xs sm:max-w-sm mx-auto">
+      <div className="flex items-center justify-center gap-1.5 sm:gap-2 w-full mx-auto">
         
         {/* Dias */}
-        <div className="flex-1 min-w-0 w-12 sm:w-14 bg-[#141414] text-[#FEF08A] py-2 px-1 rounded-xl border-2 border-[#1E1E1E] shadow-[2px_2px_0px_#BC6C25] flex flex-col items-center justify-center text-center">
-          <span className="font-mono text-xl sm:text-2xl font-bold block leading-none tabular-nums text-center">
+        <div className="flex-1 min-w-0 bg-[#141414] text-[#FEF08A] py-2 px-1 rounded-xl border-2 border-[#1E1E1E] shadow-[2px_2px_0px_#BC6C25] flex flex-col items-center justify-center text-center">
+          <span className="font-mono text-lg sm:text-2xl font-bold block leading-none tabular-nums text-center truncate">
             {String(timeLeft.days).padStart(2, '0')}
           </span>
           <span className="text-[9px] sm:text-[10px] font-semibold tracking-normal text-stone-300 font-mono mt-0.5 leading-none text-center">
@@ -85,8 +85,8 @@ export default function Countdown({ targetDate }) {
         </div>
 
         {/* Hora */}
-        <div className="flex-1 min-w-0 w-12 sm:w-14 bg-[#141414] text-[#FEF08A] py-2 px-1 rounded-xl border-2 border-[#1E1E1E] shadow-[2px_2px_0px_#BC6C25] flex flex-col items-center justify-center text-center">
-          <span className="font-mono text-xl sm:text-2xl font-bold block leading-none tabular-nums text-center">
+        <div className="flex-1 min-w-0 bg-[#141414] text-[#FEF08A] py-2 px-1 rounded-xl border-2 border-[#1E1E1E] shadow-[2px_2px_0px_#BC6C25] flex flex-col items-center justify-center text-center">
+          <span className="font-mono text-lg sm:text-2xl font-bold block leading-none tabular-nums text-center truncate">
             {String(timeLeft.hours).padStart(2, '0')}
           </span>
           <span className="text-[9px] sm:text-[10px] font-semibold tracking-normal text-stone-300 font-mono mt-0.5 leading-none text-center">
@@ -95,8 +95,8 @@ export default function Countdown({ targetDate }) {
         </div>
 
         {/* Min */}
-        <div className="flex-1 min-w-0 w-12 sm:w-14 bg-[#141414] text-[#FEF08A] py-2 px-1 rounded-xl border-2 border-[#1E1E1E] shadow-[2px_2px_0px_#BC6C25] flex flex-col items-center justify-center text-center">
-          <span className="font-mono text-xl sm:text-2xl font-bold block leading-none tabular-nums text-center">
+        <div className="flex-1 min-w-0 bg-[#141414] text-[#FEF08A] py-2 px-1 rounded-xl border-2 border-[#1E1E1E] shadow-[2px_2px_0px_#BC6C25] flex flex-col items-center justify-center text-center">
+          <span className="font-mono text-lg sm:text-2xl font-bold block leading-none tabular-nums text-center truncate">
             {String(timeLeft.minutes).padStart(2, '0')}
           </span>
           <span className="text-[9px] sm:text-[10px] font-semibold tracking-normal text-stone-300 font-mono mt-0.5 leading-none text-center">
@@ -105,8 +105,8 @@ export default function Countdown({ targetDate }) {
         </div>
 
         {/* Seg */}
-        <div className="flex-1 min-w-0 w-12 sm:w-14 bg-[#141414] text-[#FEF08A] py-2 px-1 rounded-xl border-2 border-[#1E1E1E] shadow-[2px_2px_0px_#BC6C25] flex flex-col items-center justify-center text-center">
-          <span className="font-mono text-xl sm:text-2xl font-bold text-[#EF4444] block leading-none tabular-nums text-center">
+        <div className="flex-1 min-w-0 bg-[#141414] text-[#FEF08A] py-2 px-1 rounded-xl border-2 border-[#1E1E1E] shadow-[2px_2px_0px_#BC6C25] flex flex-col items-center justify-center text-center">
+          <span className="font-mono text-lg sm:text-2xl font-bold text-[#EF4444] block leading-none tabular-nums text-center truncate">
             {String(timeLeft.seconds).padStart(2, '0')}
           </span>
           <span className="text-[9px] sm:text-[10px] font-semibold tracking-normal text-stone-300 font-mono mt-0.5 leading-none text-center">

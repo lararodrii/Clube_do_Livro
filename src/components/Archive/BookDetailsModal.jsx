@@ -12,8 +12,11 @@ import {
   BookOpen,
   Sparkles,
   Trash2,
-  Pencil
+  Pencil,
+  ShieldAlert
 } from 'lucide-react';
+import ConfidentialSpoiler from '../common/ConfidentialSpoiler';
+import { formatTextWithBold } from '../../utils/textFormat';
 
 export default function BookDetailsModal({ book, isOpen, onClose }) {
   const { activeMember, members, addOrUpdateReview, deleteReview } = useClub();
@@ -26,6 +29,7 @@ export default function BookDetailsModal({ book, isOpen, onClose }) {
 
   const [rating, setRating] = useState(5);
   const [comment, setComment] = useState('');
+  const [isSpoiler, setIsSpoiler] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
@@ -33,9 +37,11 @@ export default function BookDetailsModal({ book, isOpen, onClose }) {
     if (memberReview) {
       setRating(memberReview.rating || 5);
       setComment(memberReview.comment || '');
+      setIsSpoiler(!!memberReview.isSpoiler);
     } else {
       setRating(5);
       setComment('');
+      setIsSpoiler(false);
     }
     setShowDeleteConfirm(false);
   }, [memberReview, activeMember.id]);
@@ -53,7 +59,7 @@ export default function BookDetailsModal({ book, isOpen, onClose }) {
       return;
     }
     setIsSubmitting(true);
-    addOrUpdateReview(book.id, { rating, comment });
+    addOrUpdateReview(book.id, { rating, comment, isSpoiler });
     setIsSubmitting(false);
   };
 
@@ -135,9 +141,9 @@ export default function BookDetailsModal({ book, isOpen, onClose }) {
               <h4 className="text-xs font-mono font-black uppercase tracking-wider text-[#141414] mb-1">
                 Sinopse da Obra
               </h4>
-              <p className="text-xs sm:text-sm text-[#57534E] leading-relaxed font-reading">
-                {book.synopsis}
-              </p>
+              <div className="text-xs sm:text-sm text-[#57534E] leading-relaxed font-reading whitespace-pre-line">
+                {formatTextWithBold(book.synopsis)}
+              </div>
             </div>
           </div>
         </div>
@@ -223,7 +229,20 @@ export default function BookDetailsModal({ book, isOpen, onClose }) {
               className="w-full text-xs sm:text-sm bg-[#FAF7F0] border-2 border-[#1E1E1E] rounded-lg p-3 text-[#141414] focus:outline-none focus:ring-2 focus:ring-[#D62828] leading-relaxed font-reading"
             />
 
-            <div className="flex items-center justify-end gap-2">
+            <div className="flex flex-wrap items-center justify-between gap-3 pt-1">
+              <label className="inline-flex items-center gap-1.5 cursor-pointer text-xs font-mono font-bold text-[#141414] select-none bg-[#FAF7F0] px-2.5 py-1.5 rounded-lg border border-[#1E1E1E]">
+                <input
+                  type="checkbox"
+                  checked={isSpoiler}
+                  onChange={(e) => setIsSpoiler(e.target.checked)}
+                  className="w-3.5 h-3.5 text-[#D62828] rounded border-[#1E1E1E] focus:ring-0"
+                />
+                <span className="flex items-center gap-1 text-[11px]">
+                  <ShieldAlert className="w-3.5 h-3.5 text-[#D62828]" />
+                  <span>Contém Spoiler / Confidencial</span>
+                </span>
+              </label>
+
               <button
                 type="submit"
                 disabled={isSubmitting || !comment.trim()}
@@ -314,9 +333,13 @@ export default function BookDetailsModal({ book, isOpen, onClose }) {
                       </div>
                     </div>
 
-                    <p className="text-xs sm:text-sm text-[#141414] leading-relaxed font-reading italic mt-2 pl-10 border-l-2 border-[#D62828]">
-                      "{review.comment}"
-                    </p>
+                    <div className="mt-2 pl-4 sm:pl-8">
+                      <ConfidentialSpoiler isSpoiler={review.isSpoiler}>
+                        <div className="text-xs sm:text-sm text-[#141414] leading-relaxed font-reading italic pl-3 border-l-2 border-[#D62828] whitespace-pre-line">
+                          "{formatTextWithBold(review.comment)}"
+                        </div>
+                      </ConfidentialSpoiler>
+                    </div>
                   </div>
                 );
               })}

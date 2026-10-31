@@ -4,6 +4,7 @@ import BookCover from '../common/BookCover';
 import StarRating from '../common/StarRating';
 import ComradeCat from '../common/ComradeCat';
 import BookDetailsModal from './BookDetailsModal';
+import { formatTextWithBold } from '../../utils/textFormat';
 import { 
   Library, 
   Search, 
@@ -181,8 +182,8 @@ export default function ArchiveSection() {
                         />
                       </div>
 
-                      <p className="text-[11px] text-[#57534E] line-clamp-2 mt-2 leading-relaxed font-reading">
-                        {book.synopsis}
+                      <p className="text-[11px] text-[#57534E] line-clamp-2 mt-2 leading-relaxed font-reading whitespace-pre-line">
+                        {formatTextWithBold(book.synopsis)}
                       </p>
                     </div>
                   </div>

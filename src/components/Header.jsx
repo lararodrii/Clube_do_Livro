@@ -1,23 +1,28 @@
 import React, { useState } from 'react';
 import { useClub } from '../context/ClubContext';
+import { useTheme } from '../context/ThemeContext';
 import EditProfileModal from './Members/EditProfileModal';
 import ComradeCat from './common/ComradeCat';
 import { 
-  RotateCcw, 
   BookOpen, 
   Vote, 
   Library, 
   BarChart3, 
   LogIn, 
-  LogOut 
+  LogOut,
+  Palette,
+  X,
+  Check
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
 export default function Header({ activeTab, setActiveTab }) {
-  const { activeMember, resetToDefaults, ballot, showToast } = useClub();
+  const { activeMember, ballot, showToast } = useClub();
   const { currentUser, isAuthenticated, logout, openAuthModal } = useAuth();
-  const [showResetConfirm, setShowResetConfirm] = useState(false);
+  const { theme, setTheme, themes, currentThemeInfo } = useTheme();
+
   const [isEditProfileOpen, setIsEditProfileOpen] = useState(false);
+  const [showThemeSelector, setShowThemeSelector] = useState(false);
 
   const handleLogoutClick = async () => {
     await logout();
@@ -39,27 +44,26 @@ export default function Header({ activeTab, setActiveTab }) {
   return (
     <header className="sticky top-0 z-40 bg-[#FAF7F0] border-b-2 border-[#1E1E1E] shadow-[0_3px_0px_0px_#1E1E1E]">
       
-      {/* Faixa Superior Editorial */}
+      {/* Faixa Superior Editorial com Layout Empilhável Responsivo */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between min-h-[5.5rem] py-2">
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-3 min-h-[5.5rem] py-3">
           
           {/* Logo e Nome do Clube com o Mascote O Gato Camarada */}
-          <div className="flex items-center gap-2 sm:gap-4">
+          <div className="flex items-center gap-2 sm:gap-4 w-full sm:w-auto justify-between sm:justify-start">
             
-            {/* O GATO CAMARADA (Mascote Oficial Fixo - Pose Grumpy) */}
-            <div className="flex items-center">
+            {/* O GATO CAMARADA (Mascote Oficial Fixo - Pose Grumpy e Conselhos Interativos) */}
+            <div className="flex items-center shrink-0">
               <ComradeCat 
                 pose="grumpy" 
                 size="sm" 
                 showBubble={true}
-                customQuote="Não vai lutar contra o fascismo?"
                 bubblePosition="right"
                 className="scale-90 sm:scale-100"
               />
             </div>
 
             {/* Título & Slogan Oficial */}
-            <div className="border-l-2 border-[#1E1E1E] pl-3 sm:pl-4 hidden xs:block">
+            <div className="border-l-2 border-[#1E1E1E] pl-3 sm:pl-4">
               <div className="flex items-center gap-2">
                 <h1 
                   onClick={() => setActiveTab('current')}
@@ -78,22 +82,84 @@ export default function Header({ activeTab, setActiveTab }) {
             </div>
           </div>
 
-          {/* Área de Ações e Seletor de Perfil */}
-          <div className="flex items-center gap-2 sm:gap-3">
+          {/* Área de Ações: Seletor de Tema, Reset e Perfil Ativo */}
+          <div className="flex flex-wrap items-center justify-center sm:justify-end gap-2 sm:gap-2.5 w-full sm:w-auto">
             
-            {/* Botão de Restaurar Dados (Reset) */}
-            <button
-              onClick={() => setShowResetConfirm(true)}
-              title="Restaurar dados padrão do clube"
-              className="p-2 text-[#57534E] hover:text-[#D62828] bg-white hover:bg-[#FDF0ED] border-2 border-[#1E1E1E] shadow-[2px_2px_0px_#1E1E1E] rounded-lg transition-transform hover:-translate-x-0.5 hover:-translate-y-0.5 active:translate-x-0.5 active:translate-y-0.5"
-            >
-              <RotateCcw className="w-4 h-4" />
-            </button>
+            {/* SELETOR DE TEMAS CRIATIVOS ("Modo Ideológico") */}
+            <div className="relative">
+              <button
+                type="button"
+                onClick={() => setShowThemeSelector(!showThemeSelector)}
+                title={`Modo Ideológico Atual: ${currentThemeInfo.name}`}
+                className="flex items-center gap-1.5 px-3 py-2 text-xs font-mono font-black bg-white hover:bg-[#FAF7F0] text-[#141414] border-2 border-[#1E1E1E] shadow-[2px_2px_0px_#1E1E1E] rounded-xl transition-transform hover:-translate-x-0.5 hover:-translate-y-0.5 active:translate-x-0.5 active:translate-y-0.5"
+              >
+                <span className="text-sm">{currentThemeInfo.icon}</span>
+                <span className="hidden md:inline">{currentThemeInfo.name}</span>
+                <Palette className="w-3.5 h-3.5 text-[#D62828]" />
+              </button>
 
-            {/* ÁREA DE AUTENTICAÇÃO / PERFIL ATIVO */}
+              {/* Popover / Dropdown de Temas */}
+              {showThemeSelector && (
+                <div className="absolute right-0 mt-2 w-72 sm:w-80 bg-white rounded-2xl border-2 border-[#1E1E1E] shadow-[6px_6px_0px_#1E1E1E] z-50 p-3 space-y-2 animate-fade-in text-left">
+                  <div className="flex items-center justify-between pb-2 border-b-2 border-[#1E1E1E]">
+                    <div className="flex items-center gap-1.5">
+                      <Palette className="w-4 h-4 text-[#D62828]" />
+                      <span className="text-xs font-headline font-black uppercase text-[#141414]">Modo Ideológico ★</span>
+                    </div>
+                    <button
+                      onClick={() => setShowThemeSelector(false)}
+                      className="p-1 rounded text-stone-500 hover:text-black"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+
+                  <div className="space-y-1.5 max-h-80 overflow-y-auto">
+                    {themes.map((t) => {
+                      const isSelected = theme === t.id;
+                      return (
+                        <button
+                          key={t.id}
+                          onClick={() => {
+                            setTheme(t.id);
+                            setShowThemeSelector(false);
+                            showToast(`Modo Ideológico alterado para "${t.name}"! ★`, 'info');
+                          }}
+                          className={`w-full p-2.5 rounded-xl border-2 text-left transition-all flex items-center justify-between ${
+                            isSelected
+                              ? 'border-[#D62828] bg-[#FDF0ED] shadow-[3px_3px_0px_#1E1E1E] -translate-x-0.5'
+                              : 'border-[#1E1E1E] bg-[#FAF7F0] hover:bg-white shadow-[2px_2px_0px_#1E1E1E]'
+                          }`}
+                        >
+                          <div className="flex items-center gap-2.5">
+                            <span className="text-xl p-1 bg-white rounded-lg border border-[#1E1E1E] shrink-0">{t.icon}</span>
+                            <div>
+                              <div className="flex items-center gap-1.5">
+                                <span className="text-xs font-headline font-black text-[#141414]">{t.name}</span>
+                                <span className="text-[9px] font-mono px-1.5 py-0.2 rounded bg-stone-200 text-stone-700 font-bold">{t.badge}</span>
+                              </div>
+                              <p className="text-[10px] text-[#57534E] font-reading leading-tight mt-0.5">{t.subtitle}</p>
+                            </div>
+                          </div>
+
+                          <div className="flex items-center gap-1 shrink-0 ml-2">
+                            <span className="w-3.5 h-3.5 rounded-full border border-black shadow-sm" style={{ backgroundColor: t.primaryColor }} />
+                            <span className="w-3.5 h-3.5 rounded-full border border-black shadow-sm" style={{ backgroundColor: t.bgColor }} />
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+            </div>
+
+
+
+            {/* ÁREA DE AUTENTICAÇÃO / PERFIL ATIVO (TRAVADO NA INTEGRANTE LOGADA) */}
             {isAuthenticated ? (
               <div className="flex items-center gap-2">
-                {/* CARD DE PERFIL FIXO E ESTÁTICO (SEM DROPDOWN, SEM SETA DE ALTERNAR) */}
+                {/* CARD DE PERFIL FIXO E ESTÁTICO (SEM DROPDOWN DE TROCAR LIVREMENTE) */}
                 <div 
                   className="flex items-center gap-2.5 p-1.5 pr-3 rounded-xl bg-white border-2 border-[#1E1E1E] shadow-[3px_3px_0px_#1E1E1E] select-none"
                   title={`Conectada como ${activeMember.name} (${currentUser?.email})`}
@@ -149,9 +215,9 @@ export default function Header({ activeTab, setActiveTab }) {
         </div>
       </div>
 
-      {/* Barra de Navegação por Abas (Tabs em estilo Carimbo Retrô) */}
+      {/* Barra de Navegação por Abas (Tabs 100% Responsivas: Grid 2x2 no Mobile, Flex no Desktop, sem cortes) */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 border-t-2 border-[#1E1E1E] bg-[#F6F2E9]">
-        <nav className="flex space-x-2 sm:space-x-4 overflow-x-auto py-2.5 scrollbar-none" aria-label="Tabs">
+        <nav className="grid grid-cols-2 md:flex md:flex-wrap items-center justify-center gap-2 py-2.5 w-full" aria-label="Tabs">
           {tabs.map((tab) => {
             const Icon = tab.icon;
             const isActive = activeTab === tab.id;
@@ -159,16 +225,16 @@ export default function Header({ activeTab, setActiveTab }) {
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className={`flex items-center gap-2 py-2 px-3.5 sm:px-4 rounded-xl text-xs sm:text-sm font-extrabold whitespace-nowrap transition-all border-2 border-[#1E1E1E] ${
+                className={`w-full md:w-auto flex items-center justify-center sm:justify-start gap-1.5 sm:gap-2 py-2 px-2.5 sm:px-4 rounded-xl text-xs sm:text-sm font-extrabold transition-all border-2 border-[#1E1E1E] ${
                   isActive
                     ? 'bg-[#D62828] text-white shadow-[3px_3px_0px_#1E1E1E] -translate-y-0.5'
                     : 'bg-white text-[#141414] hover:bg-[#FAF7F0] shadow-[2px_2px_0px_#1E1E1E] hover:-translate-y-0.5'
                 }`}
               >
-                <Icon className={`w-4 h-4 ${isActive ? 'text-[#FEF08A]' : 'text-[#D62828]'}`} />
-                <span>{tab.label}</span>
+                <Icon className={`w-4 h-4 shrink-0 ${isActive ? 'text-[#FEF08A]' : 'text-[#D62828]'}`} />
+                <span className="truncate">{tab.label}</span>
                 {tab.badge && (
-                  <span className={`text-[10px] uppercase font-mono font-black tracking-wider px-2 py-0.5 rounded ${
+                  <span className={`text-[9px] sm:text-[10px] uppercase font-mono font-black tracking-wider px-1.5 sm:px-2 py-0.5 rounded shrink-0 ${
                     isActive ? 'bg-[#FEF08A] text-[#141414]' : 'bg-[#D62828] text-white'
                   }`}>
                     {tab.badge}
@@ -186,39 +252,6 @@ export default function Header({ activeTab, setActiveTab }) {
         onClose={() => setIsEditProfileOpen(false)}
       />
 
-      {/* Modal de Confirmação de Reset */}
-      {showResetConfirm && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-stone-950/70 backdrop-blur-sm animate-fade-in">
-          <div className="bg-[#FAF7F0] rounded-2xl max-w-md w-full p-6 border-2 border-[#1E1E1E] shadow-[6px_6px_0px_#1E1E1E]">
-            <div className="flex items-center gap-2 text-[#D62828] font-black mb-2">
-              <span className="text-xl">★</span>
-              <h3 className="font-headline text-xl text-[#141414]">
-                Limpar e restaurar dados?
-              </h3>
-            </div>
-            <p className="text-xs text-[#57534E] mb-6 leading-relaxed font-reading">
-              Isso deixará a urna, o mural de citações e o acervo limpos e prontos para novas recomendações dos camaradas do Exército da Paty.
-            </p>
-            <div className="flex items-center justify-end gap-3">
-              <button
-                onClick={() => setShowResetConfirm(false)}
-                className="px-4 py-2 text-xs font-bold text-[#141414] bg-white hover:bg-stone-100 rounded-lg border-2 border-[#1E1E1E] shadow-[2px_2px_0px_#1E1E1E] transition-transform hover:-translate-x-0.5 hover:-translate-y-0.5"
-              >
-                Cancelar
-              </button>
-              <button
-                onClick={() => {
-                  resetToDefaults();
-                  setShowResetConfirm(false);
-                }}
-                className="px-4 py-2 text-xs font-extrabold bg-[#D62828] hover:bg-[#9E2A2B] text-white rounded-lg border-2 border-[#1E1E1E] shadow-[2px_2px_0px_#1E1E1E] transition-transform hover:-translate-x-0.5 hover:-translate-y-0.5"
-              >
-                Sim, Limpar Tudo ★
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </header>
   );
 }

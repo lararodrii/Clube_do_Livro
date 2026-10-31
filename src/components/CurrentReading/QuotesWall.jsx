@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { useClub } from '../../context/ClubContext';
 import { useAuth } from '../../context/AuthContext';
 import ComradeCat from '../common/ComradeCat';
+import ConfidentialSpoiler from '../common/ConfidentialSpoiler';
+import { formatTextWithBold } from '../../utils/textFormat';
 import { 
   Quote, 
   Send, 
@@ -10,7 +12,8 @@ import {
   Pencil,
   Check,
   X,
-  Sparkles
+  Sparkles,
+  ShieldAlert
 } from 'lucide-react';
 
 export default function QuotesWall() {
@@ -29,6 +32,7 @@ export default function QuotesWall() {
 
   const [text, setText] = useState('');
   const [page, setPage] = useState('');
+  const [isSpoiler, setIsSpoiler] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Estado para citação sendo editada
@@ -45,9 +49,10 @@ export default function QuotesWall() {
     if (!text.trim()) return;
 
     setIsSubmitting(true);
-    addQuote({ text, page });
+    addQuote({ text, page, isSpoiler });
     setText('');
     setPage('');
+    setIsSpoiler(false);
     setIsSubmitting(false);
 
     if (triggerComradeConfetti) {
@@ -147,13 +152,29 @@ export default function QuotesWall() {
         />
 
         <div className="flex flex-wrap items-center justify-between gap-3 mt-3">
-          <input
-            type="text"
-            value={page}
-            onChange={(e) => setPage(e.target.value)}
-            placeholder="Página (ex: p. 45)"
-            className="w-36 text-xs bg-white border-2 border-[#1E1E1E] rounded-lg px-3 py-2 text-[#141414] focus:outline-none font-mono"
-          />
+          <div className="flex flex-wrap items-center gap-2.5">
+            <input
+              type="text"
+              value={page}
+              onChange={(e) => setPage(e.target.value)}
+              placeholder="Página (ex: p. 45)"
+              className="w-32 text-xs bg-white border-2 border-[#1E1E1E] rounded-lg px-3 py-2 text-[#141414] focus:outline-none font-mono"
+            />
+
+            {/* Checkbox Antispoiler / Arquivo Confidencial */}
+            <label className="inline-flex items-center gap-1.5 cursor-pointer text-xs font-mono font-bold text-[#141414] select-none bg-white px-2.5 py-2 rounded-lg border border-[#1E1E1E] shadow-sm hover:bg-[#FAF7F0] transition-colors">
+              <input
+                type="checkbox"
+                checked={isSpoiler}
+                onChange={(e) => setIsSpoiler(e.target.checked)}
+                className="w-3.5 h-3.5 text-[#D62828] rounded border-[#1E1E1E] focus:ring-0"
+              />
+              <span className="flex items-center gap-1 text-[11px]">
+                <ShieldAlert className="w-3.5 h-3.5 text-[#D62828]" />
+                <span>Contém Spoiler / Confidencial</span>
+              </span>
+            </label>
+          </div>
 
           <button
             type="submit"
@@ -302,9 +323,11 @@ export default function QuotesWall() {
                   </div>
                 ) : (
                   <>
-                    <p className="text-xs sm:text-sm text-[#141414] leading-relaxed font-reading italic pl-3 border-l-2 border-[#D62828] my-2">
-                      "{quote.text}"
-                    </p>
+                    <ConfidentialSpoiler isSpoiler={quote.isSpoiler}>
+                      <div className="text-xs sm:text-sm text-[#141414] leading-relaxed font-reading italic pl-3 border-l-2 border-[#D62828] my-2 whitespace-pre-line">
+                        "{formatTextWithBold(quote.text)}"
+                      </div>
+                    </ConfidentialSpoiler>
 
                     {/* Botão de Curtida */}
                     <div className="flex items-center justify-end pt-2">

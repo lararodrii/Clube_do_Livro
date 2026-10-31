@@ -5,6 +5,7 @@ import ComradeCat from '../common/ComradeCat';
 import NominateModal from './NominateModal';
 import RouletteModal from './RouletteModal';
 import EditNominationModal from './EditNominationModal';
+import { formatTextWithBold } from '../../utils/textFormat';
 import { 
   Vote, 
   BookPlus, 
@@ -359,8 +360,8 @@ export default function VotingBallot() {
                       {/* Defesa da Indicação ("Por que ler") */}
                       {book.nominationReason && (
                         <div className="mt-3 p-2.5 bg-[#FAF7F0] rounded-lg border border-[#1E1E1E]/40">
-                          <p className="text-[11px] text-[#141414] italic font-reading line-clamp-3 leading-relaxed">
-                            "{book.nominationReason}"
+                          <p className="text-[11px] text-[#141414] italic font-reading line-clamp-3 leading-relaxed whitespace-pre-line">
+                            "{formatTextWithBold(book.nominationReason)}"
                           </p>
                         </div>
                       )}

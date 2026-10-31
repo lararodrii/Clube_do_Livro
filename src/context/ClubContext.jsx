@@ -17,14 +17,51 @@ const ClubContext = createContext(null);
 const CLUBE_COLLECTION = 'clube';
 const CLUBE_DOC_ID = 'clube_dados';
 
-// Confetti especial em tons de vermelho revolucionário, amarelo margarida e dourado
-export const triggerComradeConfetti = (particleCount = 75) => {
-  confetti({
-    particleCount,
-    spread: 70,
-    origin: { y: 0.65 },
-    colors: ['#D62828', '#9E2A2B', '#283618', '#FEF08A', '#BC6C25', '#FFFFFF']
-  });
+// Chuva de estrelas vermelhas e douradas (★) com efeito de celebração revolucionária
+export const triggerComradeConfetti = (particleCount = 85) => {
+  try {
+    const starShape = confetti.shapeFromText 
+      ? confetti.shapeFromText({ text: '★', scalar: 1.8 }) 
+      : 'circle';
+
+    confetti({
+      particleCount,
+      spread: 85,
+      origin: { y: 0.6 },
+      colors: ['#D62828', '#E11D48', '#F59E0B', '#FEF08A', '#D4A359', '#FFFFFF'],
+      shapes: [starShape, 'circle'],
+      scalar: 1.2
+    });
+
+    // Salva de canhões duplos para grandes celebrações
+    if (particleCount >= 90) {
+      setTimeout(() => {
+        confetti({
+          particleCount: Math.round(particleCount * 0.4),
+          angle: 60,
+          spread: 55,
+          origin: { x: 0, y: 0.7 },
+          colors: ['#D62828', '#FEF08A', '#F59E0B'],
+          shapes: [starShape]
+        });
+        confetti({
+          particleCount: Math.round(particleCount * 0.4),
+          angle: 120,
+          spread: 55,
+          origin: { x: 1, y: 0.7 },
+          colors: ['#D62828', '#FEF08A', '#F59E0B'],
+          shapes: [starShape]
+        });
+      }, 180);
+    }
+  } catch {
+    confetti({
+      particleCount,
+      spread: 70,
+      origin: { y: 0.65 },
+      colors: ['#D62828', '#9E2A2B', '#283618', '#FEF08A', '#BC6C25', '#FFFFFF']
+    });
+  }
 };
 
 export const triggerPinkConfetti = triggerComradeConfetti;
@@ -154,27 +191,10 @@ export function ClubProvider({ children }) {
     } catch {}
   };
 
-  // Resetar dados para o padrão limpo do Exército da Paty na nuvem
+  // Operação de reset desativada para proteger os dados do coletivo no Firebase Firestore
   const resetToDefaults = () => {
-    const defaultData = {
-      members: INITIAL_MEMBERS,
-      currentReading: INITIAL_CURRENT_READING,
-      meeting: INITIAL_MEETING,
-      quotes: [],
-      ballot: {
-        status: 'open',
-        title: 'Urna Popular do Exército da Paty ★',
-        maxVotesPerMember: 3,
-        books: []
-      },
-      archive: []
-    };
-
-    setData(defaultData);
-    syncToCloud(defaultData);
-
-    triggerComradeConfetti(80);
-    showToast('Dados reinicializados com sucesso no Firebase! 🐾★', 'pink');
+    console.warn('Operação de reset de fábrica desativada por segurança.');
+    showToast('A restauração de fábrica foi desativada para proteger os dados do coletivo! ★', 'info');
   };
 
   // === EDIÇÃO DE PERFIL DO MEMBRO ===
@@ -365,7 +385,7 @@ export function ClubProvider({ children }) {
   };
 
   // === MURAL DE CITAÇÕES ===
-  const addQuote = ({ page, text }) => {
+  const addQuote = ({ page, text, isSpoiler = false }) => {
     if (!currentUser || !isAuthenticated || !userProfile?.memberId) {
       openAuthModal('Faça login para pregar citações no Mural Revolucionário!', 'login');
       return;
@@ -383,6 +403,7 @@ export function ClubProvider({ children }) {
       bookTitle: data.currentReading?.title || 'Leitura Coletiva',
       page: formattedPage,
       text: text.trim(),
+      isSpoiler: !!isSpoiler,
       memberId: userProfile.memberId,
       authorName: authorMember.name,
       authorAvatar: authorMember.avatar,
@@ -847,7 +868,7 @@ export function ClubProvider({ children }) {
   }, [data.meeting?.dateTime, data.currentReading?.title, data.currentReading?.isArchived, data.archive]);
 
   // === ACERVO & RESENHAS ===
-  const addOrUpdateReview = (bookId, { rating, comment }) => {
+  const addOrUpdateReview = (bookId, { rating, comment, isSpoiler = false }) => {
     if (!currentUser || !isAuthenticated || !userProfile?.memberId) {
       openAuthModal('Faça login com seu perfil de camarada para publicar sua resenha!', 'login');
       return;
@@ -870,7 +891,7 @@ export function ClubProvider({ children }) {
         if (existingIndex >= 0) {
           newReviews = existingReviews.map((r, idx) => 
             idx === existingIndex 
-              ? { ...r, rating: Number(rating), comment: comment.trim(), date: today }
+              ? { ...r, rating: Number(rating), comment: comment.trim(), isSpoiler: !!isSpoiler, date: today }
               : r
           );
         } else {
@@ -880,6 +901,7 @@ export function ClubProvider({ children }) {
               memberId: reviewerId,
               rating: Number(rating),
               comment: comment.trim(),
+              isSpoiler: !!isSpoiler,
               date: today
             }
           ];

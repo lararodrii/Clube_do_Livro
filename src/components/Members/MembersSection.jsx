@@ -9,7 +9,10 @@ import {
   Star, 
   Sparkles, 
   Pencil, 
-  Check 
+  Check,
+  ShieldCheck,
+  Award,
+  BadgeCheck
 } from 'lucide-react';
 
 export default function MembersSection() {
@@ -36,7 +39,7 @@ export default function MembersSection() {
               <span className="text-[#D62828]">★</span>
             </h2>
             <p className="text-xs sm:text-sm text-[#57534E] mt-1 max-w-xl font-reading font-semibold">
-              Acompanhe o ritmo de leitura do coletivo, confira as credenciais de cada camarada e edite seus dados pessoais.
+              Acompanhe o ritmo de leitura do coletivo, confira as credenciais oficiais sindicais de cada camarada e edite seus dados pessoais.
             </p>
           </div>
 
@@ -112,28 +115,32 @@ export default function MembersSection() {
         </div>
       </div>
 
-      {/* OS 6 MEMBROS DO CLUBE */}
+      {/* CARTEIRINHAS DE FILIAÇÃO SINDICAL - AS 6 CAMARADAS */}
       <div>
-        <div className="flex items-center justify-between mb-6">
+        <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
           <div>
             <h3 className="font-headline text-2xl font-black text-[#141414] flex items-center gap-2">
-              <span>As 6 Camaradas do Exército da Paty</span>
+              <span>Carteiras de Filiação ao Comitê Literário</span>
               <span className="text-[#D62828]">★</span>
             </h3>
             <p className="text-xs text-[#57534E] font-reading font-semibold italic">
-              Conheça as integrantes, acompanhe suas leituras e fortaleça os laços do comitê
+              Registros sindicais oficiais das 6 integrantes com matrícula, foto 3x4, cargo e carimbos acumulados
             </p>
           </div>
-          <span className="text-xs font-mono font-black px-3 py-1 rounded-lg bg-[#FEF08A] text-[#141414] border-2 border-[#1E1E1E] shadow-[2px_2px_0px_#1E1E1E] flex items-center gap-1.5">
-            <span>★</span> 6 Camaradas Ativas
+          <span className="text-xs font-mono font-black px-3 py-1.5 rounded-lg bg-[#FEF08A] text-[#141414] border-2 border-[#1E1E1E] shadow-[2px_2px_0px_#1E1E1E] flex items-center gap-1.5">
+            <ShieldCheck className="w-4 h-4 text-[#D62828]" />
+            <span>6 Camaradas Homologadas</span>
           </span>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+        {/* Grid das Carteirinhas */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {members.map((member) => {
             const isMe = member.id === activeMember.id;
+            const matriculaCode = `CL-2026-00${member.id}`;
+            const photoUrl = `/avatars/gato${member.id}.jpg`;
 
-            // Inclui avaliações do acervo e da leitura atual (Semana 4)
+            // Avaliações do acervo e da leitura atual
             const allClubReviews = [
               ...(archive || []).flatMap(b => b.reviews || []),
               ...(currentReading?.reviews || [])
@@ -145,136 +152,180 @@ export default function MembersSection() {
             return (
               <div
                 key={member.id}
-                className={`retro-card rounded-2xl p-6 flex flex-col justify-between relative transition-all duration-200 border-2 border-[#1E1E1E] ${
+                className={`retro-card rounded-2xl p-5 sm:p-6 flex flex-col justify-between relative transition-all duration-200 border-2 border-[#1E1E1E] overflow-hidden ${
                   isMe 
-                    ? 'bg-[#FDF0ED] shadow-[6px_6px_0px_#D62828] -translate-x-0.5 -translate-y-0.5' 
-                    : 'bg-white shadow-[4px_4px_0px_#1E1E1E] hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[6px_6px_0px_#1E1E1E]'
+                    ? 'bg-[#FFFDF9] shadow-[6px_6px_0px_#D62828] -translate-x-0.5 -translate-y-0.5' 
+                    : 'bg-[#FFFDF9] shadow-[5px_5px_0px_#1E1E1E] hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[7px_7px_0px_#1E1E1E]'
                 }`}
               >
-                {/* Badge Ativo */}
+                {/* Cabeçalho Oficial da Carteirinha Sindical */}
+                <div className="bg-[#141414] text-[#FAF7F0] -mx-5 sm:-mx-6 -mt-5 sm:-mt-6 p-3 px-4 sm:px-5 border-b-2 border-[#1E1E1E] flex items-center justify-between">
+                  <div>
+                    <span className="text-[8px] sm:text-[9px] font-mono tracking-widest text-[#FEF08A] uppercase font-black block">
+                      COMITÊ CENTRAL • EXÉRCITO DA PATY
+                    </span>
+                    <span className="text-xs font-headline font-black tracking-tight text-white flex items-center gap-1 mt-0.5">
+                      <span className="text-[#D62828]">★</span> CARTEIRA DE FILIAÇÃO
+                    </span>
+                  </div>
+
+                  <span className="text-[10px] font-mono font-black text-[#FEF08A] bg-[#283618] px-2 py-0.5 rounded border border-[#DDA15E]">
+                    {matriculaCode}
+                  </span>
+                </div>
+
+                {/* Badge de Perfil Autenticado */}
                 {isMe && (
-                  <div className="absolute -top-3 right-6 z-20">
-                    <span className="flex items-center gap-1 text-[10px] font-mono font-black uppercase tracking-wider px-3 py-0.5 rounded bg-[#D62828] text-white border-2 border-[#1E1E1E] shadow-[2px_2px_0px_#1E1E1E]">
-                      <Check className="w-3 h-3" />
+                  <div className="mt-3 flex justify-end">
+                    <span className="inline-flex items-center gap-1 text-[9px] font-mono font-black uppercase tracking-wider px-2 py-0.5 rounded bg-[#D62828] text-white border border-[#1E1E1E] shadow-sm">
+                      <Check className="w-3 h-3 text-[#FEF08A]" />
                       ★ Seu Perfil Ativo
                     </span>
                   </div>
                 )}
 
-                <div>
-                  {/* Topo: Avatar e Identidade */}
-                  <div className="flex items-center gap-4 mb-4">
-                    <div className="relative shrink-0">
+                {/* Bloco de Identificação: Foto 3x4 + Dados Sindicais */}
+                <div className="mt-3 flex gap-3.5 sm:gap-4 items-start">
+                  
+                  {/* Foto 3x4 Oficial com Carimbo do Comitê */}
+                  <div className="relative shrink-0">
+                    <div className="w-20 h-24 sm:w-22 sm:h-26 rounded bg-stone-100 border-2 border-[#1E1E1E] shadow-[2px_2px_0px_#1E1E1E] overflow-hidden p-1 bg-white relative">
                       <img
-                        src={member.avatar}
-                        alt={member.name}
-                        className="w-16 h-16 rounded-xl object-cover border-2 border-[#1E1E1E] shadow-sm"
+                        src={photoUrl}
+                        alt={`Foto 3x4 de ${member.name}`}
+                        onError={(e) => {
+                          e.target.src = member.avatar;
+                        }}
+                        className="w-full h-full object-cover rounded-sm grayscale contrast-110"
                       />
-                      <span
-                        className="absolute -bottom-1 -right-1 w-4.5 h-4.5 rounded-full border-2 border-[#1E1E1E] flex items-center justify-center text-[8px] text-white font-bold"
-                        style={{ backgroundColor: member.color || '#D62828' }}
-                      >
-                        ★
+                      {/* Selo 3x4 sobreposto */}
+                      <span className="absolute bottom-1 right-1 text-[7px] font-mono font-extrabold bg-black/75 text-white px-1 rounded">
+                        3x4 OFICIAL
                       </span>
                     </div>
 
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center justify-between">
-                        <h4 className="font-headline text-lg font-black text-[#141414] truncate">
-                          {member.name}
-                        </h4>
-                        {isMe && (
-                          <button
-                            type="button"
-                            onClick={() => {
-                              if (!isAuthenticated) {
-                                openAuthModal('Faça login para editar seu perfil!', 'login');
-                                return;
-                              }
-                              setIsEditProfileOpen(true);
-                            }}
-                            title="Editar meu perfil"
-                            className="p-1 hover:bg-[#FEF08A] text-[#141414] rounded border border-[#1E1E1E] transition-colors"
-                          >
-                            <Pencil className="w-3.5 h-3.5" />
-                          </button>
-                        )}
+                    {/* Carimbo de Tinta Circular Rotacionado "FILIADA EM DIA" */}
+                    <div className="absolute -bottom-2 -right-3 transform -rotate-12 pointer-events-none select-none">
+                      <div className="border-2 border-[#D62828] text-[#D62828] rounded-full w-12 h-12 flex flex-col items-center justify-center p-0.5 bg-white/90 shadow-sm opacity-90 text-[7px] font-mono font-black text-center leading-tight">
+                        <span>★</span>
+                        <span>EM DIA</span>
                       </div>
-                      <p className="text-xs text-[#D62828] font-reading font-bold italic">
-                        {member.roleBadge}
-                      </p>
-                      {member.nickname && (
-                        <p className="text-[11px] font-mono font-bold text-[#283618] truncate mt-0.5">
-                          🐾 "{member.nickname}"
-                        </p>
+                    </div>
+                  </div>
+
+                  {/* Informações Funcionais */}
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center justify-between">
+                      <h4 className="font-headline text-base sm:text-lg font-black text-[#141414] leading-tight truncate">
+                        {member.name}
+                      </h4>
+                      {isMe && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (!isAuthenticated) {
+                              openAuthModal('Faça login para editar seu perfil!', 'login');
+                              return;
+                            }
+                            setIsEditProfileOpen(true);
+                          }}
+                          title="Editar meu perfil"
+                          className="p-1 hover:bg-[#FEF08A] text-[#141414] rounded border border-[#1E1E1E] transition-colors shrink-0 ml-1"
+                        >
+                          <Pencil className="w-3.5 h-3.5" />
+                        </button>
                       )}
-                      <span className="text-[10px] text-[#57534E] font-mono block mt-0.5">
-                        No coletivo desde {member.joinedAt}
+                    </div>
+
+                    {/* Cargo em Faixa Retrô */}
+                    <div className="mt-1">
+                      <span className="inline-block text-[10px] font-mono font-black uppercase tracking-wider px-2 py-0.5 rounded bg-[#FEF08A] text-[#141414] border border-[#1E1E1E]">
+                        {member.roleBadge}
                       </span>
                     </div>
-                  </div>
 
-                  {/* Bio */}
-                  <p className="text-xs text-[#141414] leading-relaxed font-reading italic bg-[#FAF7F0] p-3 rounded-xl border border-[#1E1E1E]/30 mb-4">
-                    "{member.bio}"
-                  </p>
+                    {member.nickname && (
+                      <p className="text-[11px] font-mono font-bold text-[#283618] truncate mt-1">
+                        🐾 "{member.nickname}"
+                      </p>
+                    )}
 
-                  {/* Livro Favorito */}
-                  <div className="flex items-start gap-2 text-xs mb-4">
-                    <span className="text-[#D62828] font-black text-xs shrink-0 mt-0.5">★</span>
-                    <div>
-                      <span className="text-[#EF4444] text-[10px] font-mono font-bold uppercase tracking-wider block">Leitura de Cabeceira:</span>
-                      <strong className="text-[#141414] font-headline">{member.favBook}</strong>
-                    </div>
-                  </div>
-
-                  {/* Métricas Individuais */}
-                  <div className="grid grid-cols-3 gap-2 py-3 border-y-2 border-[#1E1E1E] text-center mb-5 font-mono">
-                    <div>
-                      <span className="font-black text-xs text-[#D62828] block">
-                        {reviewsAuthored}
-                      </span>
-                      <span className="text-[10px] text-[#57534E]">Resenhas</span>
-                    </div>
-
-                    <div>
-                      <span className="font-black text-xs text-[#D62828] block">
-                        {quotesAuthored}
-                      </span>
-                      <span className="text-[10px] text-[#57534E]">Citações</span>
-                    </div>
-
-                    <div>
-                      <span className={`font-black text-xs block ${rsvpConfirmed ? 'text-[#283618]' : 'text-stone-400'}`}>
-                        {rsvpConfirmed ? 'Presente ★' : 'Pendente'}
-                      </span>
-                      <span className="text-[10px] text-[#57534E]">Reunião</span>
-                    </div>
+                    <span className="text-[9px] text-[#57534E] font-mono block mt-1">
+                      Filiação: {member.joinedAt || '2026'}
+                    </span>
                   </div>
                 </div>
 
-                {/* Botões de Ação */}
-                {isMe ? (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      if (!isAuthenticated) {
-                        openAuthModal('Faça login com seu perfil para editar suas informações!', 'login');
-                        return;
-                      }
-                      setIsEditProfileOpen(true);
-                    }}
-                    className="w-full py-2.5 rounded-xl text-xs font-mono font-black uppercase tracking-wider bg-[#D62828] hover:bg-[#9E2A2B] text-white border-2 border-[#1E1E1E] shadow-[3px_3px_0px_#1E1E1E] transition-transform hover:-translate-x-0.5 hover:-translate-y-0.5 active:translate-x-0.5 active:translate-y-0.5 flex items-center justify-center gap-2"
-                  >
-                    <Pencil className="w-3.5 h-3.5 text-[#FEF08A]" />
-                    <span>Editar Meu Perfil ★</span>
-                  </button>
-                ) : (
-                  <div className="w-full py-2.5 rounded-xl text-xs font-mono font-bold uppercase tracking-wider bg-[#FAF7F0] text-[#57534E] border-2 border-[#1E1E1E] shadow-[2px_2px_0px_#1E1E1E] flex items-center justify-center gap-1.5 select-none">
-                    <span className="text-[#283618]">★</span>
-                    <span>Camarada do Coletivo</span>
+                {/* Declaração Ideológica / Bio */}
+                <div className="mt-4 p-2.5 rounded-lg bg-[#FAF7F0] border border-[#1E1E1E]/40 text-xs text-[#141414] font-reading italic leading-relaxed">
+                  <span className="text-[9px] font-mono font-black text-[#D62828] uppercase not-italic block mb-0.5">
+                    ★ Declaração Ideológica:
+                  </span>
+                  "{member.bio}"
+                </div>
+
+                {/* Leitura de Cabeceira */}
+                <div className="mt-3 flex items-start gap-1.5 text-xs">
+                  <span className="text-[#D62828] font-black text-xs shrink-0 mt-0.5">★</span>
+                  <div className="min-w-0">
+                    <span className="text-[9px] font-mono font-bold uppercase text-[#57534E] block">
+                      Livro de Cabeceira:
+                    </span>
+                    <p className="font-headline font-bold text-[#141414] text-xs truncate">
+                      {member.favBook}
+                    </p>
                   </div>
-                )}
+                </div>
+
+                {/* Selos & Carimbos Acumulados de Leitura */}
+                <div className="mt-4 pt-3 border-t-2 border-[#1E1E1E]">
+                  <span className="text-[9px] font-mono font-black uppercase tracking-wider text-[#57534E] block mb-2">
+                    Carimbos Homologados de Leitura:
+                  </span>
+
+                  <div className="flex flex-wrap items-center gap-1.5 mb-3">
+                    <span className="text-[9px] font-mono font-black uppercase px-2 py-0.5 rounded bg-[#FAF7F0] border border-[#1E1E1E] text-[#141414] flex items-center gap-1">
+                      <Award className="w-3 h-3 text-[#D62828]" />
+                      <span>{reviewsAuthored} {reviewsAuthored === 1 ? 'Resenha' : 'Resenhas'}</span>
+                    </span>
+
+                    <span className="text-[9px] font-mono font-black uppercase px-2 py-0.5 rounded bg-[#FAF7F0] border border-[#1E1E1E] text-[#141414] flex items-center gap-1">
+                      <span>★</span>
+                      <span>{quotesAuthored} Citações</span>
+                    </span>
+
+                    <span className={`text-[9px] font-mono font-black uppercase px-2 py-0.5 rounded border border-[#1E1E1E] flex items-center gap-1 ${
+                      rsvpConfirmed ? 'bg-[#283618] text-[#FEF08A]' : 'bg-stone-100 text-stone-500'
+                    }`}>
+                      <BadgeCheck className="w-3 h-3" />
+                      <span>{rsvpConfirmed ? 'Presença Confirmada' : 'Presença Pendente'}</span>
+                    </span>
+                  </div>
+                </div>
+
+                {/* Rodapé da Carteira com Ação */}
+                <div className="mt-2 pt-2 border-t border-[#1E1E1E]/20">
+                  {isMe ? (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (!isAuthenticated) {
+                          openAuthModal('Faça login com seu perfil para editar suas informações!', 'login');
+                          return;
+                        }
+                        setIsEditProfileOpen(true);
+                      }}
+                      className="w-full py-2 rounded-xl text-xs font-mono font-black uppercase tracking-wider bg-[#D62828] hover:bg-[#9E2A2B] text-white border-2 border-[#1E1E1E] shadow-[2px_2px_0px_#1E1E1E] transition-transform hover:-translate-x-0.5 hover:-translate-y-0.5 active:translate-x-0.5 active:translate-y-0.5 flex items-center justify-center gap-2"
+                    >
+                      <Pencil className="w-3.5 h-3.5 text-[#FEF08A]" />
+                      <span>Atualizar Minha Carteira ★</span>
+                    </button>
+                  ) : (
+                    <div className="w-full py-1.5 text-[10px] font-mono font-bold uppercase tracking-wider text-center text-[#57534E] select-none bg-[#FAF7F0] rounded border border-[#1E1E1E]">
+                      ★ Registro Sindical Autenticado
+                    </div>
+                  )}
+                </div>
 
               </div>
             );

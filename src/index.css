@@ -2,25 +2,113 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ═══════════════════════════════════════════════════════════════
+   PALETAS TEMÁTICAS IDEOLÓGICAS (Modo Ideológico)
+   1. Imprensa Clandestina (Papel Jornal & Xilogravura)
+   2. Sierra Maestra & Café (Verde Guerrilha & Terracota)
+   3. Manifesto Carmim (Alto Contraste Escuro Carbono)
+   4. Socialismo Cibernético (Cybersyn Noir 1970s)
+   ═══════════════════════════════════════════════════════════════ */
+
+:root,
+[data-theme='clandestina'] {
+  --theme-bg: #F5F0E6;
+  --theme-header-bg: #FAF7F0;
+  --theme-sub-bg: #F6F2E9;
+  --theme-card: #FFFFFF;
+  --theme-card-subtle: #FAF7F0;
+  --theme-text: #141414;
+  --theme-text-muted: #57534E;
+  --theme-primary: #D62828;
+  --theme-primary-hover: #9E2A2B;
+  --theme-primary-text: #FFFFFF;
+  --theme-border: #141414;
+  --theme-shadow: #141414;
+  --theme-accent: #FEF08A;
+  --theme-accent-gold: #F59E0B;
+  --theme-olive: #283618;
+  --theme-font-mono: 'JetBrains Mono', 'Courier New', monospace;
+}
+
+[data-theme='sierra'] {
+  --theme-bg: #162419;
+  --theme-header-bg: #1B2B1F;
+  --theme-sub-bg: #131E15;
+  --theme-card: #231915;
+  --theme-card-subtle: #2D201A;
+  --theme-text: #EDE6D6;
+  --theme-text-muted: #B8ADA0;
+  --theme-primary: #D4A359;
+  --theme-primary-hover: #BF8E42;
+  --theme-primary-text: #162419;
+  --theme-border: #D4A359;
+  --theme-shadow: #0A110B;
+  --theme-accent: #DDA15E;
+  --theme-accent-gold: #EAB308;
+  --theme-olive: #3D5A2B;
+  --theme-font-mono: 'JetBrains Mono', 'Courier New', monospace;
+}
+
+[data-theme='carmim'] {
+  --theme-bg: #0F0F12;
+  --theme-header-bg: #141418;
+  --theme-sub-bg: #0B0B0E;
+  --theme-card: #18181C;
+  --theme-card-subtle: #222228;
+  --theme-text: #F3F4F6;
+  --theme-text-muted: #9CA3AF;
+  --theme-primary: #E11D48;
+  --theme-primary-hover: #BE123C;
+  --theme-primary-text: #FFFFFF;
+  --theme-border: #E11D48;
+  --theme-shadow: #000000;
+  --theme-accent: #F59E0B;
+  --theme-accent-gold: #FBBF24;
+  --theme-olive: #4C1D24;
+  --theme-font-mono: 'JetBrains Mono', 'Courier New', monospace;
+}
+
+[data-theme='cybersyn'] {
+  --theme-bg: #0B132B;
+  --theme-header-bg: #111B38;
+  --theme-sub-bg: #070D1E;
+  --theme-card: #1C2541;
+  --theme-card-subtle: #263359;
+  --theme-text: #E0FBFC;
+  --theme-text-muted: #9BB1C8;
+  --theme-primary: #FF2A54;
+  --theme-primary-hover: #E01E45;
+  --theme-primary-text: #FFFFFF;
+  --theme-border: #FF2A54;
+  --theme-shadow: #050914;
+  --theme-accent: #FFBE0B;
+  --theme-accent-gold: #FFBE0B;
+  --theme-olive: #1F4E5B;
+  --theme-font-mono: 'JetBrains Mono', 'Courier New', monospace;
+}
+
 @layer base {
   html {
     scroll-behavior: smooth;
   }
   
   body {
-    background-color: #F6F2E9;
-    color: #141414;
+    background-color: var(--theme-bg);
+    color: var(--theme-text);
     font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
-    background-image: 
-      radial-gradient(#1E1E1E 0.75px, transparent 0.75px),
-      radial-gradient(circle at 15% 15%, rgba(214, 40, 40, 0.04) 0%, transparent 50%),
-      radial-gradient(circle at 85% 85%, rgba(40, 54, 24, 0.05) 0%, transparent 50%);
-    background-size: 24px 24px, 100% 100%, 100% 100%;
     min-height: 100vh;
+    transition: background-color 0.3s ease, color 0.3s ease;
+  }
+
+  /* Toque monoespaçado no tema Cybersyn */
+  [data-theme='cybersyn'] .font-mono,
+  [data-theme='cybersyn'] .tabular-nums {
+    font-family: var(--theme-font-mono) !important;
+    letter-spacing: 0.04em;
   }
 
   ::selection {
-    background: #D62828;
+    background: var(--theme-primary);
     color: #FFFFFF;
   }
 }
@@ -31,93 +119,152 @@
   height: 9px;
 }
 ::-webkit-scrollbar-track {
-  background: #F6F2E9;
-  border-left: 2px solid #1E1E1E;
+  background: var(--theme-bg);
+  border-left: 2px solid var(--theme-border);
 }
 ::-webkit-scrollbar-thumb {
-  background: #D62828;
-  border: 2px solid #1E1E1E;
+  background: var(--theme-primary);
+  border: 2px solid var(--theme-border);
   border-radius: 0px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #9E2A2B;
+  background: var(--theme-primary-hover);
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   TEXTURA GRANULADA DE PAPEL/PÔSTER VINTAGE
+   ═══════════════════════════════════════════════════════════════ */
+.film-grain-overlay {
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='1'/%3E%3C/svg%3E");
+  pointer-events: none;
 }
 
 /* Neo-Brutalist Revolutionary Poster Card */
 .retro-card {
-  background-color: #FFFFFF;
-  border: 2px solid #1E1E1E;
-  box-shadow: 4px 4px 0px 0px #1E1E1E;
-  transition: transform 0.15s ease, box-shadow 0.15s ease;
+  background-color: var(--theme-card);
+  color: var(--theme-text);
+  border: 2px solid var(--theme-border);
+  box-shadow: 4px 4px 0px 0px var(--theme-shadow);
+  transition: transform 0.15s ease, box-shadow 0.15s ease, background-color 0.25s ease, border-color 0.25s ease;
 }
 
 .retro-card-hover:hover {
   transform: translate(-2px, -2px);
-  box-shadow: 6px 6px 0px 0px #1E1E1E;
+  box-shadow: 6px 6px 0px 0px var(--theme-shadow);
 }
 
 /* Interactive Button Neo-Brutalist */
 .retro-btn {
-  border: 2px solid #1E1E1E;
-  box-shadow: 3px 3px 0px 0px #1E1E1E;
+  border: 2px solid var(--theme-border);
+  box-shadow: 3px 3px 0px 0px var(--theme-shadow);
   font-weight: 800;
   transition: all 0.12s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .retro-btn:hover {
   transform: translate(-1px, -1px);
-  box-shadow: 4px 4px 0px 0px #1E1E1E;
+  box-shadow: 4px 4px 0px 0px var(--theme-shadow);
 }
 
 .retro-btn:active {
   transform: translate(2px, 2px);
-  box-shadow: 1px 1px 0px 0px #1E1E1E;
+  box-shadow: 1px 1px 0px 0px var(--theme-shadow);
 }
 
-/* Red Star & Stamp Styles */
+/* ═══════════════════════════════════════════════════════════════
+   EFEITO CARIMBO DE TINTA (RUBBER STAMP) COM ANIMAÇÃO SLAM
+   ═══════════════════════════════════════════════════════════════ */
+@keyframes stamp-slam {
+  0% {
+    opacity: 0;
+    transform: scale(2.2) rotate(-8deg);
+  }
+  60% {
+    opacity: 0.95;
+    transform: scale(0.92) rotate(-1deg);
+  }
+  85% {
+    transform: scale(1.05) rotate(-3deg);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) rotate(-2deg);
+  }
+}
+
 .rev-stamp {
   display: inline-flex;
   align-items: center;
   gap: 0.35rem;
-  border: 2px solid #1E1E1E;
-  font-weight: 800;
+  border: 2px solid currentColor;
+  font-weight: 900;
   text-transform: uppercase;
-  letter-spacing: 0.05em;
-  box-shadow: 2px 2px 0px 0px #1E1E1E;
+  letter-spacing: 0.08em;
+  padding: 0.2rem 0.6rem;
+  border-radius: 4px;
+  transform: rotate(-2deg);
+  box-shadow: 2px 2px 0px 0px rgba(0, 0, 0, 0.3);
+  position: relative;
+  mask-image: radial-gradient(circle, black 80%, rgba(0,0,0,0.8) 100%);
 }
 
-/* Realistic 3D Physical Book Styles with Editorial Depth */
+.rev-stamp-animate {
+  animation: stamp-slam 0.4s cubic-bezier(0.2, 0.9, 0.3, 1.2) forwards;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   PISCAR DE OLHOS DO GATO CAMARADA (LIVING MASCOT)
+   ═══════════════════════════════════════════════════════════════ */
+@keyframes cat-blink {
+  0%, 94%, 100% {
+    transform: scaleY(1);
+  }
+  96%, 98% {
+    transform: scaleY(0.08);
+  }
+}
+
+.cat-eyelid-blink {
+  transform-origin: 80px 72px;
+  animation: cat-blink 4s infinite ease-in-out;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   DOCUMENTO CONFIDENCIAL / CENSURADO (ANTI-SPOILER)
+   ═══════════════════════════════════════════════════════════════ */
+.censored-tape {
+  background: #000000;
+  color: #FFFFFF;
+  position: relative;
+  display: inline-block;
+  user-select: none;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.censored-tape:hover {
+  background: #1C1917;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   REALISTIC 3D PHYSICAL BOOK STYLES WITH EDITORIAL DEPTH
+   ═══════════════════════════════════════════════════════════════ */
 .book-3d-wrapper {
-  perspective: 1400px;
+  perspective: 1200px;
 }
 
 .book-3d {
   position: relative;
   transform-style: preserve-3d;
-  transform: rotateY(-16deg) rotateX(3deg);
-  transition: transform 0.45s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.45s cubic-bezier(0.16, 1, 0.3, 1);
-  box-shadow: 
-    -16px 20px 32px -4px rgba(15, 15, 15, 0.52),
-    -6px 8px 16px -2px rgba(20, 20, 20, 0.35),
-    0 2px 4px rgba(0, 0, 0, 0.25);
-}
-
-.book-3d:hover {
-  transform: rotateY(-4deg) rotateX(1deg) translateY(-8px);
-  box-shadow: 
-    -22px 28px 42px -6px rgba(15, 15, 15, 0.62),
-    -8px 12px 20px -2px rgba(20, 20, 20, 0.42),
-    0 4px 8px rgba(0, 0, 0, 0.3);
+  transition: transform 0.2s ease-out, box-shadow 0.25s ease-out;
 }
 
 /* Laterais das páginas do livro físico (Page block depth) */
-.book-3d::before {
+.book-pages-block {
   content: '';
   position: absolute;
   top: 4px;
   bottom: 4px;
-  right: -13px;
-  width: 13px;
   background: repeating-linear-gradient(
     to bottom,
     #FAF7F0,
@@ -128,7 +275,7 @@
   transform: rotateY(90deg);
   transform-origin: left;
   border: 1px solid #1E1E1E;
-  box-shadow: inset 0 0 4px rgba(0, 0, 0, 0.15);
+  box-shadow: inset 0 0 4px rgba(0, 0, 0, 0.2);
 }
 
 /* Lombada realista com espessura na esquerda */
@@ -137,11 +284,11 @@
   top: 0;
   bottom: 0;
   left: 0;
-  width: 20px;
+  width: 22px;
   background: linear-gradient(
     to right,
-    rgba(0, 0, 0, 0.7) 0%,
-    rgba(255, 255, 255, 0.18) 18%,
+    rgba(0, 0, 0, 0.72) 0%,
+    rgba(255, 255, 255, 0.2) 20%,
     rgba(0, 0, 0, 0.15) 45%,
     rgba(255, 255, 255, 0.28) 70%,
     rgba(0, 0, 0, 0.55) 88%,
@@ -156,13 +303,13 @@
   position: absolute;
   top: 0;
   bottom: 0;
-  left: 17px;
+  left: 18px;
   width: 3px;
   background: linear-gradient(
     to right,
-    rgba(0, 0, 0, 0.6) 0%,
-    rgba(255, 255, 255, 0.45) 50%,
-    rgba(0, 0, 0, 0.25) 100%
+    rgba(0, 0, 0, 0.65) 0%,
+    rgba(255, 255, 255, 0.5) 50%,
+    rgba(0, 0, 0, 0.3) 100%
   );
   box-shadow: 0 0 2px rgba(0, 0, 0, 0.5);
   pointer-events: none;

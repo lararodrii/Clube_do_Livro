@@ -5,6 +5,7 @@ import BookCover from '../common/BookCover';
 import ComradeCat from '../common/ComradeCat';
 import EditCurrentReadingModal from './EditCurrentReadingModal';
 import BookEvaluationModal from './BookEvaluationModal';
+import { formatTextWithBold } from '../../utils/textFormat';
 import { 
   BookOpen, 
   CheckCircle2, 
@@ -147,23 +148,23 @@ export default function CurrentReadingCard() {
           </span>
         </div>
 
-        <div className="flex items-center gap-2.5">
+        <div className="flex flex-wrap items-center gap-2 sm:gap-2.5 w-full sm:w-auto">
           {/* Alternar Mockup 3D */}
           <button
             type="button"
             onClick={() => setPrefer3DMockup(!prefer3DMockup)}
             title="Alternar entre capa original e mockup 3D realista"
-            className="flex items-center gap-1.5 px-3 py-1 text-xs font-mono font-bold text-[#141414] bg-white hover:bg-[#FAF7F0] border-2 border-[#1E1E1E] shadow-[2px_2px_0px_#1E1E1E] rounded-lg transition-transform hover:-translate-x-0.5 hover:-translate-y-0.5 active:translate-x-0.5 active:translate-y-0.5"
+            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-mono font-bold text-[#141414] bg-white hover:bg-[#FAF7F0] border-2 border-[#1E1E1E] shadow-[2px_2px_0px_#1E1E1E] rounded-lg transition-transform hover:-translate-x-0.5 hover:-translate-y-0.5 active:translate-x-0.5 active:translate-y-0.5"
           >
             <Layers className="w-3.5 h-3.5 text-[#D62828]" />
-            <span className="hidden sm:inline">{prefer3DMockup ? 'Capa Plana' : 'Mockup 3D'}</span>
+            <span>{prefer3DMockup ? 'Capa Plana' : 'Mockup 3D'}</span>
           </button>
 
           <button
             type="button"
             onClick={handleEditClick}
             title="Editar informações da leitura atual"
-            className="flex items-center gap-1.5 px-3 py-1 text-xs font-mono font-bold text-white bg-[#283618] hover:bg-[#1E2812] border-2 border-[#1E1E1E] shadow-[2px_2px_0px_#1E1E1E] rounded-lg transition-transform hover:-translate-x-0.5 hover:-translate-y-0.5 active:translate-x-0.5 active:translate-y-0.5"
+            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-mono font-bold text-white bg-[#283618] hover:bg-[#1E2812] border-2 border-[#1E1E1E] shadow-[2px_2px_0px_#1E1E1E] rounded-lg transition-transform hover:-translate-x-0.5 hover:-translate-y-0.5 active:translate-x-0.5 active:translate-y-0.5"
           >
             <Pencil className="w-3.5 h-3.5 text-[#FEF08A]" />
             <span>Editar Obra</span>
@@ -174,14 +175,14 @@ export default function CurrentReadingCard() {
             type="button"
             onClick={handleArchiveClick}
             title={isArchived ? "Obra já arquivada no Acervo Coletivo" : "Arquivar esta obra no Acervo & Resenhas"}
-            className={`flex items-center gap-1.5 px-3 py-1 text-xs font-mono font-bold border-2 border-[#1E1E1E] shadow-[2px_2px_0px_#1E1E1E] rounded-lg transition-transform hover:-translate-x-0.5 hover:-translate-y-0.5 active:translate-x-0.5 active:translate-y-0.5 ${
+            className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-mono font-bold border-2 border-[#1E1E1E] shadow-[2px_2px_0px_#1E1E1E] rounded-lg transition-transform hover:-translate-x-0.5 hover:-translate-y-0.5 active:translate-x-0.5 active:translate-y-0.5 ${
               isArchived
                 ? 'bg-stone-200 text-[#57534E] hover:bg-stone-300'
                 : 'bg-[#FEF08A] hover:bg-[#FDE047] text-[#141414]'
             }`}
           >
             <Archive className="w-3.5 h-3.5 text-[#D62828]" />
-            <span>{isArchived ? 'Obra Já Arquivada' : 'Arquivar Obra Manualmente'}</span>
+            <span>{isArchived ? 'Obra Arquivada' : 'Arquivar Manualmente'}</span>
           </button>
         </div>
       </div>
@@ -206,15 +207,16 @@ export default function CurrentReadingCard() {
         </div>
       )}
 
-      {/* Conteúdo Principal: Capa 3D + Detalhes */}
+      {/* Conteúdo Principal: Capa 3D Centralizada no Mobile + Detalhes */}
       <div className="grid grid-cols-1 md:grid-cols-12 gap-8 items-start">
         
-        {/* Coluna da Capa */}
-        <div className="md:col-span-5 lg:col-span-4 flex flex-col items-center">
+        {/* Coluna da Capa Centralizada no Mobile */}
+        <div className="md:col-span-5 lg:col-span-4 flex flex-col items-center justify-center text-center mx-auto w-full">
           <BookCover
             src={currentReading.coverUrl}
             title={currentReading.title}
             author={currentReading.author}
+            pages={currentReading.pages}
             size="lg"
             forceRealistic3D={prefer3DMockup}
             badge={
@@ -249,8 +251,8 @@ export default function CurrentReadingCard() {
               <div className="flex items-center gap-2 text-[#EF4444] font-mono text-[10px] uppercase font-black mb-1">
                 <span>★ RESUMO DA OBRA:</span>
               </div>
-              <p className={`font-reading ${showFullSynopsis ? '' : 'line-clamp-3'}`}>
-                {currentReading.synopsis}
+              <p className={`font-reading whitespace-pre-line leading-relaxed ${showFullSynopsis ? '' : 'line-clamp-3'}`}>
+                {formatTextWithBold(currentReading.synopsis, 'font-bold text-[#9E2A2B]')}
               </p>
               <button
                 onClick={() => setShowFullSynopsis(!showFullSynopsis)}

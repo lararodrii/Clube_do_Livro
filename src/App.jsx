@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { AuthProvider } from './context/AuthContext';
 import { ClubProvider } from './context/ClubContext';
+import { ThemeProvider } from './context/ThemeContext';
 import Header from './components/Header';
 import CurrentReadingCard from './components/CurrentReading/CurrentReadingCard';
 import NextMeetingCard from './components/CurrentReading/NextMeetingCard';
@@ -16,7 +17,13 @@ function ClubApp() {
   const [activeTab, setActiveTab] = useState('current');
 
   return (
-    <div className="min-h-screen flex flex-col bg-[#F6F2E9] text-[#141414] relative overflow-x-hidden selection:bg-[#D62828] selection:text-white">
+    <div className="min-h-screen flex flex-col relative overflow-x-hidden transition-colors duration-300">
+      
+      {/* Overlay sutil de granulação de papel / filme retrô em toda a tela */}
+      <div 
+        aria-hidden="true" 
+        className="film-grain-overlay pointer-events-none fixed inset-0 opacity-[0.04] z-50" 
+      />
       
       {/* Barra de Navegação e Perfil */}
       <Header activeTab={activeTab} setActiveTab={setActiveTab} />
@@ -30,12 +37,12 @@ function ClubApp() {
             {/* Destaque do Mês */}
             <CurrentReadingCard />
 
-            {/* Grid com Próxima Reunião e Mural de Citações */}
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-              <div className="lg:col-span-5 w-full">
+            {/* Grid com Próxima Reunião e Mural de Citações (Coluna única no celular, 2 colunas no desktop) */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
+              <div className="w-full">
                 <NextMeetingCard />
               </div>
-              <div className="lg:col-span-7 w-full">
+              <div className="w-full">
                 <QuotesWall />
               </div>
             </div>
@@ -119,10 +126,12 @@ function ClubApp() {
 
 export default function App() {
   return (
-    <AuthProvider>
-      <ClubProvider>
-        <ClubApp />
-      </ClubProvider>
-    </AuthProvider>
+    <ThemeProvider>
+      <AuthProvider>
+        <ClubProvider>
+          <ClubApp />
+        </ClubProvider>
+      </AuthProvider>
+    </ThemeProvider>
   );
 }

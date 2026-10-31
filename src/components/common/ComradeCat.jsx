@@ -1,14 +1,17 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 
-const WITTY_QUOTES = [
+export const COMRADE_ADVICES = [
   "Não vai lutar contra o fascismo?",
-  "Sem teoria revolucionária não há leitura concluída!",
+  "Camarada que lê não cai em conversa fiada!",
+  "Já atualizou sua meta semanal de leitura hoje?",
+  "Sem teoria crítica e páginas lidas, não há transformação!",
+  "Prepare seus argumentos para a próxima Assembleia!",
+  "Sublinhou algum trecho importante? Pregue no Mural!",
+  "A leitura coletiva fortalece a nossa trincheira!",
+  "Nem só de boas intenções vive o clube: abra o livro, camarada!",
   "A burguesia não quer que você termine o capítulo 4.",
-  "Camarada, ler 10 páginas por dia já é um ato de resistência!",
-  "Menos desculpas, mais materialismo dialético!",
-  "A sua citação no mural já desmascarou o imperialismo hoje?",
-  "Quem não lê, vira massa de manobra do algoritmo!",
   "A urna popular não aceita omissão, camarada!",
+  "Quem não lê, vira massa de manobra do algoritmo!",
   "Fichou o capítulo ou vai esperar a revolução acontecer sozinha?"
 ];
 
@@ -21,13 +24,58 @@ export default function ComradeCat({
   bubblePosition = 'right' // 'right' | 'top' | 'left'
 }) {
   const [quoteIndex, setQuoteIndex] = useState(0);
+  const [hasInteracted, setHasInteracted] = useState(false);
   const [isWiggling, setIsWiggling] = useState(false);
+  const [displayedText, setDisplayedText] = useState('');
+  const [isTyping, setIsTyping] = useState(false);
+  const typingTimerRef = useRef(null);
 
-  const currentQuote = customQuote || WITTY_QUOTES[quoteIndex % WITTY_QUOTES.length];
+  // Se o usuário interagiu, ignora qualquer customQuote fixo e avança pela lista
+  const currentQuote = hasInteracted || !customQuote 
+    ? COMRADE_ADVICES[quoteIndex % COMRADE_ADVICES.length]
+    : customQuote;
 
-  const handleNextQuote = () => {
+  // Efeito Máquina de Escrever letra por letra com limpeza garantida de timers
+  useEffect(() => {
+    if (typingTimerRef.current) {
+      clearInterval(typingTimerRef.current);
+      typingTimerRef.current = null;
+    }
+
+    let index = 0;
+    setDisplayedText('');
+    setIsTyping(true);
+
+    const targetText = currentQuote;
+    typingTimerRef.current = setInterval(() => {
+      index++;
+      if (index <= targetText.length) {
+        setDisplayedText(targetText.slice(0, index));
+      } else {
+        setIsTyping(false);
+        if (typingTimerRef.current) {
+          clearInterval(typingTimerRef.current);
+          typingTimerRef.current = null;
+        }
+      }
+    }, 24);
+
+    return () => {
+      if (typingTimerRef.current) {
+        clearInterval(typingTimerRef.current);
+        typingTimerRef.current = null;
+      }
+    };
+  }, [currentQuote]);
+
+  // Avança para o próximo conselho sem repetir o anterior
+  const handleNextAdvice = (e) => {
+    if (e) {
+      e.stopPropagation();
+    }
+    setHasInteracted(true);
     setIsWiggling(true);
-    setQuoteIndex(prev => prev + 1);
+    setQuoteIndex(prevIndex => (prevIndex + 1) % COMRADE_ADVICES.length);
     setTimeout(() => setIsWiggling(false), 300);
   };
 
@@ -73,11 +121,13 @@ export default function ComradeCat({
               <polygon points="0,-6 1.8,-1.8 6.3,-1.8 2.7,0.9 4,5.4 0,2.7 -4,5.4 -2.7,0.9 -6.3,-1.8 -1.8,-1.8" fill="#D62828" stroke="#FDE047" strokeWidth="0.8" />
             </g>
 
-            {/* Olhos concentrados olhando para baixo */}
-            <ellipse cx="68" cy="74" rx="7" ry="5.5" fill="#FEF08A" stroke="#1E1E1E" strokeWidth="1.5" />
-            <circle cx="68" cy="76" r="3" fill="#1E1E1E" />
-            <ellipse cx="92" cy="74" rx="7" ry="5.5" fill="#FEF08A" stroke="#1E1E1E" strokeWidth="1.5" />
-            <circle cx="92" cy="76" r="3" fill="#1E1E1E" />
+            {/* Olhos concentrados olhando para baixo com animação de piscar */}
+            <g className="cat-eyelid-blink" style={{ transformOrigin: '80px 74px' }}>
+              <ellipse cx="68" cy="74" rx="7" ry="5.5" fill="#FEF08A" stroke="#1E1E1E" strokeWidth="1.5" />
+              <circle cx="68" cy="76" r="3" fill="#1E1E1E" />
+              <ellipse cx="92" cy="74" rx="7" ry="5.5" fill="#FEF08A" stroke="#1E1E1E" strokeWidth="1.5" />
+              <circle cx="92" cy="76" r="3" fill="#1E1E1E" />
+            </g>
 
             {/* Óculos redondos de intelectual revolucionário */}
             <circle cx="68" cy="74" r="10" fill="none" stroke="#DDA15E" strokeWidth="2.5" />
@@ -154,11 +204,13 @@ export default function ComradeCat({
               <polygon points="0,-5 1.5,-1.5 5.5,-1.5 2.5,0.8 3.5,4.8 0,2.4 -3.5,4.8 -2.5,0.8 -5.5,-1.5 -1.5,-1.5" fill="#D62828" stroke="#FDE047" strokeWidth="0.8" />
             </g>
 
-            {/* Olhos vigilantes com atitude */}
-            <ellipse cx="54" cy="70" rx="7" ry="8" fill="#FEF08A" stroke="#1E1E1E" strokeWidth="1.5" />
-            <circle cx="56" cy="70" r="3.5" fill="#1E1E1E" />
-            <ellipse cx="76" cy="70" rx="7" ry="8" fill="#FEF08A" stroke="#1E1E1E" strokeWidth="1.5" />
-            <circle cx="78" cy="70" r="3.5" fill="#1E1E1E" />
+            {/* Olhos vigilantes com atitude e piscar periódico */}
+            <g className="cat-eyelid-blink" style={{ transformOrigin: '65px 70px' }}>
+              <ellipse cx="54" cy="70" rx="7" ry="8" fill="#FEF08A" stroke="#1E1E1E" strokeWidth="1.5" />
+              <circle cx="56" cy="70" r="3.5" fill="#1E1E1E" />
+              <ellipse cx="76" cy="70" rx="7" ry="8" fill="#FEF08A" stroke="#1E1E1E" strokeWidth="1.5" />
+              <circle cx="78" cy="70" r="3.5" fill="#1E1E1E" />
+            </g>
 
             {/* Focinho e bigodes */}
             <polygon points="65,79 61,75 69,75" fill="#F43F5E" />
@@ -359,14 +411,16 @@ export default function ComradeCat({
             {/* Sobrancelha direita franzida */}
             <path d="M86 58 Q94 54 102 59" stroke="#FAF7F0" strokeWidth="2.5" strokeLinecap="round" fill="none" />
 
-            {/* Olhos amarelos penetrantes e ranzinzas */}
-            <ellipse cx="66" cy="68" rx="8" ry="9" fill="#FEF08A" stroke="#1E1E1E" strokeWidth="1.8" />
-            <circle cx="68" cy="68" r="3.8" fill="#1E1E1E" />
-            <circle cx="66" cy="66" r="1.2" fill="#FFFFFF" />
+            {/* Olhos amarelos penetrantes e ranzinzas com piscar periódico */}
+            <g className="cat-eyelid-blink" style={{ transformOrigin: '80px 68px' }}>
+              <ellipse cx="66" cy="68" rx="8" ry="9" fill="#FEF08A" stroke="#1E1E1E" strokeWidth="1.8" />
+              <circle cx="68" cy="68" r="3.8" fill="#1E1E1E" />
+              <circle cx="66" cy="66" r="1.2" fill="#FFFFFF" />
 
-            <ellipse cx="94" cy="68" rx="8" ry="9" fill="#FEF08A" stroke="#1E1E1E" strokeWidth="1.8" />
-            <circle cx="92" cy="68" r="3.8" fill="#1E1E1E" />
-            <circle cx="94" cy="66" r="1.2" fill="#FFFFFF" />
+              <ellipse cx="94" cy="68" rx="8" ry="9" fill="#FEF08A" stroke="#1E1E1E" strokeWidth="1.8" />
+              <circle cx="92" cy="68" r="3.8" fill="#1E1E1E" />
+              <circle cx="94" cy="66" r="1.2" fill="#FFFFFF" />
+            </g>
 
             {/* Focinho e bigodes caídos de desaprovação */}
             <polygon points="80,78 76,74 84,74" fill="#F43F5E" />
@@ -396,13 +450,13 @@ export default function ComradeCat({
   };
 
   return (
-    <div className={`relative inline-flex items-center select-none ${className}`}>
+    <div className={`relative inline-flex items-center select-none z-30 pointer-events-auto ${className}`}>
       
       {/* Container SVG do Mascote */}
       <div 
-        onClick={handleNextQuote}
+        onClick={handleNextAdvice}
         title="Clique no camarada para ouvir conselhos revolucionários"
-        className={`cursor-pointer transition-transform duration-200 hover:scale-105 active:scale-95 ${
+        className={`cursor-pointer select-none pointer-events-auto transition-transform duration-200 hover:scale-105 active:scale-95 ${
           isWiggling ? 'animate-wiggle' : ''
         }`}
         style={{ width: `${w}px`, height: `${h}px` }}
@@ -417,11 +471,12 @@ export default function ComradeCat({
         </svg>
       </div>
 
-      {/* Balão de Fala Interativo */}
+      {/* Balão de Fala Interativo com Clique para Avançar Conselho */}
       {showBubble && (
         <div 
-          onClick={handleNextQuote}
-          className={`cursor-pointer z-30 transition-all duration-200 hover:scale-102 ${
+          onClick={handleNextAdvice}
+          title="Clique para outro conselho revolucionário"
+          className={`cursor-pointer select-none z-30 pointer-events-auto transition-all duration-200 hover:scale-102 ${
             bubblePosition === 'top' 
               ? 'absolute -top-16 left-1/2 -translate-x-1/2' 
               : bubblePosition === 'left'
@@ -429,7 +484,7 @@ export default function ComradeCat({
               : 'ml-3 sm:ml-4'
           }`}
         >
-          <div className="relative bg-[#FAF7F0] text-[#141414] border-2 border-[#1E1E1E] shadow-[3px_3px_0px_#1E1E1E] px-3.5 py-2 rounded-xl max-w-xs sm:max-w-sm">
+          <div className="relative bg-[#FAF7F0] text-[#141414] border-2 border-[#1E1E1E] shadow-[3px_3px_0px_#1E1E1E] px-3.5 py-2 rounded-xl max-w-xs sm:max-w-sm cursor-pointer select-none">
             {/* Ponta da fala do balão */}
             {bubblePosition === 'right' && (
               <div className="absolute top-1/2 -left-2 -translate-y-1/2 w-0 h-0 border-t-[6px] border-t-transparent border-b-[6px] border-b-transparent border-r-[8px] border-r-[#1E1E1E]" />
@@ -438,11 +493,12 @@ export default function ComradeCat({
             <div className="flex items-start gap-2">
               <span className="text-[#D62828] text-xs font-black shrink-0 mt-0.5">★</span>
               <div>
-                <p className="font-serif italic font-extrabold text-xs sm:text-sm text-[#141414] leading-snug">
-                  "{currentQuote}"
+                <p className="font-serif italic font-extrabold text-xs sm:text-sm text-[#141414] leading-snug min-h-[2.2rem]">
+                  "{displayedText}"
+                  {isTyping && <span className="inline-block text-[#D62828] font-mono animate-pulse ml-0.5">▌</span>}
                 </p>
-                <span className="text-[9px] uppercase font-mono font-black text-[#9E2A2B] tracking-wider block mt-1">
-                  O Gato Camarada • Clique p/ outro conselho
+                <span className="text-[9px] uppercase font-mono font-black text-[#9E2A2B] tracking-wider block mt-1 hover:underline flex items-center gap-1">
+                  <span>★</span> O Gato Camarada • CLIQUE P/ OUTRO CONSELHO
                 </span>
               </div>
             </div>
