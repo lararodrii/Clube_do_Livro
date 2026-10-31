@@ -89,27 +89,30 @@ export default function EditMeetingModal({ isOpen, onClose }) {
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-stone-950/70 backdrop-blur-sm animate-fade-in overflow-y-auto">
       <div className="relative bg-theme-container text-theme-primary rounded-2xl w-[95vw] max-w-lg max-h-[90vh] overflow-y-auto p-4 sm:p-6 mx-auto border-2 border-theme-border shadow-[8px_8px_0px_var(--shadow-color)] my-4 sm:my-8">
         
-        {/* Fechar */}
-        <button
-          onClick={onClose}
-          className="absolute top-5 right-5 text-theme-muted hover:text-theme-primary p-2 rounded-lg border-2 border-theme-border bg-theme-card hover:bg-theme-gold/20 transition-colors shadow-[2px_2px_0px_var(--shadow-color)]"
-        >
-          <X className="w-5 h-5" />
-        </button>
-
-        {/* Cabeçalho */}
-        <div className="mb-6">
-          <div className="flex items-center gap-2 text-theme-red text-xs font-mono font-black uppercase tracking-wider mb-1">
-            <span>★</span>
-            <span>Assembleia do Coletivo</span>
-            <span className="text-theme-gold">• Não vai lutar contra o fascismo?</span>
+        {/* Cabeçalho com Botão de Fechar sem sobreposição */}
+        <div className="flex items-start justify-between gap-3 w-full pb-2 mb-4 relative z-10">
+          <div className="flex-1 min-w-0 pr-2">
+            <div className="flex items-center gap-1.5 text-theme-red text-xs font-mono font-black uppercase tracking-wider mb-1 flex-wrap">
+              <span>★</span>
+              <span>Assembleia do Coletivo</span>
+              <span className="text-theme-gold">• Não vai lutar contra o fascismo?</span>
+            </div>
+            <h3 className="font-headline text-xl sm:text-2xl font-black text-theme-primary">
+              Editar Detalhes do Encontro ★
+            </h3>
+            <p className="text-xs sm:text-sm text-theme-muted mt-1 font-reading font-semibold">
+              Altere data, horário, modalidade (100% online, híbrida ou presencial) e link da reunião.
+            </p>
           </div>
-          <h3 className="font-headline text-2xl sm:text-3xl font-black text-theme-primary">
-            Editar Detalhes do Encontro ★
-          </h3>
-          <p className="text-sm text-theme-muted mt-1 font-reading font-semibold">
-            Altere data, horário, modalidade (100% online, híbrida ou presencial) e link da reunião.
-          </p>
+
+          <button
+            type="button"
+            onClick={(e) => { e.stopPropagation(); onClose(); }}
+            title="Fechar modal"
+            className="shrink-0 z-30 w-9 h-9 flex items-center justify-center rounded-lg cursor-pointer text-theme-muted hover:text-theme-primary border-2 border-theme-border bg-theme-card hover:bg-theme-gold/20 transition-colors shadow-[2px_2px_0px_var(--shadow-color)]"
+          >
+            <X className="w-5 h-5" />
+          </button>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">

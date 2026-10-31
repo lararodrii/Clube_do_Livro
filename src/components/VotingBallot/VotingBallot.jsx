@@ -98,100 +98,98 @@ export default function VotingBallot() {
       {/* Cabeçalho do Módulo de Votação com o Mascote Fiscalizando a Urna */}
       <div className="retro-card rounded-2xl p-3.5 sm:p-8 bg-theme-container border-2 border-theme-border shadow-[6px_6px_0px_var(--shadow-color)] relative transition-colors duration-300">
         
-        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 pb-6 border-b-2 border-theme-border">
+        {/* Título e Status da Urna */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b-2 border-theme-border">
+          <div>
+            <div className="flex items-center gap-2 mb-1 flex-wrap">
+              <span className={`text-[10px] font-mono font-black uppercase tracking-wider px-2.5 py-0.5 rounded border-2 border-theme-border shadow-[2px_2px_0px_var(--shadow-color)] ${
+                ballot.status === 'open' 
+                  ? 'bg-[#FEF08A] text-[#111111] font-bold' 
+                  : 'bg-theme-card text-theme-muted'
+              }`}>
+                {ballot.status === 'open' ? '★ Urna Popular Aberta' : 'Votação Encerrada'}
+              </span>
+              <span className="text-xs text-theme-muted font-reading font-bold italic">
+                Eleição da Próxima Leitura
+              </span>
+            </div>
+
+            <h2 className="font-headline font-black text-xl sm:text-2xl text-theme-primary flex items-center gap-1.5">
+              <span className="text-theme-red">★</span>
+              <span>Urna Popular do Exército da Paty</span>
+            </h2>
+            <p className="text-xs sm:text-sm text-theme-muted mt-0.5 max-w-xl font-reading font-semibold">
+              Indicações <strong className="text-theme-red font-black">100% livres e ilimitadas</strong>! Cada camarada tem direito a até {ballot.maxVotesPerMember} votos para eleger a próxima obra revolucionária.
+            </p>
+          </div>
+        </div>
+
+        {/* Bloco do Gato + Balão de fala Centralizado e Compacto */}
+        <div className="w-full flex items-center justify-center gap-2.5 sm:gap-4 p-3 sm:p-5 mx-auto">
+          <ComradeCat 
+            pose="voting" 
+            size="md" 
+            showBubble={true}
+            customQuote="Não vai lutar contra o fascismo? Vote já!"
+            bubblePosition="right"
+            className="w-full max-w-lg justify-center"
+          />
+        </div>
+
+        {/* Grid Limpo e Centralizado de Ações */}
+        <div className="grid grid-cols-2 sm:flex sm:flex-wrap items-center justify-between gap-2.5 w-full mt-2 pt-3 border-t-2 border-theme-border">
           
-          <div className="flex items-center gap-4">
-            {/* O Gato Camarada Fiscal da Urna */}
-            <div className="shrink-0">
-              <ComradeCat 
-                pose="voting" 
-                size="md" 
-                showBubble={true}
-                customQuote="Não vai lutar contra o fascismo? Vote já!"
-                bubblePosition="right"
-                className="scale-90 sm:scale-100"
-              />
-            </div>
-
-            <div>
-              <div className="flex items-center gap-2 mb-1.5 flex-wrap">
-                <span className={`text-[10px] font-mono font-black uppercase tracking-wider px-3 py-0.5 rounded border-2 border-theme-border shadow-[2px_2px_0px_var(--shadow-color)] ${
-                  ballot.status === 'open' 
-                    ? 'bg-[#FEF08A] text-[#111111] font-bold' 
-                    : 'bg-theme-card text-theme-muted'
-                }`}>
-                  {ballot.status === 'open' ? '★ Urna Popular Aberta' : 'Votação Encerrada'}
+          {/* Votos Usados / Cota de Votos */}
+          {isQuotaReached ? (
+            <div className="bg-theme-red text-white px-3 py-2 rounded-xl border-2 border-theme-border shadow-[2px_2px_0px_var(--shadow-color)] text-center flex items-center gap-2">
+              <span className="w-2.5 h-2.5 rounded-full bg-[#FEF08A] animate-ping shrink-0" />
+              <div className="text-left">
+                <span className="text-[9px] font-mono font-black uppercase tracking-wider text-[#FEF08A] block leading-none">
+                  ★ Votos esgotados
                 </span>
-                <span className="text-xs text-theme-muted font-reading font-bold italic">
-                  Eleição da Próxima Leitura
+                <span className="text-[10px] font-mono font-bold text-white leading-tight">
+                  {activeMemberVotesCount}/{maxVotes} votos
                 </span>
               </div>
-
-              <h2 className="font-headline font-black text-2xl sm:text-3xl text-theme-primary flex items-center gap-2">
-                <span className="text-theme-red">★</span>
-                <span>Urna Popular do Exército da Paty</span>
-              </h2>
-              <p className="text-xs sm:text-sm text-theme-muted mt-1 max-w-xl font-reading font-semibold">
-                Indicações <strong className="text-theme-red font-black">100% livres e ilimitadas</strong>! Cada camarada tem direito a até {ballot.maxVotesPerMember} votos para eleger a próxima obra revolucionária.
-              </p>
             </div>
-          </div>
+          ) : (
+            <div className="bg-theme-card px-3 py-2 rounded-xl border-2 border-theme-border shadow-[2px_2px_0px_var(--shadow-color)] text-center">
+              <span className="text-[9px] font-mono text-theme-muted font-bold uppercase tracking-wider block">
+                Cédulas Restantes:
+              </span>
+              <span className="text-xs sm:text-sm font-mono font-black text-theme-red">
+                {remainingVotes} de {maxVotes} votos
+              </span>
+            </div>
+          )}
 
-          {/* Painel de Votos do Membro & Ações Rápidas */}
-          <div className="flex flex-wrap items-center gap-3">
-            
-            {/* Votos Usados / Cota de Votos */}
-            {isQuotaReached ? (
-              <div className="bg-theme-red text-white px-3.5 py-2 rounded-xl border-2 border-theme-border shadow-[3px_3px_0px_var(--shadow-color)] text-center flex items-center gap-2">
-                <span className="w-2.5 h-2.5 rounded-full bg-[#FEF08A] animate-ping shrink-0" />
-                <div className="text-left">
-                  <span className="text-[10px] font-mono font-black uppercase tracking-wider text-[#FEF08A] block leading-none">
-                    ★ Votos esgotados nesta rodada
-                  </span>
-                  <span className="text-[11px] font-mono font-bold text-white leading-tight">
-                    {activeMemberVotesCount} de {maxVotes} votos utilizados
-                  </span>
-                </div>
-              </div>
+          {/* Alternar Status (Administrador da Urna) */}
+          <button
+            onClick={handleToggleBallotStatus}
+            title="Abrir ou fechar a urna de votação"
+            className="flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl text-xs font-mono font-bold bg-theme-card hover:bg-theme-container text-theme-primary border-2 border-theme-border shadow-[2px_2px_0px_var(--shadow-color)] transition-transform hover:-translate-x-0.5 hover:-translate-y-0.5 active:translate-x-0.5 active:translate-y-0.5"
+          >
+            {ballot.status === 'open' ? (
+              <>
+                <Lock className="w-3.5 h-3.5 text-theme-red shrink-0" />
+                <span className="whitespace-nowrap">Fechar Urna</span>
+              </>
             ) : (
-              <div className="bg-theme-card px-4 py-2 rounded-xl border-2 border-theme-border shadow-[3px_3px_0px_var(--shadow-color)] text-center">
-                <span className="text-[9px] font-mono text-theme-muted font-bold uppercase tracking-wider block">
-                  Cédulas Restantes:
-                </span>
-                <span className="text-sm font-mono font-black text-theme-red">
-                  {remainingVotes} de {maxVotes} votos
-                </span>
-              </div>
+              <>
+                <Unlock className="w-3.5 h-3.5 text-theme-gold shrink-0" />
+                <span className="whitespace-nowrap">Reabrir Urna</span>
+              </>
             )}
+          </button>
 
-            {/* Alternar Status (Administrador da Urna) */}
-            <button
-              onClick={handleToggleBallotStatus}
-              title="Abrir ou fechar a urna de votação"
-              className="flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl text-xs font-mono font-bold bg-theme-card hover:bg-theme-container text-theme-primary border-2 border-theme-border shadow-[3px_3px_0px_var(--shadow-color)] transition-transform hover:-translate-x-0.5 hover:-translate-y-0.5 active:translate-x-0.5 active:translate-y-0.5"
-            >
-              {ballot.status === 'open' ? (
-                <>
-                  <Lock className="w-3.5 h-3.5 text-theme-red" />
-                  <span>Fechar Urna</span>
-                </>
-              ) : (
-                <>
-                  <Unlock className="w-3.5 h-3.5 text-theme-gold" />
-                  <span>Reabrir Urna</span>
-                </>
-              )}
-            </button>
-
-            {/* BOTÃO DE INDICAÇÃO (ILIMITADO) */}
-            <button
-              onClick={handleNominateClick}
-              className="flex items-center gap-2 px-5 py-2.5 bg-theme-red hover:opacity-90 text-white font-bold rounded-xl text-xs font-headline font-black uppercase tracking-wider border-2 border-theme-border shadow-[4px_4px_0px_var(--shadow-color)] transition-transform hover:-translate-x-0.5 hover:-translate-y-0.5 active:translate-x-0.5 active:translate-y-0.5"
-            >
-              <BookPlus className="w-4 h-4 text-[#FEF08A]" />
-              <span>Indicar Livro (+1) ★</span>
-            </button>
-          </div>
+          {/* BOTÃO DE INDICAÇÃO (ILIMITADO) */}
+          <button
+            onClick={handleNominateClick}
+            className="col-span-2 sm:w-auto justify-center flex items-center gap-2 px-4 py-2.5 bg-theme-red hover:opacity-90 text-white font-bold rounded-xl text-xs font-headline font-black uppercase tracking-wider border-2 border-theme-border shadow-[3px_3px_0px_var(--shadow-color)] transition-transform hover:-translate-x-0.5 hover:-translate-y-0.5 active:translate-x-0.5 active:translate-y-0.5"
+          >
+            <BookPlus className="w-4 h-4 text-[#FEF08A] shrink-0" />
+            <span className="whitespace-nowrap">INDICAR LIVRO (+1) ★</span>
+          </button>
         </div>
 
         {/* Barra de Ações Rápidas: Desempate da Sorte e Promoção */}

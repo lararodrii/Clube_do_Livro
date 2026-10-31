@@ -68,27 +68,30 @@ export default function RouletteModal({ isOpen, onClose, books = [] }) {
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-stone-950/70 backdrop-blur-sm animate-fade-in overflow-y-auto">
       <div className="relative bg-theme-container text-theme-primary rounded-2xl w-[95vw] max-w-lg max-h-[90vh] overflow-y-auto p-4 sm:p-6 mx-auto border-2 border-theme-border shadow-[8px_8px_0px_var(--shadow-color)] text-center my-4 sm:my-8">
         
-        {/* Botão de Fechar */}
-        <button
-          onClick={onClose}
-          disabled={isSpinning}
-          className="absolute top-5 right-5 text-theme-muted hover:text-theme-primary p-2 rounded-lg border-2 border-theme-border bg-theme-card hover:bg-theme-gold/20 transition-colors disabled:opacity-30 shadow-[2px_2px_0px_var(--shadow-color)]"
-        >
-          <X className="w-5 h-5" />
-        </button>
-
-        {/* Cabeçalho */}
-        <div className="mb-6 relative z-10">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded bg-[#FEF08A] border-2 border-theme-border text-[#111111] text-xs font-mono font-black uppercase tracking-wider mb-2 shadow-[2px_2px_0px_var(--shadow-color)]">
-            <span className="text-theme-red">★</span>
-            <span>Sorteio Popular da Assembleia 🎲</span>
+        {/* Cabeçalho com Botão de Fechar sem sobreposição */}
+        <div className="flex items-start justify-between gap-3 w-full pb-2 mb-4 relative z-10 text-left">
+          <div className="flex-1 min-w-0 pr-2">
+            <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded bg-[#FEF08A] border-2 border-theme-border text-[#111111] text-xs font-mono font-black uppercase tracking-wider mb-1 shadow-[2px_2px_0px_var(--shadow-color)]">
+              <span className="text-theme-red">★</span>
+              <span>Sorteio Popular da Assembleia 🎲</span>
+            </div>
+            <h3 className="font-headline font-black text-xl sm:text-2xl text-theme-primary">
+              Desempate da Sorte
+            </h3>
+            <p className="text-xs sm:text-sm text-theme-muted mt-1 font-reading font-semibold">
+              Quando a votação fica acirrada entre as camaradas, a roleta decide democraticamente a próxima leitura!
+            </p>
           </div>
-          <h3 className="font-headline font-black text-2xl sm:text-3xl text-theme-primary">
-            Desempate da Sorte
-          </h3>
-          <p className="text-xs sm:text-sm text-theme-muted mt-1 max-w-sm mx-auto font-reading font-semibold">
-            Quando a votação fica acirrada entre as camaradas, a roleta decide democraticamente a próxima leitura!
-          </p>
+
+          <button
+            type="button"
+            onClick={(e) => { e.stopPropagation(); onClose(); }}
+            disabled={isSpinning}
+            title="Fechar modal"
+            className="shrink-0 z-30 w-9 h-9 flex items-center justify-center rounded-lg cursor-pointer text-theme-muted hover:text-theme-primary border-2 border-theme-border bg-theme-card hover:bg-theme-gold/20 transition-colors disabled:opacity-30 shadow-[2px_2px_0px_var(--shadow-color)]"
+          >
+            <X className="w-5 h-5" />
+          </button>
         </div>
 
         {/* VISUAL DA ROLETA */}

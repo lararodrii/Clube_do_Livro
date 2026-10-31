@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useClub } from '../../context/ClubContext';
-import { X, UserCheck, Sparkles, Image, Palette, BookMarked, FileText } from 'lucide-react';
+import { X, UserCheck, Sparkles, Image, Palette, BookMarked, FileText, Upload, Loader2, AlertCircle } from 'lucide-react';
 
 const AVATAR_PRESETS = [
   '/avatars/gato1.jpg',
@@ -32,6 +32,10 @@ export default function EditProfileModal({ isOpen, onClose }) {
   const [bio, setBio] = useState('');
   const [avatar, setAvatar] = useState('');
   const [color, setColor] = useState('#D62828');
+  const [uploadError, setUploadError] = useState('');
+  const [isProcessingImage, setIsProcessingImage] = useState(false);
+
+  const fileInputRef = useRef(null);
 
   useEffect(() => {
     if (activeMember && isOpen) {
@@ -42,10 +46,68 @@ export default function EditProfileModal({ isOpen, onClose }) {
       setBio(activeMember.bio || '');
       setAvatar(activeMember.avatar || '');
       setColor(activeMember.color || '#D62828');
+      setUploadError('');
     }
   }, [activeMember, isOpen]);
 
   if (!isOpen || !activeMember) return null;
+
+  const handleFileChange = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      setUploadError('Selecione uma imagem válida (JPG, PNG ou WebP).');
+      return;
+    }
+
+    setUploadError('');
+    setIsProcessingImage(true);
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const rawDataUrl = event.target.result;
+      const img = new window.Image();
+      img.onload = () => {
+        try {
+          const maxDim = 400;
+          let width = img.width;
+          let height = img.height;
+          if (width > maxDim || height > maxDim) {
+            if (width > height) {
+              height = Math.round((height * maxDim) / width);
+              width = maxDim;
+            } else {
+              width = Math.round((width * maxDim) / height);
+              height = maxDim;
+            }
+          }
+          const canvas = document.createElement('canvas');
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0, width, height);
+          const optimized = canvas.toDataURL('image/jpeg', 0.85);
+          setAvatar(optimized);
+          setIsProcessingImage(false);
+        } catch {
+          setAvatar(rawDataUrl);
+          setIsProcessingImage(false);
+        }
+      };
+      img.onerror = () => {
+        setUploadError('Erro ao processar imagem.');
+        setIsProcessingImage(false);
+      };
+      img.src = rawDataUrl;
+    };
+    reader.onerror = () => {
+      setUploadError('Falha ao ler o arquivo.');
+      setIsProcessingImage(false);
+    };
+    reader.readAsDataURL(file);
+    e.target.value = '';
+  };
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -68,27 +130,30 @@ export default function EditProfileModal({ isOpen, onClose }) {
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/75 backdrop-blur-sm animate-fade-in overflow-y-auto">
       <div className="relative bg-theme-container text-theme-primary rounded-2xl w-[95vw] max-w-lg max-h-[90vh] overflow-y-auto p-4 sm:p-6 mx-auto border-2 border-theme-border shadow-[8px_8px_0px_var(--shadow-color)] my-4 sm:my-8">
         
-        {/* Fechar */}
-        <button
-          onClick={onClose}
-          className="absolute top-5 right-5 text-theme-muted hover:text-theme-primary p-2 rounded-lg border-2 border-theme-border bg-theme-card hover:bg-theme-gold/20 transition-colors shadow-[2px_2px_0px_var(--shadow-color)]"
-        >
-          <X className="w-5 h-5" />
-        </button>
-
-        {/* Cabeçalho */}
-        <div className="mb-6">
-          <div className="flex items-center gap-2 text-theme-red text-xs font-mono font-black uppercase tracking-wider mb-1">
-            <span>★</span>
-            <span>Credencial Coletiva</span>
-            <span className="text-theme-gold">• Não vai lutar contra o fascismo?</span>
+        {/* Cabeçalho com Botão de Fechar sem sobreposição */}
+        <div className="flex items-start justify-between gap-3 w-full pb-2 mb-4 relative z-10">
+          <div className="flex-1 min-w-0 pr-2">
+            <div className="flex items-center gap-1.5 text-theme-red text-xs font-mono font-black uppercase tracking-wider mb-1 flex-wrap">
+              <span>★</span>
+              <span>Credencial Coletiva</span>
+              <span className="text-theme-gold">• Não vai lutar contra o fascismo?</span>
+            </div>
+            <h3 className="font-headline text-xl sm:text-2xl font-black text-theme-primary">
+              Editar Ficha da Camarada ★
+            </h3>
+            <p className="text-xs sm:text-sm text-theme-muted mt-1 font-reading font-semibold">
+              Altere seu nome de guerra, cargo no comitê, foto de perfil, livro predileto e biografia.
+            </p>
           </div>
-          <h3 className="font-headline text-2xl sm:text-3xl font-black text-theme-primary">
-            Personalizar Credencial ★
-          </h3>
-          <p className="text-sm text-theme-muted mt-1 font-reading font-semibold">
-            Altere seu nome de combate, patente literária, foto, livro predileto e biografia.
-          </p>
+
+          <button
+            type="button"
+            onClick={(e) => { e.stopPropagation(); onClose(); }}
+            title="Fechar modal"
+            className="shrink-0 z-30 w-9 h-9 flex items-center justify-center rounded-lg cursor-pointer text-theme-muted hover:text-theme-primary border-2 border-theme-border bg-theme-card hover:bg-theme-gold/20 transition-colors shadow-[2px_2px_0px_var(--shadow-color)]"
+          >
+            <X className="w-5 h-5" />
+          </button>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -193,23 +258,25 @@ export default function EditProfileModal({ isOpen, onClose }) {
             />
           </div>
 
-          {/* URL da Foto de Perfil & Presets */}
+          {/* Foto de Perfil (Avatar): Presets e Upload do Celular/PC */}
           <div>
-            <label className="block text-xs font-mono font-bold text-theme-primary uppercase tracking-wider mb-1">
-              URL da Foto de Perfil
+            <label className="block text-xs font-mono font-bold text-theme-primary uppercase tracking-wider mb-1.5">
+              Foto de Perfil (Avatar) ★
             </label>
+
+            {/* Input Oculto de Upload de Arquivo */}
             <input
-              type="text"
-              value={avatar}
-              onChange={(e) => setAvatar(e.target.value)}
-              placeholder="https://... ou caminho de imagem"
-              className="w-full text-xs font-mono bg-theme-input border-2 border-theme-border rounded-lg px-3.5 py-2 text-theme-primary placeholder:text-theme-muted focus:outline-none focus:ring-2 focus:ring-theme-red"
+              type="file"
+              ref={fileInputRef}
+              onChange={handleFileChange}
+              accept="image/*"
+              className="hidden"
             />
 
-            {/* Presets Rápidos de Fotos */}
-            <div className="mt-2.5">
+            {/* Presets de Gatinhos */}
+            <div className="mb-3">
               <span className="text-[11px] text-theme-muted font-mono font-bold block mb-1.5">
-                Ou escolha um avatar temático do coletivo:
+                Escolha um dos 6 gatinhos padrão do coletivo:
               </span>
               <div className="flex items-center gap-2 overflow-x-auto pb-1">
                 {AVATAR_PRESETS.map((presetUrl, idx) => (
@@ -217,13 +284,59 @@ export default function EditProfileModal({ isOpen, onClose }) {
                     key={idx}
                     type="button"
                     onClick={() => setAvatar(presetUrl)}
-                    className={`w-10 h-10 rounded-lg overflow-hidden shrink-0 border-2 transition-all ${
-                      avatar === presetUrl ? 'border-theme-red scale-105 shadow-[2px_2px_0px_var(--shadow-color)]' : 'border-theme-border opacity-70 hover:opacity-100'
+                    title={`Gatinho Camarada 0${idx + 1}`}
+                    className={`w-11 h-11 rounded-lg overflow-hidden shrink-0 border-2 transition-all ${
+                      avatar === presetUrl 
+                        ? 'border-theme-red scale-105 shadow-[2px_2px_0px_var(--shadow-color)] ring-2 ring-theme-red/50' 
+                        : 'border-theme-border opacity-70 hover:opacity-100 hover:scale-102'
                     }`}
                   >
-                    <img src={presetUrl} alt={`Preset ${idx + 1}`} className="w-full h-full object-cover" />
+                    <img src={presetUrl} alt={`Gatinho ${idx + 1}`} className="w-full h-full object-cover" />
                   </button>
                 ))}
+              </div>
+            </div>
+
+            {/* Botão de Enviar Foto Própria */}
+            <div className="space-y-2">
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={isProcessingImage}
+                className="w-full py-2.5 px-3 rounded-lg border-2 border-dashed border-theme-border bg-theme-input hover:bg-theme-card text-xs font-mono font-bold text-theme-primary transition-all flex items-center justify-center gap-2 cursor-pointer shadow-sm hover:border-theme-red"
+              >
+                {isProcessingImage ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin text-theme-red" />
+                    <span>Comprimindo imagem...</span>
+                  </>
+                ) : (
+                  <>
+                    <Upload className="w-4 h-4 text-theme-red" />
+                    <span>Enviar foto própria do celular ou computador</span>
+                  </>
+                )}
+              </button>
+
+              {uploadError && (
+                <div className="flex items-center gap-1.5 text-xs text-rose-500 font-mono">
+                  <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                  <span>{uploadError}</span>
+                </div>
+              )}
+
+              {/* URL Manual (Opcional) */}
+              <div className="pt-1">
+                <span className="text-[10px] text-theme-muted font-mono block mb-1">
+                  Ou cole o link direto da imagem:
+                </span>
+                <input
+                  type="text"
+                  value={avatar}
+                  onChange={(e) => setAvatar(e.target.value)}
+                  placeholder="https://... ou caminho de imagem"
+                  className="w-full text-xs font-mono bg-theme-input border-2 border-theme-border rounded-lg px-3 py-1.5 text-theme-primary placeholder:text-theme-muted focus:outline-none focus:ring-2 focus:ring-theme-red"
+                />
               </div>
             </div>
           </div>

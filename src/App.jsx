@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { AuthProvider } from './context/AuthContext';
+import React, { useState, useEffect } from 'react';
+import { AuthProvider, useAuth } from './context/AuthContext';
 import { ClubProvider } from './context/ClubContext';
 import { ThemeProvider } from './context/ThemeContext';
 import Header from './components/Header';
@@ -10,11 +10,28 @@ import VotingBallot from './components/VotingBallot/VotingBallot';
 import ArchiveSection from './components/Archive/ArchiveSection';
 import MembersSection from './components/Members/MembersSection';
 import AuthModal from './components/Auth/AuthModal';
+import OnboardingTour from './components/common/OnboardingTour';
 import ComradeCat from './components/common/ComradeCat';
 import Toast from './components/common/Toast';
 
 function ClubApp() {
   const [activeTab, setActiveTab] = useState('current');
+  const [isTourOpen, setIsTourOpen] = useState(false);
+  const { currentUser, userProfile } = useAuth();
+
+  // Disparo Automático do Tour no Primeiro Login
+  useEffect(() => {
+    if (currentUser) {
+      const tourKey = `tour_completed_${currentUser.uid}`;
+      const hasSeenLocal = localStorage.getItem(tourKey);
+      if (!hasSeenLocal && !userProfile?.hasSeenTour) {
+        const timer = setTimeout(() => {
+          setIsTourOpen(true);
+        }, 1000);
+        return () => clearTimeout(timer);
+      }
+    }
+  }, [currentUser, userProfile]);
 
   return (
     <div className="min-h-screen flex flex-col relative overflow-x-hidden transition-colors duration-300">
@@ -26,7 +43,11 @@ function ClubApp() {
       />
       
       {/* Barra de Navegação e Perfil */}
-      <Header activeTab={activeTab} setActiveTab={setActiveTab} />
+      <Header 
+        activeTab={activeTab} 
+        setActiveTab={setActiveTab} 
+        onOpenTour={() => setIsTourOpen(true)}
+      />
 
       {/* Conteúdo Principal com Layout Fluido e Responsivo */}
       <main className="flex-1 max-w-7xl w-full mx-auto px-2.5 py-2 sm:px-6 sm:py-4 overflow-x-hidden">
@@ -114,6 +135,13 @@ function ClubApp() {
           </div>
         </div>
       </footer>
+
+      {/* Tour Guiado Passo a Passo de Onboarding */}
+      <OnboardingTour
+        isOpen={isTourOpen}
+        onClose={() => setIsTourOpen(false)}
+        setActiveTab={setActiveTab}
+      />
 
       {/* Modal Global de Acesso e Autenticação das Camaradas */}
       <AuthModal />

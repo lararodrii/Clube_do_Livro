@@ -12,11 +12,13 @@ import {
   LogOut,
   Palette,
   X,
-  Check
+  Check,
+  Pencil,
+  HelpCircle
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
-export default function Header({ activeTab, setActiveTab }) {
+export default function Header({ activeTab, setActiveTab, onOpenTour }) {
   const { activeMember, ballot, showToast } = useClub();
   const { currentUser, isAuthenticated, logout, openAuthModal } = useAuth();
   const { theme, setTheme, themes, currentThemeInfo } = useTheme();
@@ -93,6 +95,18 @@ export default function Header({ activeTab, setActiveTab }) {
             </button>
           </div>
 
+          {/* BOTÃO GUIA / REVER TOUR */}
+          {onOpenTour && (
+            <button
+              type="button"
+              onClick={onOpenTour}
+              title="Guia do Clube / Rever Tour Passo a Passo (?)"
+              className="flex items-center justify-center w-7 h-7 sm:w-8 sm:h-8 rounded-xl text-xs font-mono font-black text-theme-primary bg-theme-card hover:bg-theme-container border-2 border-theme-border shadow-[2px_2px_0px_var(--shadow-color)] transition-transform hover:-translate-x-0.5 hover:-translate-y-0.5 active:translate-x-0.5 active:translate-y-0.5 shrink-0"
+            >
+              <HelpCircle className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-theme-red" />
+            </button>
+          )}
+
           {/* PERFIL ATIVO / AUTENTICAÇÃO */}
           {isAuthenticated ? (
             <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
@@ -114,10 +128,23 @@ export default function Header({ activeTab, setActiveTab }) {
                   </span>
                 </div>
                 <div className="text-left">
-                  <p className="text-[9px] sm:text-xs font-black text-theme-primary leading-tight flex items-center gap-1">
-                    <span>{activeMember.name.split(' ')[0]}</span>
-                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" title="Sessão ativa e sincronizada" />
-                  </p>
+                  <div className="flex items-center gap-1">
+                    <p className="text-[9px] sm:text-xs font-black text-theme-primary leading-tight flex items-center gap-1">
+                      <span>{activeMember.name.split(' ')[0]}</span>
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" title="Sessão ativa e sincronizada" />
+                    </p>
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setIsEditProfileOpen(true);
+                      }}
+                      title="Editar meu perfil"
+                      className="p-1 hover:bg-theme-gold/20 text-theme-muted hover:text-theme-primary rounded-lg border border-theme-border/60 transition-colors shrink-0 ml-0.5"
+                    >
+                      <Pencil className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-theme-gold" />
+                    </button>
+                  </div>
                   <p className="text-[8px] sm:text-[10px] text-theme-muted font-mono font-bold leading-none truncate max-w-[85px] sm:max-w-[130px] mt-0.5">
                     {activeMember.roleBadge}
                   </p>

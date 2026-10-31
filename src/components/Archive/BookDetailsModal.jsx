@@ -79,13 +79,21 @@ export default function BookDetailsModal({ book, isOpen, onClose }) {
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/75 backdrop-blur-sm animate-fade-in overflow-y-auto">
       <div className="relative bg-theme-container text-theme-primary rounded-2xl w-[95vw] max-w-2xl max-h-[90vh] overflow-y-auto p-4 sm:p-6 mx-auto border-2 border-theme-border shadow-[8px_8px_0px_var(--shadow-color)] my-4 sm:my-8">
         
-        {/* Botão Fechar */}
-        <button
-          onClick={onClose}
-          className="absolute top-5 right-5 text-theme-muted hover:text-theme-primary p-2 rounded-lg border-2 border-theme-border bg-theme-card hover:bg-theme-gold/20 transition-colors shadow-[2px_2px_0px_var(--shadow-color)]"
-        >
-          <X className="w-5 h-5" />
-        </button>
+        {/* Barra Superior com Botão Fechar sem sobreposição */}
+        <div className="flex items-center justify-between gap-3 w-full pb-3 mb-4 border-b-2 border-theme-border relative z-10">
+          <div className="flex items-center gap-2 text-xs font-mono font-black uppercase tracking-wider text-theme-primary truncate">
+            <span className="text-theme-red">★</span>
+            <span>Ficha Catalográfica da Obra</span>
+          </div>
+          <button
+            type="button"
+            onClick={(e) => { e.stopPropagation(); onClose(); }}
+            title="Fechar modal"
+            className="shrink-0 z-30 w-9 h-9 flex items-center justify-center rounded-lg cursor-pointer text-theme-muted hover:text-theme-primary border-2 border-theme-border bg-theme-card hover:bg-theme-gold/20 transition-colors shadow-[2px_2px_0px_var(--shadow-color)]"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        </div>
 
         {/* Topo do Livro: Capa + Detalhes Principais */}
         <div className="flex flex-col sm:flex-row gap-6 items-start pb-6 border-b-2 border-theme-border">

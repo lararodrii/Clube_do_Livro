@@ -86,31 +86,34 @@ export default function BookEvaluationModal({ isOpen, onClose }) {
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/75 backdrop-blur-sm animate-fade-in overflow-y-auto">
       <div className="relative bg-theme-container text-theme-primary rounded-2xl w-[95vw] max-w-lg max-h-[90vh] overflow-y-auto p-4 sm:p-6 mx-auto border-2 border-theme-border shadow-[8px_8px_0px_var(--shadow-color)] my-4 sm:my-8">
         
-        {/* Fechar */}
-        <button
-          onClick={onClose}
-          className="absolute top-5 right-5 text-theme-muted hover:text-theme-primary p-2 rounded-lg border-2 border-theme-border bg-theme-card hover:bg-theme-gold/20 transition-colors shadow-[2px_2px_0px_var(--shadow-color)]"
-        >
-          <X className="w-5 h-5" />
-        </button>
-
-        {/* Topo Festivo com o Mascote Comemorando */}
-        <div className="flex items-center gap-4 mb-5 pb-5 border-b-2 border-theme-border">
-          <div className="shrink-0">
-            <ComradeCat pose="celebrating" size="sm" showBubble={false} className="scale-100" />
-          </div>
-          <div>
-            <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded bg-theme-red text-white text-[10px] font-mono font-black uppercase tracking-wider border border-theme-border shadow-[1px_1px_0px_var(--shadow-color)] mb-1">
-              <span>★</span>
-              <span>SEMANA 4 CONCLUÍDA! LEITURA FINALIZADA</span>
+        {/* Topo Festivo com o Mascote Comemorando e Botão de Fechar sem sobreposição */}
+        <div className="flex items-start justify-between gap-3 w-full pb-4 mb-4 border-b-2 border-theme-border relative z-10">
+          <div className="flex items-center gap-3.5 flex-1 min-w-0 pr-2">
+            <div className="shrink-0">
+              <ComradeCat pose="celebrating" size="sm" showBubble={false} className="scale-100" />
             </div>
-            <h3 className="font-headline text-xl sm:text-2xl font-black text-theme-primary leading-tight">
-              Avaliação Crítica da Obra ★
-            </h3>
-            <p className="text-xs text-theme-muted font-reading font-semibold mt-0.5">
-              Camarada <strong>{activeMember.name}</strong>, registre sua nota e impressões para computar em membros e métricas!
-            </p>
+            <div className="min-w-0 flex-1">
+              <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded bg-theme-red text-white text-[10px] font-mono font-black uppercase tracking-wider border border-theme-border shadow-[1px_1px_0px_var(--shadow-color)] mb-1 flex-wrap">
+                <span>★</span>
+                <span>SEMANA 4 CONCLUÍDA! LEITURA FINALIZADA</span>
+              </div>
+              <h3 className="font-headline text-lg sm:text-2xl font-black text-theme-primary leading-tight">
+                Avaliação Crítica da Obra ★
+              </h3>
+              <p className="text-xs text-theme-muted font-reading font-semibold mt-0.5">
+                Camarada <strong>{activeMember.name}</strong>, registre sua nota e impressões para computar em membros e métricas!
+              </p>
+            </div>
           </div>
+
+          <button
+            type="button"
+            onClick={(e) => { e.stopPropagation(); onClose(); }}
+            title="Fechar modal"
+            className="shrink-0 z-30 w-9 h-9 flex items-center justify-center rounded-lg cursor-pointer text-theme-muted hover:text-theme-primary border-2 border-theme-border bg-theme-card hover:bg-theme-gold/20 transition-colors shadow-[2px_2px_0px_var(--shadow-color)]"
+          >
+            <X className="w-5 h-5" />
+          </button>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">

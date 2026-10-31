@@ -135,37 +135,39 @@ export default function AuthModal() {
       {/* Container Principal do Modal Estilo Pôster Editorial Retrô */}
       <div className="relative bg-theme-container text-theme-primary rounded-2xl w-[95vw] max-w-lg max-h-[90vh] overflow-y-auto p-4 sm:p-6 mx-auto border-2 border-theme-border shadow-[8px_8px_0px_var(--shadow-color)] my-4 sm:my-8">
         
-        {/* Botão de Fechar */}
-        <button
-          type="button"
-          onClick={closeAuthModal}
-          className="absolute top-5 right-5 text-theme-muted hover:text-theme-primary p-2 rounded-lg border-2 border-theme-border bg-theme-card hover:bg-theme-gold/20 transition-colors shadow-[2px_2px_0px_var(--shadow-color)]"
-        >
-          <X className="w-4 h-4" />
-        </button>
-
-        {/* Topo do Modal com o Gato Camarada */}
-        <div className="flex items-center gap-4 mb-5 pb-4 border-b-2 border-theme-border">
-          <div className="shrink-0">
-            <ComradeCat 
-              pose={activeTab === 'register' ? 'celebrating' : activeTab === 'forgot' ? 'curious' : 'reading'} 
-              size="sm" 
-              showBubble={false}
-              className="scale-90"
-            />
-          </div>
-          <div>
-            <div className="flex items-center gap-1.5 text-[10px] font-mono font-black uppercase tracking-wider text-theme-red mb-0.5">
-              <span>★</span>
-              <span>Comitê do Exército da Paty</span>
+        {/* Topo do Modal com o Gato Camarada e Botão de Fechar sem sobreposição */}
+        <div className="flex items-start justify-between gap-3 w-full pb-4 mb-4 border-b-2 border-theme-border relative z-10">
+          <div className="flex items-center gap-3.5 flex-1 min-w-0 pr-2">
+            <div className="shrink-0">
+              <ComradeCat 
+                pose={activeTab === 'register' ? 'celebrating' : activeTab === 'forgot' ? 'curious' : 'reading'} 
+                size="sm" 
+                showBubble={false}
+                className="scale-90"
+              />
             </div>
-            <h3 className="font-headline font-black text-2xl text-theme-primary leading-tight">
-              Acesso das Camaradas ★
-            </h3>
-            <p className="text-xs text-theme-muted font-reading font-semibold italic mt-0.5">
-              "Não vai lutar contra o fascismo?" • Autenticação Coletiva
-            </p>
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center gap-1.5 text-[10px] font-mono font-black uppercase tracking-wider text-theme-red mb-0.5 flex-wrap">
+                <span>★</span>
+                <span>Comitê do Exército da Paty</span>
+              </div>
+              <h3 className="font-headline font-black text-xl sm:text-2xl text-theme-primary leading-tight">
+                Acesso das Camaradas ★
+              </h3>
+              <p className="text-xs text-theme-muted font-reading font-semibold italic mt-0.5">
+                "Não vai lutar contra o fascismo?" • Autenticação Coletiva
+              </p>
+            </div>
           </div>
+
+          <button
+            type="button"
+            onClick={(e) => { e.stopPropagation(); closeAuthModal(); }}
+            title="Fechar modal"
+            className="shrink-0 z-30 w-9 h-9 flex items-center justify-center rounded-lg cursor-pointer text-theme-muted hover:text-theme-primary border-2 border-theme-border bg-theme-card hover:bg-theme-gold/20 transition-colors shadow-[2px_2px_0px_var(--shadow-color)]"
+          >
+            <X className="w-5 h-5" />
+          </button>
         </div>
 
         {/* Banner de Aviso de Ação Protegida (se invocado por clique em ação restrita) */}
