@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useClub } from '../../context/ClubContext';
 import BookAutocomplete from '../common/BookAutocomplete';
 import BookCover from '../common/BookCover';
+import { findDuplicateBookInBallot, isCurrentReadingBook } from '../../utils/bookDuplicateCheck';
 import { 
   Search, 
   X, 
@@ -33,46 +34,17 @@ export default function NominateModal({ isOpen, onClose }) {
   const [showUrlInput, setShowUrlInput] = useState(false);
   const [uploadError, setUploadError] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const fileInputRef = useRef(null);
 
-  // Normalização de texto para validação anti-duplicidade em tempo real
-  const normalize = (str) => (str || '')
-    .toLowerCase()
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .replace(/[^\w\s]/gi, '')
-    .replace(/\s+/g, ' ')
-    .trim();
-
-  const cleanTitle = normalize(title);
-  const cleanAuthor = normalize(author);
-
-  // Verifica se o título informado já existe na Urna Popular
-  const duplicateInBallot = Boolean(
-    cleanTitle &&
-    (ballot?.books || []).some(b => {
-      const existingTitle = normalize(b.title);
-      if (existingTitle === cleanTitle) return true;
-      if (cleanTitle.length > 5 && existingTitle.length > 5) {
-        if (existingTitle.includes(cleanTitle) || cleanTitle.includes(existingTitle)) {
-          const existingAuthor = normalize(b.author);
-          if (cleanAuthor && existingAuthor && (existingAuthor.includes(cleanAuthor) || cleanAuthor.includes(existingAuthor))) {
-            return true;
-          }
-        }
-      }
-      return false;
-    })
-  );
+  // Validação anti-duplicidade em tempo real (título exato, subtítulo ou variação de escrita)
+  const duplicateCheck = findDuplicateBookInBallot(title, ballot?.books || []);
+  const duplicateInBallot = duplicateCheck.isDuplicate;
+  const duplicateMatchedBook = duplicateCheck.matchedBook;
 
   // Verifica se o título informado já é a leitura atual do mês
-  const isCurrentReading = Boolean(
-    cleanTitle &&
-    normalize(currentReading?.title) &&
-    (normalize(currentReading?.title) === cleanTitle || 
-      (cleanTitle.length > 5 && normalize(currentReading?.title).includes(cleanTitle)))
-  );
+  const isCurrentReading = isCurrentReadingBook(title, currentReading);
 
   // Ao selecionar um livro da busca Multi-API, autopreenche tudo
   const handleSelectBook = (book) => {
@@ -143,13 +115,14 @@ export default function NominateModal({ isOpen, onClose }) {
     e.target.value = '';
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!title.trim()) return;
+    if (!title.trim() || isSubmitting) return;
 
     if (duplicateInBallot) {
+      const matchName = duplicateMatchedBook?.title || title.trim();
       if (showToast) {
-        showToast(`A obra "${title.trim()}" já está indicada na Urna Popular! Você pode votar nela diretamente. 📚★`, 'error');
+        showToast(`A obra "${matchName}" já está indicada na Urna Popular! Você pode votar nela diretamente. 📚★`, 'error');
       }
       return;
     }
@@ -161,21 +134,26 @@ export default function NominateModal({ isOpen, onClose }) {
       return;
     }
 
-    const success = nominateBook({
-      title,
-      author,
-      pages,
-      coverUrl,
-      synopsis,
-      genre,
-      nominationReason
-    });
+    setIsSubmitting(true);
+    try {
+      const success = await nominateBook({
+        title,
+        author,
+        pages,
+        coverUrl,
+        synopsis,
+        genre,
+        nominationReason
+      });
 
-    if (success) {
-      if (triggerComradeConfetti) {
-        triggerComradeConfetti();
+      if (success) {
+        if (triggerComradeConfetti) {
+          triggerComradeConfetti();
+        }
+        handleClose();
       }
-      handleClose();
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -422,16 +400,30 @@ export default function NominateModal({ isOpen, onClose }) {
 
           {/* Alertas de Duplicidade em Tempo Real */}
           {duplicateInBallot && (
-            <div className="p-3 bg-theme-red/10 border-2 border-theme-red rounded-xl flex items-center gap-2.5 text-xs font-mono font-bold text-theme-red animate-fade-in">
-              <AlertCircle className="w-4 h-4 shrink-0 text-theme-red" />
-              <span>Esta obra já foi indicada na Urna Popular! Você pode votar nela diretamente na urna em vez de cadastrá-la novamente.</span>
+            <div className="p-3.5 bg-theme-red/15 border-2 border-theme-red rounded-xl flex items-start gap-2.5 text-xs font-mono font-bold text-theme-red animate-fade-in shadow-[3px_3px_0px_var(--accent-red)]">
+              <AlertCircle className="w-5 h-5 shrink-0 text-theme-red mt-0.5" />
+              <div className="flex-1">
+                <span className="block font-headline font-black text-xs uppercase tracking-wider text-theme-red">
+                  ⚠️ Obra já cadastrada na Urna Popular!
+                </span>
+                <p className="text-[11px] font-reading font-semibold text-theme-primary mt-1 leading-relaxed">
+                  "{duplicateMatchedBook?.title || title.trim()}" já está na cédula deste mês ({duplicateMatchedBook?.votes?.length || 0} votos). O comitê proíbe indicar o mesmo livro repetido. Você pode votar diretamente nele na cédula! ★
+                </p>
+              </div>
             </div>
           )}
 
           {isCurrentReading && (
-            <div className="p-3 bg-[#FEF08A]/20 border-2 border-theme-border rounded-xl flex items-center gap-2.5 text-xs font-mono font-bold text-theme-primary animate-fade-in">
-              <AlertCircle className="w-4 h-4 shrink-0 text-theme-red" />
-              <span>Esta obra já é a Leitura Atual do comitê! Escolha outra obra para a próxima rodada de votação.</span>
+            <div className="p-3.5 bg-[#FEF08A]/20 border-2 border-theme-border rounded-xl flex items-start gap-2.5 text-xs font-mono font-bold text-theme-primary animate-fade-in">
+              <AlertCircle className="w-5 h-5 shrink-0 text-theme-red mt-0.5" />
+              <div className="flex-1">
+                <span className="block font-headline font-black text-xs uppercase tracking-wider text-theme-red">
+                  ★ Obra em Leitura Ativa no Mês!
+                </span>
+                <p className="text-[11px] font-reading font-semibold text-theme-primary mt-1 leading-relaxed">
+                  Esta obra já é a Leitura Atual do comitê revolucionário. Escolha outra indicação para disputar a próxima rodada!
+                </p>
+              </div>
             </div>
           )}
 
@@ -446,11 +438,11 @@ export default function NominateModal({ isOpen, onClose }) {
             </button>
             <button
               type="submit"
-              disabled={!title.trim() || duplicateInBallot || isCurrentReading || isProcessing}
+              disabled={!title.trim() || duplicateInBallot || isCurrentReading || isProcessing || isSubmitting}
               className="w-full sm:w-auto justify-center px-6 py-2.5 bg-theme-red hover:brightness-110 disabled:opacity-50 text-white text-xs font-headline font-black uppercase tracking-wider rounded-lg border-2 border-theme-border shadow-[4px_4px_0px_var(--shadow-color)] transition-transform hover:-translate-x-0.5 hover:-translate-y-0.5 active:translate-x-0.5 active:translate-y-0.5 flex items-center gap-2 cursor-pointer disabled:cursor-not-allowed"
             >
               <BookPlus className="w-4 h-4 text-[#FEF08A]" />
-              <span>★ Adicionar à Urna</span>
+              <span>{isSubmitting ? 'Registrando...' : '★ Adicionar à Urna'}</span>
             </button>
           </div>
         </form>

@@ -11,6 +11,11 @@ import {
   INITIAL_ARCHIVE
 } from '../data/initialData';
 import { useAuth } from './AuthContext';
+import {
+  findDuplicateBookInBallot,
+  isCurrentReadingBook,
+  deduplicateBallotBooks
+} from '../utils/bookDuplicateCheck';
 
 const ClubContext = createContext(null);
 
@@ -125,12 +130,24 @@ export function ClubProvider({ children }) {
         (docSnap) => {
           if (docSnap.exists()) {
             const cloud = docSnap.data();
+
+            // Saneamento e deduplicação automática da Urna em tempo real
+            let cleanBallot = cloud.ballot || INITIAL_BALLOT;
+            if (cleanBallot && Array.isArray(cleanBallot.books)) {
+              const { dedupedBooks, hadDuplicates } = deduplicateBallotBooks(cleanBallot.books);
+              if (hadDuplicates) {
+                cleanBallot = { ...cleanBallot, books: dedupedBooks };
+                // Sincroniza silenciosamente a lista unificada de volta com o Firestore
+                setDoc(docRef, { ballot: cleanBallot, updatedAt: new Date().toISOString() }, { merge: true }).catch(() => {});
+              }
+            }
+
             setData(prev => ({
               ...prev,
               members: cloud.members || prev.members || INITIAL_MEMBERS,
               currentReading: cloud.currentReading || prev.currentReading || INITIAL_CURRENT_READING,
               meeting: cloud.meeting || prev.meeting || INITIAL_MEETING,
-              ballot: cloud.ballot || prev.ballot || INITIAL_BALLOT,
+              ballot: cleanBallot,
               archive: cloud.archive || prev.archive || INITIAL_ARCHIVE,
               quotes: cloud.quotes || prev.quotes || INITIAL_QUOTES
             }));
@@ -609,41 +626,18 @@ export function ClubProvider({ children }) {
       return false;
     }
 
-    // Normalização rigorosa de texto para comparação anti-duplicidade
-    const normalize = (str) => (str || '')
-      .toLowerCase()
-      .normalize('NFD')
-      .replace(/[\u0300-\u036f]/g, '') // remove acentos
-      .replace(/[^\w\s]/gi, '') // remove pontuação
-      .replace(/\s+/g, ' ')
-      .trim();
+    const currentBooks = data.ballot?.books || [];
 
-    const cleanNewTitle = normalize(title);
-    const cleanNewAuthor = normalize(author);
-
-    // 1. Verifica se já está na Urna Popular
-    const isAlreadyInBallot = (data.ballot?.books || []).some(b => {
-      const existingTitle = normalize(b.title);
-      if (existingTitle === cleanNewTitle) return true;
-      if (cleanNewTitle.length > 5 && existingTitle.length > 5) {
-        if (existingTitle.includes(cleanNewTitle) || cleanNewTitle.includes(existingTitle)) {
-          const existingAuthor = normalize(b.author);
-          if (cleanNewAuthor && existingAuthor && (existingAuthor.includes(cleanNewAuthor) || cleanNewAuthor.includes(existingAuthor))) {
-            return true;
-          }
-        }
-      }
-      return false;
-    });
-
-    if (isAlreadyInBallot) {
-      showToast(`A obra "${title.trim()}" já está indicada na Urna Popular! Você pode votar nela diretamente. 📚★`, 'error');
+    // 1. Validação anti-duplicidade abrangente (título idêntico, subtítulos ou tokens equivalentes)
+    const duplicateCheck = findDuplicateBookInBallot(title, currentBooks);
+    if (duplicateCheck.isDuplicate) {
+      const existingName = duplicateCheck.matchedBook?.title || title.trim();
+      showToast(`A obra "${existingName}" já está na Urna Popular! Você pode votar diretamente nela. 📚★`, 'error');
       return false;
     }
 
     // 2. Verifica se já é a leitura atual do comitê
-    const currentTitle = normalize(data.currentReading?.title);
-    if (currentTitle && (currentTitle === cleanNewTitle || (cleanNewTitle.length > 5 && currentTitle.includes(cleanNewTitle)))) {
+    if (isCurrentReadingBook(title, data.currentReading)) {
       showToast(`"${title.trim()}" já é a Leitura Atual do comitê! Escolha outra obra para a próxima rodada. 📚★`, 'error');
       return false;
     }
@@ -652,7 +646,7 @@ export function ClubProvider({ children }) {
     const newBook = {
       id: `ballot-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
       title: title.trim(),
-      author: author.trim() || 'Autor não informado',
+      author: author?.trim() || 'Autor não informado',
       pages: parseInt(pages, 10) || 280,
       coverUrl: coverUrl || '',
       synopsis: synopsis || 'Sem sinopse cadastrada.',
@@ -662,9 +656,12 @@ export function ClubProvider({ children }) {
       votes: [nominatorId] // Quem indica já vota automaticamente com seu ID autenticado
     };
 
+    // Deduplica preventivamente ao montar a nova lista
+    const { dedupedBooks } = deduplicateBallotBooks([...currentBooks, newBook]);
+
     const updatedBallot = {
       ...data.ballot,
-      books: [...(data.ballot.books || []), newBook]
+      books: dedupedBooks
     };
 
     setData(prev => ({
@@ -689,6 +686,19 @@ export function ClubProvider({ children }) {
     if (targetBook && targetBook.nominatedBy !== userProfile.memberId) {
       showToast('Você só pode editar indicações feitas por você!', 'error');
       return;
+    }
+
+    // Se estiver alterando o título, valida contra duplicidades na urna
+    if (updatedFields.title) {
+      const duplicateCheck = findDuplicateBookInBallot(updatedFields.title, data.ballot?.books || [], bookId);
+      if (duplicateCheck.isDuplicate) {
+        showToast(`Conflito: a obra "${duplicateCheck.matchedBook?.title || updatedFields.title}" já existe na urna!`, 'error');
+        return;
+      }
+      if (isCurrentReadingBook(updatedFields.title, data.currentReading)) {
+        showToast(`"${updatedFields.title.trim()}" já é a Leitura Atual do comitê!`, 'error');
+        return;
+      }
     }
 
     const updatedBooks = data.ballot.books.map(b => {

@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { useClub } from '../../context/ClubContext';
-import { X, Save, BookOpen, Trash2 } from 'lucide-react';
+import { X, Save, BookOpen, Trash2, AlertCircle } from 'lucide-react';
+import { findDuplicateBookInBallot, isCurrentReadingBook } from '../../utils/bookDuplicateCheck';
 
 export default function EditNominationModal({ book, isOpen, onClose }) {
-  const { updateNomination, deleteNomination, activeMember } = useClub();
+  const { updateNomination, deleteNomination, activeMember, ballot, currentReading, showToast } = useClub();
 
   const [title, setTitle] = useState('');
   const [author, setAuthor] = useState('');
@@ -29,9 +30,30 @@ export default function EditNominationModal({ book, isOpen, onClose }) {
 
   if (!isOpen || !book) return null;
 
+  // Validação anti-duplicidade ao editar título (ignora a si mesmo via book.id)
+  const duplicateCheck = findDuplicateBookInBallot(title, ballot?.books || [], book.id);
+  const duplicateInBallot = duplicateCheck.isDuplicate;
+  const duplicateMatchedBook = duplicateCheck.matchedBook;
+
+  const isCurrentReading = isCurrentReadingBook(title, currentReading);
+
   const handleSubmit = (e) => {
     e.preventDefault();
     if (!title.trim()) return;
+
+    if (duplicateInBallot) {
+      if (showToast) {
+        showToast(`Conflito: a obra "${duplicateMatchedBook?.title || title.trim()}" já existe na urna!`, 'error');
+      }
+      return;
+    }
+
+    if (isCurrentReading) {
+      if (showToast) {
+        showToast(`"${title.trim()}" já é a Leitura Atual do comitê!`, 'error');
+      }
+      return;
+    }
 
     updateNomination(book.id, {
       title: title.trim(),
@@ -203,6 +225,35 @@ export default function EditNominationModal({ book, isOpen, onClose }) {
             />
           </div>
 
+          {/* Alertas de Duplicidade */}
+          {duplicateInBallot && (
+            <div className="p-3 bg-theme-red/15 border-2 border-theme-red rounded-xl flex items-start gap-2 text-xs font-mono font-bold text-theme-red animate-fade-in shadow-[2px_2px_0px_var(--accent-red)]">
+              <AlertCircle className="w-4 h-4 shrink-0 text-theme-red mt-0.5" />
+              <div>
+                <span className="block font-headline font-black text-xs uppercase tracking-wider text-theme-red">
+                  ⚠️ Conflito de título na Urna!
+                </span>
+                <p className="text-[11px] font-reading font-semibold text-theme-primary mt-0.5">
+                  Já existe outra obra indicada com este título ("{duplicateMatchedBook?.title}"). Escolha um título único para evitar duplicidades.
+                </p>
+              </div>
+            </div>
+          )}
+
+          {isCurrentReading && (
+            <div className="p-3 bg-[#FEF08A]/20 border-2 border-theme-border rounded-xl flex items-start gap-2 text-xs font-mono font-bold text-theme-primary animate-fade-in">
+              <AlertCircle className="w-4 h-4 shrink-0 text-theme-red mt-0.5" />
+              <div>
+                <span className="block font-headline font-black text-xs uppercase tracking-wider text-theme-red">
+                  ★ Leitura Atual Ativa!
+                </span>
+                <p className="text-[11px] font-reading font-semibold text-theme-primary mt-0.5">
+                  Esta obra já é a Leitura Atual do comitê revolucionário.
+                </p>
+              </div>
+            </div>
+          )}
+
           {/* Botões de Ação */}
           <div className="flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-between gap-3 pt-4 border-t-2 border-theme-border">
             <button
@@ -218,13 +269,14 @@ export default function EditNominationModal({ book, isOpen, onClose }) {
               <button
                 type="button"
                 onClick={onClose}
-                className="flex-1 sm:flex-initial px-4 py-2 text-xs font-mono font-bold text-theme-muted hover:bg-theme-card rounded-lg border-2 border-theme-border transition-colors text-center"
+                className="flex-1 sm:flex-initial px-4 py-2 text-xs font-mono font-bold text-theme-muted hover:bg-theme-card rounded-lg border-2 border-theme-border transition-colors text-center cursor-pointer"
               >
                 Cancelar
               </button>
               <button
                 type="submit"
-                className="flex-1 sm:flex-initial justify-center px-5 py-2 bg-theme-red hover:brightness-110 text-white text-xs font-headline font-black uppercase tracking-wider rounded-lg border-2 border-theme-border shadow-[3px_3px_0px_var(--shadow-color)] transition-transform hover:-translate-x-0.5 hover:-translate-y-0.5 active:translate-x-0.5 active:translate-y-0.5 flex items-center gap-1.5"
+                disabled={!title.trim() || duplicateInBallot || isCurrentReading}
+                className="flex-1 sm:flex-initial justify-center px-5 py-2 bg-theme-red hover:brightness-110 disabled:opacity-50 text-white text-xs font-headline font-black uppercase tracking-wider rounded-lg border-2 border-theme-border shadow-[3px_3px_0px_var(--shadow-color)] transition-transform hover:-translate-x-0.5 hover:-translate-y-0.5 active:translate-x-0.5 active:translate-y-0.5 flex items-center gap-1.5 cursor-pointer disabled:cursor-not-allowed"
               >
                 <Save className="w-3.5 h-3.5 text-[#FEF08A]" />
                 <span>Salvar Alterações</span>

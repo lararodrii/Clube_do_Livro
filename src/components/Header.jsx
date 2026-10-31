@@ -78,59 +78,63 @@ export default function Header({ activeTab, setActiveTab, onOpenTour }) {
           />
         </div>
 
-        {/* Bloco 3: Barra de Controles (Tema + Perfil Logado + Sair) */}
-        <div className="flex items-center justify-between sm:justify-end gap-1 sm:gap-2 w-full sm:w-auto shrink-0 order-1 lg:order-3">
-          {/* SELETOR DE TEMAS */}
-          <div className="relative">
-            <button
-              type="button"
-              onClick={() => setShowThemeSelector(!showThemeSelector)}
-              title={`Modo Ideológico Atual: ${currentThemeInfo.name}`}
-              className="flex items-center gap-1 sm:gap-1.5 px-2 py-1 sm:px-2.5 sm:py-1.5 text-[9px] sm:text-xs font-mono font-black bg-theme-card hover:bg-theme-container text-theme-primary border-2 border-theme-border shadow-[2px_2px_0px_var(--shadow-color)] rounded-xl transition-transform hover:-translate-x-0.5 hover:-translate-y-0.5 active:translate-x-0.5 active:translate-y-0.5 shrink-0"
-            >
-              <span className="text-xs sm:text-sm">{currentThemeInfo.icon}</span>
-              <span className="hidden xl:inline whitespace-nowrap">{currentThemeInfo.name}</span>
-              <span className="inline xl:hidden whitespace-nowrap text-[10px]">Tema</span>
-              <Palette className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-theme-red shrink-0" />
-            </button>
+        {/* Bloco 3: Barra de Controles (Tema + Guia + Perfil Logado + Sair) */}
+        <div className="flex items-center justify-between sm:justify-end gap-1.5 sm:gap-2.5 w-full sm:w-auto order-1 lg:order-3 min-w-0 pr-1 sm:pr-0">
+          {/* GRUPO ESQUERDA: TEMA + GUIA */}
+          <div className="flex items-center gap-1 sm:gap-1.5 shrink-0">
+            {/* SELETOR DE TEMAS */}
+            <div className="relative">
+              <button
+                type="button"
+                onClick={() => setShowThemeSelector(!showThemeSelector)}
+                title={`Modo Ideológico Atual: ${currentThemeInfo.name}`}
+                className="flex items-center gap-1 sm:gap-1.5 px-1.5 py-1 sm:px-2.5 sm:py-1.5 text-[9px] sm:text-xs font-mono font-black bg-theme-card hover:bg-theme-container text-theme-primary border-2 border-theme-border shadow-[2px_2px_0px_var(--shadow-color)] rounded-xl transition-transform hover:-translate-x-0.5 hover:-translate-y-0.5 active:translate-x-0.5 active:translate-y-0.5 shrink-0 cursor-pointer"
+              >
+                <span className="text-xs sm:text-sm">{currentThemeInfo.icon}</span>
+                <span className="hidden xl:inline whitespace-nowrap">{currentThemeInfo.name}</span>
+                <span className="inline xl:hidden whitespace-nowrap text-[9px] sm:text-[10px]">Tema</span>
+                <Palette className="w-2.5 h-2.5 sm:w-3.5 sm:h-3.5 text-theme-red shrink-0" />
+              </button>
+            </div>
+
+            {/* BOTÃO GUIA / REVER TOUR */}
+            {onOpenTour && (
+              <button
+                type="button"
+                onClick={onOpenTour}
+                title="Guia do Clube / Rever Tour Passo a Passo (?)"
+                className="flex items-center justify-center w-6 h-6 sm:w-8 sm:h-8 rounded-xl text-[10px] sm:text-xs font-mono font-black text-theme-primary bg-theme-card hover:bg-theme-container border-2 border-theme-border shadow-[2px_2px_0px_var(--shadow-color)] transition-transform hover:-translate-x-0.5 hover:-translate-y-0.5 active:translate-x-0.5 active:translate-y-0.5 shrink-0 cursor-pointer"
+              >
+                <HelpCircle className="w-3 h-3 sm:w-4 sm:h-4 text-theme-red" />
+              </button>
+            )}
           </div>
 
-          {/* BOTÃO GUIA / REVER TOUR */}
-          {onOpenTour && (
-            <button
-              type="button"
-              onClick={onOpenTour}
-              title="Guia do Clube / Rever Tour Passo a Passo (?)"
-              className="flex items-center justify-center w-7 h-7 sm:w-8 sm:h-8 rounded-xl text-xs font-mono font-black text-theme-primary bg-theme-card hover:bg-theme-container border-2 border-theme-border shadow-[2px_2px_0px_var(--shadow-color)] transition-transform hover:-translate-x-0.5 hover:-translate-y-0.5 active:translate-x-0.5 active:translate-y-0.5 shrink-0"
-            >
-              <HelpCircle className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-theme-red" />
-            </button>
-          )}
-
-          {/* PERFIL ATIVO / AUTENTICAÇÃO */}
+          {/* GRUPO DIREITA: PERFIL ATIVO + BOTÃO SAIR */}
           {isAuthenticated ? (
-            <div className="flex items-center gap-1 sm:gap-2 shrink-0">
+            <div className="flex items-center gap-1 sm:gap-2 min-w-0 shrink">
+              {/* Card de Perfil que se adapta proporcionalmente em telas estreitas */}
               <div 
-                className="flex items-center gap-1.5 sm:gap-2 px-1.5 py-1 sm:px-2.5 sm:py-1.5 rounded-xl bg-theme-card border-2 border-theme-border shadow-[2px_2px_0px_var(--shadow-color)] select-none shrink-0"
+                className="flex items-center gap-1 sm:gap-2 px-1.5 py-1 sm:px-2.5 sm:py-1.5 rounded-xl bg-theme-card border-2 border-theme-border shadow-[2px_2px_0px_var(--shadow-color)] select-none min-w-0 shrink"
                 title={`Conectada como ${activeMember.name} (${currentUser?.email})`}
               >
                 <div className="relative shrink-0">
                   <img
                     src={activeMember.avatar}
                     alt={activeMember.name}
-                    className="w-6 h-6 sm:w-8 sm:h-8 rounded-lg object-cover border border-theme-border shrink-0"
+                    className="w-5 h-5 sm:w-8 sm:h-8 rounded-lg object-cover border border-theme-border shrink-0"
                   />
                   <span 
-                    className="absolute -bottom-1 -right-1 w-3 h-3 sm:w-3.5 sm:h-3.5 rounded-full border border-theme-border bg-theme-container flex items-center justify-center text-[6px] sm:text-[7px] text-theme-gold font-bold shadow-sm"
+                    className="absolute -bottom-1 -right-1 w-2.5 h-2.5 sm:w-3.5 sm:h-3.5 rounded-full border border-theme-border bg-theme-container flex items-center justify-center text-[5px] sm:text-[7px] text-theme-gold font-bold shadow-sm"
                     title="Sessão autenticada no comitê"
                   >
                     ★
                   </span>
                 </div>
-                <div className="text-left">
-                  <div className="flex items-center gap-1">
-                    <p className="text-[9px] sm:text-xs font-black text-theme-primary leading-tight flex items-center gap-1 truncate max-w-[60px] sm:max-w-none">
-                      <span>{activeMember.name.split(' ')[0]}</span>
+                <div className="text-left min-w-0">
+                  <div className="flex items-center gap-0.5 sm:gap-1 min-w-0">
+                    <p className="text-[8px] sm:text-xs font-black text-theme-primary leading-tight flex items-center gap-0.5 sm:gap-1 min-w-0">
+                      <span className="truncate max-w-[45px] sm:max-w-none">{activeMember.name.split(' ')[0]}</span>
                       <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse shrink-0" title="Sessão ativa e sincronizada" />
                     </p>
                     <button
@@ -140,32 +144,33 @@ export default function Header({ activeTab, setActiveTab, onOpenTour }) {
                         setIsEditProfileOpen(true);
                       }}
                       title="Editar meu perfil"
-                      className="p-1 hover:bg-theme-gold/20 text-theme-muted hover:text-theme-primary rounded-lg border border-theme-border/60 transition-colors shrink-0 ml-0.5"
+                      className="p-0.5 sm:p-1 hover:bg-theme-gold/20 text-theme-muted hover:text-theme-primary rounded-md sm:rounded-lg border border-theme-border/60 transition-colors shrink-0 cursor-pointer"
                     >
-                      <Pencil className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-theme-gold" />
+                      <Pencil className="w-2 h-2 sm:w-3 sm:h-3 text-theme-gold" />
                     </button>
                   </div>
-                  <p className="text-[8px] sm:text-[10px] text-theme-muted font-mono font-bold leading-none truncate max-w-[65px] sm:max-w-[130px] mt-0.5">
+                  <p className="text-[7px] sm:text-[10px] text-theme-muted font-mono font-bold leading-none truncate max-w-[45px] sm:max-w-[130px] mt-0.5">
                     {activeMember.roleBadge}
                   </p>
                 </div>
               </div>
 
+              {/* Botão Sair com Visibilidade Total Garantida */}
               <button
                 type="button"
                 onClick={handleLogoutClick}
                 title="Sair da sessão / Encerrar conta para alternar de perfil"
-                className="flex items-center gap-1 px-2 py-1 sm:px-3 sm:py-2 rounded-xl text-[9px] sm:text-xs font-mono font-bold text-theme-muted hover:text-theme-red bg-theme-card hover:bg-theme-container border-2 border-theme-border shadow-[2px_2px_0px_var(--shadow-color)] transition-transform hover:-translate-x-0.5 hover:-translate-y-0.5 active:translate-x-0.5 active:translate-y-0.5 shrink-0"
+                className="flex items-center justify-center gap-1 px-2 py-1 sm:px-3 sm:py-2 rounded-xl text-[9px] sm:text-xs font-mono font-bold text-theme-muted hover:text-theme-red bg-theme-card hover:bg-theme-container border-2 border-theme-border shadow-[2px_2px_0px_var(--shadow-color)] transition-transform hover:-translate-x-0.5 hover:-translate-y-0.5 active:translate-x-0.5 active:translate-y-0.5 shrink-0 cursor-pointer"
               >
                 <LogOut className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-theme-red shrink-0" />
-                <span className="whitespace-nowrap font-bold">Sair</span>
+                <span className="whitespace-nowrap font-black">Sair</span>
               </button>
             </div>
           ) : (
             <button
               type="button"
               onClick={() => openAuthModal('Faça login com sua conta para votar, debater e registrar presenças no comitê!', 'login')}
-              className="flex items-center gap-1.5 px-2.5 py-1 sm:px-3.5 sm:py-2 rounded-xl bg-theme-red hover:opacity-90 text-white font-bold border-2 border-theme-border shadow-[2px_2px_0px_var(--shadow-color)] text-[9px] sm:text-xs font-headline font-black uppercase tracking-wider transition-transform hover:-translate-x-0.5 hover:-translate-y-0.5 active:translate-x-0.5 active:translate-y-0.5 shrink-0"
+              className="flex items-center gap-1.5 px-2 py-1 sm:px-3.5 sm:py-2 rounded-xl bg-theme-red hover:opacity-90 text-white font-bold border-2 border-theme-border shadow-[2px_2px_0px_var(--shadow-color)] text-[9px] sm:text-xs font-headline font-black uppercase tracking-wider transition-transform hover:-translate-x-0.5 hover:-translate-y-0.5 active:translate-x-0.5 active:translate-y-0.5 shrink-0 cursor-pointer"
             >
               <LogIn className="w-3.5 h-3.5 text-[#FEF08A]" />
               <span>Acesso das Camaradas ★</span>
