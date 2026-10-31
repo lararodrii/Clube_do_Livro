@@ -196,17 +196,17 @@ export default function QuotesWall() {
 
       {/* Lista de Citações OU Empty State com o Gato Camarada */}
       {quotes.length === 0 ? (
-        <div className="p-8 sm:p-10 text-center bg-theme-card rounded-xl border-2 border-theme-border shadow-[3px_3px_0px_var(--shadow-color)] flex flex-col items-center">
-          <div className="mb-2">
+        <div className="p-6 sm:p-8 text-center bg-theme-card rounded-xl border-2 border-theme-border shadow-[3px_3px_0px_var(--shadow-color)] flex flex-col items-center">
+          <div className="w-full flex items-center justify-center gap-2.5 sm:gap-4 my-2">
             <ComradeCat 
               pose="reading" 
               size="md" 
               showBubble={true} 
               customQuote="Camaradas, destaque uma passagem e compartilhe com o comitê!" 
-              bubblePosition="top" 
+              bubblePosition="right" 
             />
           </div>
-          <h4 className="font-headline font-black text-lg text-theme-primary mb-1 mt-2">
+          <h4 className="font-headline font-black text-lg text-theme-primary mb-1 mt-3">
             Nenhuma citação pregada no mural ainda!
           </h4>
           <p className="text-xs text-theme-muted font-reading max-w-md mx-auto italic">

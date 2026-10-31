@@ -19,7 +19,7 @@ import {
 } from 'lucide-react';
 
 export default function NominateModal({ isOpen, onClose }) {
-  const { nominateBook, activeMember, triggerComradeConfetti } = useClub();
+  const { nominateBook, activeMember, ballot, currentReading, triggerComradeConfetti, showToast } = useClub();
 
   // Campos do formulário preenchidos automaticamente
   const [selectedBook, setSelectedBook] = useState(null);
@@ -35,6 +35,44 @@ export default function NominateModal({ isOpen, onClose }) {
   const [isProcessing, setIsProcessing] = useState(false);
 
   const fileInputRef = useRef(null);
+
+  // Normalização de texto para validação anti-duplicidade em tempo real
+  const normalize = (str) => (str || '')
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^\w\s]/gi, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+
+  const cleanTitle = normalize(title);
+  const cleanAuthor = normalize(author);
+
+  // Verifica se o título informado já existe na Urna Popular
+  const duplicateInBallot = Boolean(
+    cleanTitle &&
+    (ballot?.books || []).some(b => {
+      const existingTitle = normalize(b.title);
+      if (existingTitle === cleanTitle) return true;
+      if (cleanTitle.length > 5 && existingTitle.length > 5) {
+        if (existingTitle.includes(cleanTitle) || cleanTitle.includes(existingTitle)) {
+          const existingAuthor = normalize(b.author);
+          if (cleanAuthor && existingAuthor && (existingAuthor.includes(cleanAuthor) || cleanAuthor.includes(existingAuthor))) {
+            return true;
+          }
+        }
+      }
+      return false;
+    })
+  );
+
+  // Verifica se o título informado já é a leitura atual do mês
+  const isCurrentReading = Boolean(
+    cleanTitle &&
+    normalize(currentReading?.title) &&
+    (normalize(currentReading?.title) === cleanTitle || 
+      (cleanTitle.length > 5 && normalize(currentReading?.title).includes(cleanTitle)))
+  );
 
   // Ao selecionar um livro da busca Multi-API, autopreenche tudo
   const handleSelectBook = (book) => {
@@ -108,6 +146,20 @@ export default function NominateModal({ isOpen, onClose }) {
   const handleSubmit = (e) => {
     e.preventDefault();
     if (!title.trim()) return;
+
+    if (duplicateInBallot) {
+      if (showToast) {
+        showToast(`A obra "${title.trim()}" já está indicada na Urna Popular! Você pode votar nela diretamente. 📚★`, 'error');
+      }
+      return;
+    }
+
+    if (isCurrentReading) {
+      if (showToast) {
+        showToast(`"${title.trim()}" já é a Leitura Atual do comitê! Escolha outra obra para a próxima rodada. 📚★`, 'error');
+      }
+      return;
+    }
 
     const success = nominateBook({
       title,
@@ -368,19 +420,34 @@ export default function NominateModal({ isOpen, onClose }) {
             />
           </div>
 
+          {/* Alertas de Duplicidade em Tempo Real */}
+          {duplicateInBallot && (
+            <div className="p-3 bg-theme-red/10 border-2 border-theme-red rounded-xl flex items-center gap-2.5 text-xs font-mono font-bold text-theme-red animate-fade-in">
+              <AlertCircle className="w-4 h-4 shrink-0 text-theme-red" />
+              <span>Esta obra já foi indicada na Urna Popular! Você pode votar nela diretamente na urna em vez de cadastrá-la novamente.</span>
+            </div>
+          )}
+
+          {isCurrentReading && (
+            <div className="p-3 bg-[#FEF08A]/20 border-2 border-theme-border rounded-xl flex items-center gap-2.5 text-xs font-mono font-bold text-theme-primary animate-fade-in">
+              <AlertCircle className="w-4 h-4 shrink-0 text-theme-red" />
+              <span>Esta obra já é a Leitura Atual do comitê! Escolha outra obra para a próxima rodada de votação.</span>
+            </div>
+          )}
+
           {/* Botões de Ação */}
           <div className="flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-end gap-2.5 sm:gap-3 pt-4 border-t-2 border-theme-border">
             <button
               type="button"
               onClick={handleClose}
-              className="w-full sm:w-auto px-5 py-2.5 text-xs font-mono font-bold text-theme-muted hover:bg-theme-card rounded-lg border-2 border-theme-border transition-colors text-center"
+              className="w-full sm:w-auto px-5 py-2.5 text-xs font-mono font-bold text-theme-muted hover:bg-theme-card rounded-lg border-2 border-theme-border transition-colors text-center cursor-pointer"
             >
               Cancelar
             </button>
             <button
               type="submit"
-              disabled={!title.trim()}
-              className="w-full sm:w-auto justify-center px-6 py-2.5 bg-theme-red hover:brightness-110 disabled:opacity-50 text-white text-xs font-headline font-black uppercase tracking-wider rounded-lg border-2 border-theme-border shadow-[4px_4px_0px_var(--shadow-color)] transition-transform hover:-translate-x-0.5 hover:-translate-y-0.5 active:translate-x-0.5 active:translate-y-0.5 flex items-center gap-2"
+              disabled={!title.trim() || duplicateInBallot || isCurrentReading || isProcessing}
+              className="w-full sm:w-auto justify-center px-6 py-2.5 bg-theme-red hover:brightness-110 disabled:opacity-50 text-white text-xs font-headline font-black uppercase tracking-wider rounded-lg border-2 border-theme-border shadow-[4px_4px_0px_var(--shadow-color)] transition-transform hover:-translate-x-0.5 hover:-translate-y-0.5 active:translate-x-0.5 active:translate-y-0.5 flex items-center gap-2 cursor-pointer disabled:cursor-not-allowed"
             >
               <BookPlus className="w-4 h-4 text-[#FEF08A]" />
               <span>★ Adicionar à Urna</span>

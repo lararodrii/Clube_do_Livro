@@ -597,10 +597,54 @@ export function ClubProvider({ children }) {
     }
   };
 
-  // Indicar livro para a urna (SEM LIMITE DE QUANTIDADE POR PESSOA!)
+  // Indicar livro para a urna (SEM DUPLICIDADE!)
   const nominateBook = ({ title, author, pages, coverUrl, synopsis, genre, nominationReason }) => {
     if (!currentUser || !isAuthenticated || !userProfile?.memberId) {
       openAuthModal('Faça login com seu perfil para indicar um livro para a urna popular!', 'login');
+      return false;
+    }
+
+    if (!title || !title.trim()) {
+      showToast('Por favor, informe o título da obra.', 'error');
+      return false;
+    }
+
+    // Normalização rigorosa de texto para comparação anti-duplicidade
+    const normalize = (str) => (str || '')
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '') // remove acentos
+      .replace(/[^\w\s]/gi, '') // remove pontuação
+      .replace(/\s+/g, ' ')
+      .trim();
+
+    const cleanNewTitle = normalize(title);
+    const cleanNewAuthor = normalize(author);
+
+    // 1. Verifica se já está na Urna Popular
+    const isAlreadyInBallot = (data.ballot?.books || []).some(b => {
+      const existingTitle = normalize(b.title);
+      if (existingTitle === cleanNewTitle) return true;
+      if (cleanNewTitle.length > 5 && existingTitle.length > 5) {
+        if (existingTitle.includes(cleanNewTitle) || cleanNewTitle.includes(existingTitle)) {
+          const existingAuthor = normalize(b.author);
+          if (cleanNewAuthor && existingAuthor && (existingAuthor.includes(cleanNewAuthor) || cleanNewAuthor.includes(existingAuthor))) {
+            return true;
+          }
+        }
+      }
+      return false;
+    });
+
+    if (isAlreadyInBallot) {
+      showToast(`A obra "${title.trim()}" já está indicada na Urna Popular! Você pode votar nela diretamente. 📚★`, 'error');
+      return false;
+    }
+
+    // 2. Verifica se já é a leitura atual do comitê
+    const currentTitle = normalize(data.currentReading?.title);
+    if (currentTitle && (currentTitle === cleanNewTitle || (cleanNewTitle.length > 5 && currentTitle.includes(cleanNewTitle)))) {
+      showToast(`"${title.trim()}" já é a Leitura Atual do comitê! Escolha outra obra para a próxima rodada. 📚★`, 'error');
       return false;
     }
 

@@ -83,20 +83,20 @@ export default function ArchiveSection() {
 
       {/* Grid de Livros no Acervo OU Empty State Padronizado com o Gato Camarada */}
       {archive.length === 0 ? (
-        <div className="retro-card rounded-2xl p-8 sm:p-12 text-center bg-theme-card border-2 border-theme-border shadow-[6px_6px_0px_var(--shadow-color)] flex flex-col items-center">
-          <div className="mb-3">
+        <div className="retro-card rounded-2xl p-6 sm:p-10 text-center bg-theme-card border-2 border-theme-border shadow-[6px_6px_0px_var(--shadow-color)] flex flex-col items-center">
+          <div className="w-full flex items-center justify-center gap-2.5 sm:gap-4 my-2">
             <ComradeCat 
               pose="reading" 
-              size="lg" 
+              size="md" 
               showBubble={true}
               customQuote="Livros concluídos viram patrimônio revolucionário no acervo!"
-              bubblePosition="top"
+              bubblePosition="right"
             />
           </div>
-          <h3 className="font-headline font-black text-2xl text-theme-primary mb-2 mt-2">
+          <h3 className="font-headline font-black text-xl sm:text-2xl text-theme-primary mb-2 mt-3">
             O Acervo do Exército da Paty começa agora!
           </h3>
-          <p className="text-sm text-theme-muted max-w-lg mx-auto mb-4 font-reading italic leading-relaxed">
+          <p className="text-xs sm:text-sm text-theme-muted max-w-lg mx-auto mb-5 font-reading italic leading-relaxed">
             O Gato Camarada está organizando as estantes da nossa biblioteca. Assim que a assembleia de debate for realizada, o livro atual será catalogado aqui com avaliações em estrelas, resenhas de cada camarada e histórico permanente.
           </p>
           <div className="inline-flex items-center gap-2 bg-[#FEF08A] px-4 py-2 rounded-xl border-2 border-theme-border text-xs font-mono font-bold text-[#111111] shadow-[2px_2px_0px_var(--shadow-color)]">

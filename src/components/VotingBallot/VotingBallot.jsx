@@ -83,6 +83,10 @@ export default function VotingBallot() {
     }
   };
 
+  const handleVoteToggle = (bookId) => {
+    handleVoteClick(bookId);
+  };
+
   const handleNominateClick = () => {
     if (!isAuthenticated) {
       openAuthModal('Faça login para indicar novas obras na Urna Popular!', 'login');
@@ -244,20 +248,20 @@ export default function VotingBallot() {
 
       {/* Grid de Cards dos Livros na Urna OU Empty State Padronizado com o Gato Camarada */}
       {books.length === 0 ? (
-        <div className="retro-card rounded-2xl p-8 sm:p-12 text-center bg-theme-card border-2 border-theme-border shadow-[6px_6px_0px_var(--shadow-color)] flex flex-col items-center">
-          <div className="mb-3">
+        <div className="retro-card rounded-2xl p-6 sm:p-10 text-center bg-theme-card border-2 border-theme-border shadow-[6px_6px_0px_var(--shadow-color)] flex flex-col items-center">
+          <div className="w-full flex items-center justify-center gap-2.5 sm:gap-4 my-2">
             <ComradeCat 
               pose="reading" 
-              size="lg" 
+              size="md" 
               showBubble={true} 
               customQuote="Camaradas, a urna está zerada! Quem vai indicar a primeira obra?"
-              bubblePosition="top"
+              bubblePosition="right"
             />
           </div>
-          <h3 className="font-headline font-black text-2xl text-theme-primary mb-2 mt-2">
+          <h3 className="font-headline font-black text-xl sm:text-2xl text-theme-primary mb-2 mt-3">
             Urna Popular Pronta para Votação!
           </h3>
-          <p className="text-sm text-theme-muted max-w-md mx-auto mb-6 font-reading italic leading-relaxed">
+          <p className="text-xs sm:text-sm text-theme-muted max-w-md mx-auto mb-6 font-reading italic leading-relaxed">
             O Gato Camarada está a postos fiscalizando a urna com sua boina estrelada. Todas as 6 integrantes podem indicar quantas obras quiserem e votar em até 3 favoritas!
           </p>
           <button

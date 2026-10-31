@@ -47,11 +47,11 @@ export default function Header({ activeTab, setActiveTab, onOpenTour }) {
     <header className="sticky top-0 z-40 bg-theme-container border-b-2 border-theme-border shadow-[0_3px_0px_0px_var(--shadow-color)] transition-colors duration-300">
       
       {/* Faixa Superior Editorial com Escala Proporcional Mobile */}
-      <div className="w-full max-w-7xl mx-auto px-2.5 sm:px-6 flex flex-col lg:flex-row items-center justify-between gap-2.5 sm:gap-4 lg:gap-6 py-2 sm:py-3.5">
+      <div className="w-full max-w-7xl mx-auto px-2 sm:px-4 lg:px-6 flex flex-col lg:flex-row items-center justify-between gap-2.5 sm:gap-3 lg:gap-4 py-2 sm:py-2.5">
         
         {/* Bloco 1: Logo Central ("★ Exército da Paty" + "★ CLUBE DO LIVRO") */}
-        <div className="w-full lg:w-auto flex flex-col sm:flex-row items-center justify-between lg:justify-start gap-1 sm:gap-3 shrink-0 order-2 lg:order-1">
-          <div className="flex items-center gap-2 sm:gap-3">
+        <div className="w-full lg:w-auto flex flex-col sm:flex-row items-center justify-between lg:justify-start gap-1 sm:gap-2.5 shrink-0 order-2 lg:order-1">
+          <div className="flex items-center gap-2 sm:gap-2.5">
             <h1 
               onClick={() => setActiveTab('current')}
               className="font-headline font-bold text-base sm:text-2xl text-theme-red hover:opacity-90 cursor-pointer transition-colors flex items-center gap-1.5 whitespace-nowrap"
@@ -63,35 +63,34 @@ export default function Header({ activeTab, setActiveTab, onOpenTour }) {
               ★ CLUBE DO LIVRO
             </span>
           </div>
-          <p className="text-[9px] sm:text-xs text-theme-muted font-reading font-bold italic tracking-wide whitespace-nowrap">
-            "Não vai lutar contra o fascismo?" • Est. 2026
-          </p>
+          <span className="text-[10px] sm:text-xs text-theme-muted font-mono font-bold tracking-wider whitespace-nowrap">
+            Est. 2026
+          </span>
         </div>
 
-        {/* Bloco 2: Bloco do Gato Camarada + Balão de Fala */}
-        <div className="w-full lg:flex-1 lg:max-w-xl flex items-center gap-2 shrink-0 order-3 lg:order-2">
+        {/* Bloco 2: Bloco do Gato Camarada + Balão de Fala Horizontal */}
+        <div className="w-full lg:w-auto flex items-center justify-center shrink-0 order-3 lg:order-2">
           <ComradeCat 
             pose="grumpy" 
             size="sm" 
             showBubble={true}
             bubblePosition="right"
-            className="w-full"
           />
         </div>
 
         {/* Bloco 3: Barra de Controles (Tema + Perfil Logado + Sair) */}
-        <div className="flex items-center justify-between sm:justify-end gap-1 sm:gap-2.5 w-full sm:w-auto shrink-0 order-1 lg:order-3">
+        <div className="flex items-center justify-between sm:justify-end gap-1 sm:gap-2 w-full sm:w-auto shrink-0 order-1 lg:order-3">
           {/* SELETOR DE TEMAS */}
           <div className="relative">
             <button
               type="button"
               onClick={() => setShowThemeSelector(!showThemeSelector)}
               title={`Modo Ideológico Atual: ${currentThemeInfo.name}`}
-              className="flex items-center gap-1 sm:gap-1.5 px-2 py-1 sm:px-3 sm:py-2 text-[9px] sm:text-xs font-mono font-black bg-theme-card hover:bg-theme-container text-theme-primary border-2 border-theme-border shadow-[2px_2px_0px_var(--shadow-color)] rounded-xl transition-transform hover:-translate-x-0.5 hover:-translate-y-0.5 active:translate-x-0.5 active:translate-y-0.5 shrink-0"
+              className="flex items-center gap-1 sm:gap-1.5 px-2 py-1 sm:px-2.5 sm:py-1.5 text-[9px] sm:text-xs font-mono font-black bg-theme-card hover:bg-theme-container text-theme-primary border-2 border-theme-border shadow-[2px_2px_0px_var(--shadow-color)] rounded-xl transition-transform hover:-translate-x-0.5 hover:-translate-y-0.5 active:translate-x-0.5 active:translate-y-0.5 shrink-0"
             >
               <span className="text-xs sm:text-sm">{currentThemeInfo.icon}</span>
-              <span className="hidden sm:inline whitespace-nowrap">{currentThemeInfo.name}</span>
-              <span className="inline sm:hidden whitespace-nowrap text-[9px]">Tema</span>
+              <span className="hidden xl:inline whitespace-nowrap">{currentThemeInfo.name}</span>
+              <span className="inline xl:hidden whitespace-nowrap text-[10px]">Tema</span>
               <Palette className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-theme-red shrink-0" />
             </button>
           </div>

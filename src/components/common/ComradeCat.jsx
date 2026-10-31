@@ -450,7 +450,11 @@ export default function ComradeCat({
   };
 
   return (
-    <div className={`relative inline-flex items-center select-none z-30 pointer-events-auto max-w-full ${className}`}>
+    <div className={`relative ${
+      bubblePosition === 'top' 
+        ? 'flex flex-col-reverse items-center justify-center gap-2.5' 
+        : 'inline-flex items-center'
+    } select-none z-30 pointer-events-auto max-w-full ${className}`}>
       
       {/* Container SVG do Mascote */}
       <div 
@@ -475,29 +479,32 @@ export default function ComradeCat({
         <div 
           onClick={handleNextAdvice}
           title="Clique para outro conselho revolucionário"
-          className={`cursor-pointer select-none z-30 pointer-events-auto transition-all duration-200 hover:scale-102 flex-1 min-w-0 ${
+          className={`cursor-pointer select-none z-30 pointer-events-auto transition-all duration-200 hover:scale-102 shrink-0 ${
             bubblePosition === 'top' 
-              ? 'absolute -top-16 left-1/2 -translate-x-1/2' 
+              ? 'mb-1' 
               : bubblePosition === 'left'
               ? 'mr-2 sm:mr-3'
-              : 'ml-2 sm:ml-4'
+              : 'ml-2 sm:ml-3'
           }`}
         >
-          <div className="relative bg-theme-card text-theme-primary border-2 border-theme-border shadow-[3px_3px_0px_var(--shadow-color)] px-3 py-2 sm:px-4 sm:py-3 rounded-xl w-full max-w-md cursor-pointer select-none">
+          <div className="relative bg-theme-card text-theme-primary border-2 border-theme-border shadow-[3px_3px_0px_var(--shadow-color)] px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-xl min-w-[200px] sm:min-w-[250px] max-w-[280px] sm:max-w-md cursor-pointer select-none">
             {/* Ponta da fala do balão */}
             {bubblePosition === 'right' && (
               <div className="absolute top-1/2 -left-2 -translate-y-1/2 w-0 h-0 border-t-[6px] border-t-transparent border-b-[6px] border-b-transparent border-r-[8px] border-r-theme-border" />
+            )}
+            {bubblePosition === 'top' && (
+              <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-0 h-0 border-l-[6px] border-l-transparent border-r-[6px] border-r-transparent border-t-[8px] border-t-theme-border" />
             )}
             
             <div className="flex items-start gap-1.5 sm:gap-2">
               <span className="text-theme-red text-xs font-black shrink-0 mt-0.5">★</span>
               <div className="min-w-0 flex-1">
-                <p className="font-serif italic font-extrabold text-xs sm:text-base leading-tight break-words text-theme-primary min-h-[1.8rem] sm:min-h-[2.2rem]">
+                <p className="font-serif italic font-extrabold text-xs sm:text-sm leading-snug break-normal text-theme-primary">
                   "{displayedText}"
                   {isTyping && <span className="inline-block text-theme-red font-mono animate-pulse ml-0.5">▌</span>}
                 </p>
-                <span className="text-[8px] sm:text-[10px] uppercase font-mono font-black text-theme-red tracking-wider block mt-1 hover:underline leading-tight whitespace-normal break-words">
-                  ★ O GATO CAMARADA • CLIQUE P/ OUTRO CONSELHO
+                <span className="text-[8px] sm:text-[9px] uppercase font-mono font-black text-theme-red tracking-wider block mt-0.5 hover:underline whitespace-nowrap">
+                  ★ CLIQUE P/ OUTRO CONSELHO 🐾
                 </span>
               </div>
             </div>

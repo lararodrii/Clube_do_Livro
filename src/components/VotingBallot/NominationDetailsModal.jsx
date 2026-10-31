@@ -32,7 +32,7 @@ export default function NominationDetailsModal({
   onVoteToggle,
   onEdit
 }) {
-  const { updateNomination, members, showToast } = useClub();
+  const { updateNomination, members = [], showToast } = useClub();
   const [isSearchingSynopsis, setIsSearchingSynopsis] = useState(false);
 
   if (!isOpen || !book) return null;
@@ -68,7 +68,7 @@ export default function NominationDetailsModal({
 
   return (
     <div 
-      className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-stone-950/80 backdrop-blur-sm animate-fade-in overflow-y-auto"
+      className="fixed inset-0 z-[60] flex items-center justify-center p-3 sm:p-4 bg-stone-950/85 backdrop-blur-sm animate-fade-in overflow-y-auto"
       onClick={onClose}
     >
       <div 
