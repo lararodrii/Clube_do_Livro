@@ -5,6 +5,7 @@ import ComradeCat from '../common/ComradeCat';
 import NominateModal from './NominateModal';
 import RouletteModal from './RouletteModal';
 import EditNominationModal from './EditNominationModal';
+import NominationDetailsModal from './NominationDetailsModal';
 import { formatTextWithBold } from '../../utils/textFormat';
 import { 
   Vote, 
@@ -17,7 +18,11 @@ import {
   Award,
   Pencil,
   Trash2,
-  Sparkles
+  Sparkles,
+  BookOpen,
+  Info,
+  ChevronDown,
+  ChevronUp
 } from 'lucide-react';
 
 export default function VotingBallot() {
@@ -36,6 +41,16 @@ export default function VotingBallot() {
   const [isNominateOpen, setIsNominateOpen] = useState(false);
   const [isRouletteOpen, setIsRouletteOpen] = useState(false);
   const [editingBook, setEditingBook] = useState(null);
+  const [selectedBookForDetails, setSelectedBookForDetails] = useState(null);
+  const [expandedSynopsisIds, setExpandedSynopsisIds] = useState({});
+
+  const toggleExpandSynopsis = (bookId, e) => {
+    if (e) e.stopPropagation();
+    setExpandedSynopsisIds(prev => ({
+      ...prev,
+      [bookId]: !prev[bookId]
+    }));
+  };
 
   const books = ballot.books || [];
 
@@ -264,6 +279,11 @@ export default function VotingBallot() {
             const hasVotedForThis = book.votes?.includes(activeMember.id);
             const isMyNomination = book.nominatedBy === activeMember.id;
             const leader = isLeader(book);
+
+            const isExpanded = !!expandedSynopsisIds[book.id];
+            const hasValidSynopsis = book.synopsis && 
+              book.synopsis.trim() !== '' && 
+              book.synopsis !== 'Sem sinopse cadastrada.';
             
             // Membro que indicou
             const nominator = members.find(m => m.id === book.nominatedBy) || {
@@ -325,7 +345,7 @@ export default function VotingBallot() {
                           type="button"
                           onClick={() => setEditingBook(book)}
                           title="Editar ou excluir sua recomendação"
-                          className="p-1 hover:bg-[#FEF08A] hover:text-[#111111] text-theme-primary rounded border border-theme-border transition-colors"
+                          className="p-1 hover:bg-[#FEF08A] hover:text-[#111111] text-theme-primary rounded border border-theme-border transition-colors cursor-pointer"
                         >
                           <Pencil className="w-3.5 h-3.5" />
                         </button>
@@ -334,8 +354,12 @@ export default function VotingBallot() {
                   </div>
 
                   {/* Bloco de Capa e Título */}
-                  <div className="flex gap-4 items-start mb-4">
-                    <div className="shrink-0">
+                  <div className="flex gap-3.5 sm:gap-4 items-start mb-3">
+                    <div 
+                      onClick={() => setSelectedBookForDetails(book)}
+                      className="shrink-0 cursor-pointer group transition-transform hover:scale-105 active:scale-95"
+                      title="Clique para ver a ficha e sinopse completa"
+                    >
                       <BookCover
                         src={book.coverUrl}
                         title={book.title}
@@ -345,25 +369,75 @@ export default function VotingBallot() {
                     </div>
 
                     <div className="flex-1 min-w-0">
-                      <h3 className="font-headline font-black text-base sm:text-lg text-theme-primary leading-snug line-clamp-2">
+                      <h3 
+                        onClick={() => setSelectedBookForDetails(book)}
+                        className="font-headline font-black text-base sm:text-lg text-theme-primary leading-snug line-clamp-2 cursor-pointer hover:text-theme-red transition-colors"
+                        title="Clique para ver a ficha completa"
+                      >
                         {book.title}
                       </h3>
                       <p className="text-xs text-theme-red font-reading font-bold italic mt-0.5">
                         por {book.author}
                       </p>
                       <p className="text-[10px] text-theme-muted font-mono mt-1 line-clamp-1 uppercase font-bold">
-                        {book.genre}
+                        {book.genre || 'Literatura'}
                       </p>
 
-                      {/* Defesa da Indicação ("Por que ler") */}
-                      {book.nominationReason && (
-                        <div className="mt-3 p-2.5 bg-theme-container rounded-lg border border-theme-border/40 text-theme-secondary">
-                          <p className="text-[11px] italic font-reading line-clamp-3 leading-relaxed whitespace-pre-line">
+                      {/* Defesa curta da camarada se diferente do padrão */}
+                      {book.nominationReason && book.nominationReason !== 'Indicação especial para o Exército da Paty!' && (
+                        <div className="mt-2 p-2 bg-theme-container rounded-lg border border-theme-border/40 text-theme-secondary">
+                          <p className="text-[10px] italic font-reading line-clamp-2 leading-relaxed">
                             "{formatTextWithBold(book.nominationReason)}"
                           </p>
                         </div>
                       )}
                     </div>
+                  </div>
+
+                  {/* Bloco de Sinopse com Prévia & Expansão */}
+                  <div className="p-2.5 bg-theme-container rounded-xl border border-theme-border/50 text-theme-secondary transition-all mb-1">
+                    <div className="flex items-center justify-between gap-1 mb-1 pb-1 border-b border-theme-border/30">
+                      <span className="text-[10px] font-mono font-black uppercase tracking-wider text-theme-red flex items-center gap-1">
+                        <BookOpen className="w-3 h-3 text-theme-red shrink-0" />
+                        <span>Sinopse:</span>
+                      </span>
+                      
+                      {hasValidSynopsis && (
+                        <button
+                          type="button"
+                          onClick={(e) => toggleExpandSynopsis(book.id, e)}
+                          className="text-[10px] font-mono font-bold text-theme-muted hover:text-theme-primary flex items-center gap-0.5 transition-colors cursor-pointer"
+                        >
+                          <span>{isExpanded ? 'Recolher' : 'Expandir'}</span>
+                          {isExpanded ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
+                        </button>
+                      )}
+                    </div>
+
+                    {hasValidSynopsis ? (
+                      <p className={`text-[11px] font-reading leading-relaxed whitespace-pre-line text-theme-secondary ${
+                        isExpanded ? '' : 'line-clamp-3'
+                      }`}>
+                        {formatTextWithBold(book.synopsis)}
+                      </p>
+                    ) : (
+                      <p className="text-[11px] font-reading italic text-theme-muted">
+                        {book.nominationReason || 'Sem sinopse detalhada fornecida.'}
+                      </p>
+                    )}
+
+                    {/* Botão Ver Ficha Completa */}
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setSelectedBookForDetails(book);
+                      }}
+                      className="w-full mt-2 py-1 px-2 text-[10px] font-mono font-bold text-theme-primary hover:text-theme-red bg-theme-card hover:bg-theme-container rounded-lg border border-theme-border flex items-center justify-center gap-1.5 transition-colors shadow-sm cursor-pointer"
+                    >
+                      <Info className="w-3 h-3 text-theme-red shrink-0" />
+                      <span>Ver Ficha Completa & Sinopse ★</span>
+                    </button>
                   </div>
                 </div>
 
@@ -462,6 +536,28 @@ export default function VotingBallot() {
         isOpen={!!editingBook}
         onClose={() => setEditingBook(null)}
       />
+
+      {/* Modal de Detalhes e Sinopse Completa da Obra Indicada */}
+      {selectedBookForDetails && (
+        <NominationDetailsModal
+          isOpen={!!selectedBookForDetails}
+          onClose={() => setSelectedBookForDetails(null)}
+          book={books.find(b => b.id === selectedBookForDetails.id) || selectedBookForDetails}
+          nominator={members.find(m => m.id === selectedBookForDetails.nominatedBy) || { name: 'Camarada', avatar: '', color: '#D62828' }}
+          isMyNomination={selectedBookForDetails.nominatedBy === activeMember.id}
+          hasVoted={(books.find(b => b.id === selectedBookForDetails.id) || selectedBookForDetails).votes?.includes(activeMember.id)}
+          voteCount={(books.find(b => b.id === selectedBookForDetails.id) || selectedBookForDetails).votes?.length || 0}
+          votePercentage={totalBallotVotes > 0 
+            ? Math.round((((books.find(b => b.id === selectedBookForDetails.id) || selectedBookForDetails).votes?.length || 0) / totalBallotVotes) * 100) 
+            : 0}
+          isLeader={isLeader(books.find(b => b.id === selectedBookForDetails.id) || selectedBookForDetails)}
+          isQuotaReached={isQuotaReached}
+          remainingVotes={remainingVotes}
+          maxVotes={maxVotes}
+          onVoteToggle={handleVoteToggle}
+          onEdit={(b) => setEditingBook(b)}
+        />
+      )}
 
     </div>
   );

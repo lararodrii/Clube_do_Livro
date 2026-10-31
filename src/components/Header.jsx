@@ -80,7 +80,7 @@ export default function Header({ activeTab, setActiveTab, onOpenTour }) {
         </div>
 
         {/* Bloco 3: Barra de Controles (Tema + Perfil Logado + Sair) */}
-        <div className="flex items-center justify-between sm:justify-end gap-1.5 sm:gap-2.5 w-full sm:w-auto shrink-0 order-1 lg:order-3">
+        <div className="flex items-center justify-between sm:justify-end gap-1 sm:gap-2.5 w-full sm:w-auto shrink-0 order-1 lg:order-3">
           {/* SELETOR DE TEMAS */}
           <div className="relative">
             <button
@@ -90,8 +90,9 @@ export default function Header({ activeTab, setActiveTab, onOpenTour }) {
               className="flex items-center gap-1 sm:gap-1.5 px-2 py-1 sm:px-3 sm:py-2 text-[9px] sm:text-xs font-mono font-black bg-theme-card hover:bg-theme-container text-theme-primary border-2 border-theme-border shadow-[2px_2px_0px_var(--shadow-color)] rounded-xl transition-transform hover:-translate-x-0.5 hover:-translate-y-0.5 active:translate-x-0.5 active:translate-y-0.5 shrink-0"
             >
               <span className="text-xs sm:text-sm">{currentThemeInfo.icon}</span>
-              <span className="inline whitespace-nowrap">{currentThemeInfo.name}</span>
-              <Palette className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-theme-red" />
+              <span className="hidden sm:inline whitespace-nowrap">{currentThemeInfo.name}</span>
+              <span className="inline sm:hidden whitespace-nowrap text-[9px]">Tema</span>
+              <Palette className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-theme-red shrink-0" />
             </button>
           </div>
 
@@ -109,9 +110,9 @@ export default function Header({ activeTab, setActiveTab, onOpenTour }) {
 
           {/* PERFIL ATIVO / AUTENTICAÇÃO */}
           {isAuthenticated ? (
-            <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+            <div className="flex items-center gap-1 sm:gap-2 shrink-0">
               <div 
-                className="flex items-center gap-1.5 sm:gap-2 px-2 py-1 sm:px-2.5 sm:py-1.5 rounded-xl bg-theme-card border-2 border-theme-border shadow-[2px_2px_0px_var(--shadow-color)] select-none shrink-0"
+                className="flex items-center gap-1.5 sm:gap-2 px-1.5 py-1 sm:px-2.5 sm:py-1.5 rounded-xl bg-theme-card border-2 border-theme-border shadow-[2px_2px_0px_var(--shadow-color)] select-none shrink-0"
                 title={`Conectada como ${activeMember.name} (${currentUser?.email})`}
               >
                 <div className="relative shrink-0">
@@ -129,9 +130,9 @@ export default function Header({ activeTab, setActiveTab, onOpenTour }) {
                 </div>
                 <div className="text-left">
                   <div className="flex items-center gap-1">
-                    <p className="text-[9px] sm:text-xs font-black text-theme-primary leading-tight flex items-center gap-1">
+                    <p className="text-[9px] sm:text-xs font-black text-theme-primary leading-tight flex items-center gap-1 truncate max-w-[60px] sm:max-w-none">
                       <span>{activeMember.name.split(' ')[0]}</span>
-                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" title="Sessão ativa e sincronizada" />
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse shrink-0" title="Sessão ativa e sincronizada" />
                     </p>
                     <button
                       type="button"
@@ -145,7 +146,7 @@ export default function Header({ activeTab, setActiveTab, onOpenTour }) {
                       <Pencil className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-theme-gold" />
                     </button>
                   </div>
-                  <p className="text-[8px] sm:text-[10px] text-theme-muted font-mono font-bold leading-none truncate max-w-[85px] sm:max-w-[130px] mt-0.5">
+                  <p className="text-[8px] sm:text-[10px] text-theme-muted font-mono font-bold leading-none truncate max-w-[65px] sm:max-w-[130px] mt-0.5">
                     {activeMember.roleBadge}
                   </p>
                 </div>
@@ -157,8 +158,8 @@ export default function Header({ activeTab, setActiveTab, onOpenTour }) {
                 title="Sair da sessão / Encerrar conta para alternar de perfil"
                 className="flex items-center gap-1 px-2 py-1 sm:px-3 sm:py-2 rounded-xl text-[9px] sm:text-xs font-mono font-bold text-theme-muted hover:text-theme-red bg-theme-card hover:bg-theme-container border-2 border-theme-border shadow-[2px_2px_0px_var(--shadow-color)] transition-transform hover:-translate-x-0.5 hover:-translate-y-0.5 active:translate-x-0.5 active:translate-y-0.5 shrink-0"
               >
-                <LogOut className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-theme-red" />
-                <span className="whitespace-nowrap">Sair</span>
+                <LogOut className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-theme-red shrink-0" />
+                <span className="whitespace-nowrap font-bold">Sair</span>
               </button>
             </div>
           ) : (
