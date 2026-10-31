@@ -3,7 +3,7 @@
  * 
  * Suporta:
  * 1. Arquivos PDF com anotações nativas (Highlight em amarelo)
- * 2. Validação visual por amostragem de pixels em Canvas (elimina 100% de palavras antes ou depois do grifo)
+ * 2. Validação visual por amostragem de pixels em Canvas (gera candidatos que exigem revisão)
  * 3. Suporte a Tablets (StarNote, Samsung Notes, GoodNotes e PDFs achatados)
  * 4. Arquivos exportados do Kindle (My Clippings.txt e cadernos de notas .html)
  * 
@@ -104,7 +104,7 @@ function isYellowHighlighterPixel(r, g, b) {
  * Valida se uma palavra está REALMENTE coberta por marca-texto amarelo no Canvas renderizado.
  * Analisa os pixels no centro da caixa delimitadora da palavra.
  */
-function isWordYellowOnCanvas(wordBox, data, canvasW, canvasH) {
+export function isWordYellowOnCanvas(wordBox, data, canvasW, canvasH) {
   // Ajusta levemente os limites para focar no corpo principal das letras
   const startX = Math.max(0, Math.floor(wordBox.x + 1));
   const endX = Math.min(canvasW - 1, Math.ceil(wordBox.x + wordBox.width - 1));
@@ -140,7 +140,7 @@ function isWordYellowOnCanvas(wordBox, data, canvasW, canvasH) {
   // Palavras com marca-texto amarelo têm entre 20% e 80% de pixels amarelos
   // (o restante são as letras pretas).
   const yellowRatio = yellowCount / totalSampled;
-  return yellowRatio >= 0.18;
+  return yellowRatio >= 0.30;
 }
 
 /**
@@ -183,7 +183,7 @@ function splitItemIntoWords(item) {
  * Agrupa palavras grifadas consecutivas em trechos contínuos e limpos.
  * Separa frases quando houver quebra de parágrafo ou trechos não grifados no meio.
  */
-function groupConsecutiveWords(words, pageNum, defaultColor, source) {
+export function groupConsecutiveWords(words, pageNum, defaultColor, source) {
   if (!words || words.length === 0) return [];
 
   // Remove duplicatas exatas de palavras na mesma coordenada (evita eco de OCR)
@@ -196,13 +196,14 @@ function groupConsecutiveWords(words, pageNum, defaultColor, source) {
   }
 
   // Ordena por ordem natural de leitura: de cima para baixo, da esquerda para a direita
-  uniqueWords.sort((a, b) => {
-    const diffY = a.box.y - b.box.y;
-    if (Math.abs(diffY) > 5) {
-      return diffY;
-    }
-    return a.box.x - b.box.x;
-  });
+  // Cluster lines first: pairwise Y-tolerance sorting is non-transitive.
+  const lines = [];
+  for (const word of uniqueWords.sort((a,b)=>a.box.y-b.box.y || a.box.x-b.box.x)) {
+    let line = lines.find(l=>Math.abs(l.y-word.box.y)<=Math.max(2,word.box.height*.4));
+    if (!line) { line={y:word.box.y,words:[]}; lines.push(line); }
+    line.words.push(word);
+  }
+  uniqueWords.splice(0,uniqueWords.length,...lines.flatMap(l=>l.words.sort((a,b)=>a.box.x-b.box.x)));
 
   const highlights = [];
   let currentGroup = null;
@@ -245,7 +246,7 @@ function groupConsecutiveWords(words, pageNum, defaultColor, source) {
 
     if (shouldJoin) {
       currentGroup.words.push(word);
-      if (currentGroup.text.endsWith('-')) {
+      if (!isSameLine && currentGroup.text.endsWith('-')) {
         currentGroup.text = currentGroup.text.slice(0, -1) + word.text;
       } else {
         currentGroup.text += ' ' + word.text;
@@ -284,6 +285,31 @@ function groupConsecutiveWords(words, pageNum, defaultColor, source) {
       createdAt: new Date().toISOString()
     }))
     .filter(g => g.text.length >= 3 && !/^[0-9.,;:!?\s]+$/.test(g.text));
+}
+
+function wordOverlapsBox(wBox, bBox, tolerance = 0.2) {
+  const overlapX = Math.max(0, Math.min(wBox.x + wBox.width, bBox.x + bBox.width) - Math.max(wBox.x, bBox.x));
+  const overlapY = Math.max(0, Math.min(wBox.y + wBox.height, bBox.y + bBox.height) - Math.max(wBox.y, bBox.y));
+
+  if (overlapX <= 0 || overlapY <= 0) return false;
+  return (overlapX / wBox.width) > tolerance && (overlapY / wBox.height) > tolerance;
+}
+
+export function annotationAreas(annotation,viewport) {
+  const quads=annotation.quadPoints;
+  const flat=quads ? Array.from(quads).flat(Infinity) : [];
+  const numbers=flat.flatMap(p=>typeof p==='number'?[p]:[p.x,p.y]);
+  const regions=[];
+  for(let i=0;i+7<numbers.length;i+=8) {
+    const xs=[numbers[i],numbers[i+2],numbers[i+4],numbers[i+6]];
+    const ys=[numbers[i+1],numbers[i+3],numbers[i+5],numbers[i+7]];
+    regions.push([Math.min(...xs),Math.min(...ys),Math.max(...xs),Math.max(...ys)]);
+  }
+  if(!regions.length && annotation.rect) regions.push(annotation.rect);
+  return regions.map(r=>{
+    const [x1,y1,x2,y2]=viewport.convertToViewportRectangle(r);
+    return {x:Math.min(x1,x2),y:Math.min(y1,y2),width:Math.abs(x2-x1),height:Math.abs(y2-y1)};
+  });
 }
 
 /**
@@ -341,9 +367,9 @@ async function extractFromPdf(file, onProgress = () => {}) {
         allWords.push(...wordsInItem);
       }
 
-      if (allWords.length === 0) continue;
 
-      // 2. Renderização da página em um canvas oculto para verdade visual absoluta dos pixels
+
+      // 2. Renderização da página em um canvas oculto para validação visual heurística
       const canvas = document.createElement('canvas');
       canvas.width = Math.floor(viewport.width);
       canvas.height = Math.floor(viewport.height);
@@ -357,51 +383,34 @@ async function extractFromPdf(file, onProgress = () => {}) {
       const canvasW = canvas.width;
       const canvasH = canvas.height;
 
-      // 3. Leitura de anotações nativas do PDF para capturar comentários anexados
       const annotations = await page.getAnnotations();
-      const notesByArea = [];
-
+      // Preserve one native annotation as one record, independently of visual detection.
+      const nativeAreas=[];
       for (const annot of annotations) {
-        const subtype = (annot.subtype || '').toLowerCase();
-        if (subtype !== 'highlight' && subtype !== 'underline') continue;
-
-        const annotNote = annot.contents || annot.richText || '';
-        if (!annotNote) continue;
-
-        if (annot.rect && Array.isArray(annot.rect) && annot.rect.length === 4) {
-          const [vx1, vy1, vx2, vy2] = viewport.convertToViewportRectangle(annot.rect);
-          notesByArea.push({
-            box: {
-              x: Math.min(vx1, vx2),
-              y: Math.min(vy1, vy2),
-              width: Math.abs(vx2 - vx1),
-              height: Math.abs(vy2 - vy1)
-            },
-            note: annotNote
-          });
-        }
+        if (!['Highlight','Underline','StrikeOut','Squiggly','Text','FreeText'].includes(annot.subtype)) continue;
+        const areas=annotationAreas(annot,viewport);
+        nativeAreas.push(...areas);
+        const words=allWords.filter(w=>areas.some(area=>wordOverlapsBox(w.box,area,.2)));
+        const parts=groupConsecutiveWords(words,pageNum,YELLOW_COLOR_INFO,'pdf_annotation');
+        allExtractedHighlights.push({
+          id:`native-${pageNum}-${annot.id || allExtractedHighlights.length}`,
+          page:pageNum,text:parts.map(p=>p.text).join(' '),
+          note:annot.contentsObj?.str || (typeof annot.contents==='string'?annot.contents:''),
+          color:YELLOW_COLOR_INFO,source:'pdf_annotation',
+          confidence:words.length ? .95 : .3,createdAt:new Date().toISOString()
+        });
       }
 
-      // 4. Verificação RIGOROSA palavra por palavra contra o Canvas:
-      // Apenas palavras com pixels amarelos reais de marca-texto no Canvas são aceitas.
-      // Qualquer palavra antes do ponto, depois do ponto ou em parágrafos vizinhos sem amarelo é descartada!
       const confirmedYellowWords = [];
 
       for (const word of allWords) {
+        if (nativeAreas.some(area=>wordOverlapsBox(word.box,area,.2))) continue;
         const isYellow = isWordYellowOnCanvas(word.box, data, canvasW, canvasH);
         if (isYellow) {
-          // Verifica se há alguma anotação de texto correspondente
-          const matchingNote = notesByArea.find(n => 
-            word.box.x >= n.box.x - 10 && 
-            word.box.x <= (n.box.x + n.box.width + 10) &&
-            word.box.y >= n.box.y - 10 && 
-            word.box.y <= (n.box.y + n.box.height + 10)
-          );
-
           confirmedYellowWords.push({
             ...word,
             color: YELLOW_COLOR_INFO,
-            note: matchingNote ? matchingNote.note : '',
+            note: '',
             source: 'pdf_verified_scan'
           });
         }
@@ -415,14 +424,14 @@ async function extractFromPdf(file, onProgress = () => {}) {
         'pdf_verified_scan'
       );
 
-      allExtractedHighlights.push(...pageHighlights);
+      allExtractedHighlights.push(...pageHighlights.map(h=>({...h,confidence:.5})));
 
     } catch (pageErr) {
       console.warn(`[pdfHighlightExtractor] Erro ao processar página ${pageNum}:`, pageErr.message);
     }
   }
 
-  onProgress({ current: numPages, total: numPages, stage: 'completed', message: 'Extração concluída com sucesso!' });
+  onProgress({ current: numPages, total: numPages, stage: 'completed', message: 'Análise concluída. Revise os candidatos; a contagem não garante recuperação integral.' });
   return allExtractedHighlights;
 }
 

@@ -27,12 +27,12 @@ export default function ReviewHighlightsModal({
   const [editedItems, setEditedItems] = useState([]);
 
   useEffect(() => {
-    if (extractedHighlights && extractedHighlights.length > 0) {
+    if (extractedHighlights) {
       setEditedItems(extractedHighlights.map(h => ({ ...h })));
       // Por padrão seleciona todos os grifos encontrados
       const initialSelection = {};
       extractedHighlights.forEach(h => {
-        initialSelection[h.id] = true;
+        initialSelection[h.id] = h.source !== 'pdf_verified_scan' && !!h.text?.trim();
       });
       setSelectedItems(initialSelection);
     }
@@ -186,7 +186,7 @@ export default function ReviewHighlightsModal({
               <div className="flex flex-wrap items-center justify-between gap-3 p-3 bg-theme-card rounded-xl border-2 border-theme-border shadow-xs">
                 <div className="flex items-center gap-2 text-xs font-mono font-bold text-theme-primary">
                   <span className="text-theme-red font-black text-sm">★</span>
-                  <span>{editedItems.length} grifos identificados! Revise e selecione os que deseja enviar:</span>
+                  <span>{editedItems.length} resultados para revisão (anotações e candidatos visuais). Candidatos visuais não são comentários confirmados:</span>
                 </div>
 
                 <button
