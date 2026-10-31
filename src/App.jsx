@@ -29,7 +29,7 @@ function ClubApp() {
       <Header activeTab={activeTab} setActiveTab={setActiveTab} />
 
       {/* Conteúdo Principal com Layout Fluido e Responsivo */}
-      <main className="flex-1 max-w-7xl w-full mx-auto px-3 sm:px-6 md:px-8 py-6 md:py-10">
+      <main className="flex-1 max-w-7xl w-full mx-auto px-2.5 py-2 sm:px-6 sm:py-4 overflow-x-hidden">
         
         {/* TAB 1: LEITURA ATUAL & ENCONTRO */}
         {activeTab === 'current' && (

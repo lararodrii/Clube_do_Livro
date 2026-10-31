@@ -39,11 +39,11 @@ export default function NominateModal({ isOpen, onClose }) {
   // Ao selecionar um livro da busca Multi-API, autopreenche tudo
   const handleSelectBook = (book) => {
     setSelectedBook(book);
-    setTitle(book.title);
-    setAuthor(book.author);
-    setPages(book.pages || 280);
-    setCoverUrl(book.coverUrl);
-    setSynopsis(book.synopsis);
+    setTitle(book.title || '');
+    setAuthor(book.author || '');
+    setPages(book.pages || 250);
+    setCoverUrl(book.cover || book.coverUrl || '');
+    setSynopsis(book.synopsis || '');
     setGenre(book.genre || 'Literatura');
   };
 
@@ -128,8 +128,6 @@ export default function NominateModal({ isOpen, onClose }) {
   };
 
   const handleClose = () => {
-    setSearchQuery('');
-    setSearchResults([]);
     setSelectedBook(null);
     setTitle('');
     setAuthor('');

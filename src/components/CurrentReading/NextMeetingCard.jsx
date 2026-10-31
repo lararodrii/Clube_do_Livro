@@ -44,7 +44,7 @@ export default function NextMeetingCard() {
   };
 
   return (
-    <div className="retro-card rounded-2xl p-6 sm:p-7 relative bg-theme-container border-2 border-theme-border shadow-[6px_6px_0px_var(--shadow-color)] transition-colors duration-300">
+    <div className="retro-card rounded-2xl p-3.5 sm:p-7 relative bg-theme-container border-2 border-theme-border shadow-[6px_6px_0px_var(--shadow-color)] transition-colors duration-300">
       
       {/* Cabeçalho do Encontro com botão de Edição */}
       <div className="flex flex-wrap items-center justify-between gap-3 pb-4 border-b-2 border-theme-border mb-5">

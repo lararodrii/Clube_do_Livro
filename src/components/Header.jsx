@@ -44,86 +44,81 @@ export default function Header({ activeTab, setActiveTab }) {
   return (
     <header className="sticky top-0 z-40 bg-theme-container border-b-2 border-theme-border shadow-[0_3px_0px_0px_var(--shadow-color)] transition-colors duration-300">
       
-      {/* Faixa Superior Editorial com Layout Empilhável Responsivo Esticado */}
-      <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 flex flex-col lg:flex-row items-center justify-between gap-4 lg:gap-8 min-h-[5.5rem] py-3">
+      {/* Faixa Superior Editorial com Escala Proporcional Mobile */}
+      <div className="w-full max-w-7xl mx-auto px-2.5 sm:px-6 flex flex-col lg:flex-row items-center justify-between gap-2.5 sm:gap-4 lg:gap-6 py-2 sm:py-3.5">
         
-        {/* LAYOUT DESKTOP / TABLET E GERAL */}
-        <div className="w-full lg:w-auto flex flex-col sm:flex-row items-center justify-between lg:justify-start gap-4 shrink-0">
-          {/* Logo e Nome do Clube com o Mascote O Gato Camarada */}
-          <div className="flex items-center gap-3 md:gap-4 shrink-0">
-            {/* O GATO CAMARADA */}
-            <div className="flex items-center shrink-0">
-              <ComradeCat 
-                pose="grumpy" 
-                size="sm" 
-                showBubble={true}
-                bubblePosition="right"
-              />
-            </div>
-
-            {/* Título & Slogan Oficial */}
-            <div className="border-l-2 border-theme-border pl-3 md:pl-4">
-              <div className="flex flex-wrap sm:flex-nowrap items-center gap-3">
-                <h1 
-                  onClick={() => setActiveTab('current')}
-                  className="font-headline font-black tracking-tight text-xl sm:text-2xl md:text-3xl text-theme-red hover:opacity-90 cursor-pointer transition-colors flex items-center gap-1.5 sm:whitespace-nowrap"
-                >
-                  <span className="text-theme-red">★</span>
-                  <span>Exército da Paty</span>
-                </h1>
-                <span className="whitespace-nowrap inline-flex items-center gap-1.5 px-3 py-1 text-xs font-mono uppercase rounded bg-theme-red text-white font-extrabold border-2 border-theme-border shadow-[2px_2px_0px_var(--shadow-color)]">
-                  ★ CLUBE DO LIVRO
-                </span>
-              </div>
-              <p className="text-xs sm:text-sm text-theme-muted font-reading font-bold italic tracking-wide mt-0.5 sm:whitespace-nowrap">
-                "Não vai lutar contra o fascismo?" • Est. 2026
-              </p>
-            </div>
+        {/* Bloco 1: Logo Central ("★ Exército da Paty" + "★ CLUBE DO LIVRO") */}
+        <div className="w-full lg:w-auto flex flex-col sm:flex-row items-center justify-between lg:justify-start gap-1 sm:gap-3 shrink-0 order-2 lg:order-1">
+          <div className="flex items-center gap-2 sm:gap-3">
+            <h1 
+              onClick={() => setActiveTab('current')}
+              className="font-headline font-bold text-base sm:text-2xl text-theme-red hover:opacity-90 cursor-pointer transition-colors flex items-center gap-1.5 whitespace-nowrap"
+            >
+              <span className="text-theme-red">★</span>
+              <span>Exército da Paty</span>
+            </h1>
+            <span className="whitespace-nowrap inline-flex items-center gap-1 px-1.5 py-0.5 text-[8px] sm:text-xs font-mono uppercase rounded bg-theme-red text-white font-extrabold border border-theme-border shadow-[2px_2px_0px_var(--shadow-color)]">
+              ★ CLUBE DO LIVRO
+            </span>
           </div>
+          <p className="text-[9px] sm:text-xs text-theme-muted font-reading font-bold italic tracking-wide whitespace-nowrap">
+            "Não vai lutar contra o fascismo?" • Est. 2026
+          </p>
         </div>
 
-        {/* Área de Ações: Seletor de Tema e Perfil Ativo */}
-        <div className="flex items-center justify-center sm:justify-end gap-2.5 w-full lg:w-auto shrink-0">
-          {/* SELETOR DE TEMAS CRIATIVOS ("Modo Ideológico") */}
+        {/* Bloco 2: Bloco do Gato Camarada + Balão de Fala */}
+        <div className="w-full lg:flex-1 lg:max-w-xl flex items-center gap-2 shrink-0 order-3 lg:order-2">
+          <ComradeCat 
+            pose="grumpy" 
+            size="sm" 
+            showBubble={true}
+            bubblePosition="right"
+            className="w-full"
+          />
+        </div>
+
+        {/* Bloco 3: Barra de Controles (Tema + Perfil Logado + Sair) */}
+        <div className="flex items-center justify-between sm:justify-end gap-1.5 sm:gap-2.5 w-full sm:w-auto shrink-0 order-1 lg:order-3">
+          {/* SELETOR DE TEMAS */}
           <div className="relative">
             <button
               type="button"
               onClick={() => setShowThemeSelector(!showThemeSelector)}
               title={`Modo Ideológico Atual: ${currentThemeInfo.name}`}
-              className="flex items-center gap-1.5 px-3 py-2 text-xs font-mono font-black bg-theme-card hover:bg-theme-container text-theme-primary border-2 border-theme-border shadow-[2px_2px_0px_var(--shadow-color)] rounded-xl transition-transform hover:-translate-x-0.5 hover:-translate-y-0.5 active:translate-x-0.5 active:translate-y-0.5"
+              className="flex items-center gap-1 sm:gap-1.5 px-2 py-1 sm:px-3 sm:py-2 text-[9px] sm:text-xs font-mono font-black bg-theme-card hover:bg-theme-container text-theme-primary border-2 border-theme-border shadow-[2px_2px_0px_var(--shadow-color)] rounded-xl transition-transform hover:-translate-x-0.5 hover:-translate-y-0.5 active:translate-x-0.5 active:translate-y-0.5 shrink-0"
             >
-              <span className="text-sm">{currentThemeInfo.icon}</span>
-              <span className="inline">{currentThemeInfo.name}</span>
-              <Palette className="w-3.5 h-3.5 text-theme-red" />
+              <span className="text-xs sm:text-sm">{currentThemeInfo.icon}</span>
+              <span className="inline whitespace-nowrap">{currentThemeInfo.name}</span>
+              <Palette className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-theme-red" />
             </button>
           </div>
 
-          {/* ÁREA DE AUTENTICAÇÃO / PERFIL ATIVO */}
+          {/* PERFIL ATIVO / AUTENTICAÇÃO */}
           {isAuthenticated ? (
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
               <div 
-                className="flex items-center gap-2.5 p-1.5 pr-3 rounded-xl bg-theme-card border-2 border-theme-border shadow-[3px_3px_0px_var(--shadow-color)] select-none"
+                className="flex items-center gap-1.5 sm:gap-2 px-2 py-1 sm:px-2.5 sm:py-1.5 rounded-xl bg-theme-card border-2 border-theme-border shadow-[2px_2px_0px_var(--shadow-color)] select-none shrink-0"
                 title={`Conectada como ${activeMember.name} (${currentUser?.email})`}
               >
                 <div className="relative shrink-0">
                   <img
                     src={activeMember.avatar}
                     alt={activeMember.name}
-                    className="w-8 h-8 rounded-lg object-cover border border-theme-border"
+                    className="w-6 h-6 sm:w-8 sm:h-8 rounded-lg object-cover border border-theme-border shrink-0"
                   />
                   <span 
-                    className="absolute -bottom-1 -right-1 w-3.5 h-3.5 rounded-full border border-theme-border bg-theme-container flex items-center justify-center text-[7px] text-theme-gold font-bold shadow-sm"
+                    className="absolute -bottom-1 -right-1 w-3 h-3 sm:w-3.5 sm:h-3.5 rounded-full border border-theme-border bg-theme-container flex items-center justify-center text-[6px] sm:text-[7px] text-theme-gold font-bold shadow-sm"
                     title="Sessão autenticada no comitê"
                   >
                     ★
                   </span>
                 </div>
-                <div className="text-left hidden sm:block">
-                  <p className="text-xs font-black text-theme-primary leading-tight flex items-center gap-1.5">
+                <div className="text-left">
+                  <p className="text-[9px] sm:text-xs font-black text-theme-primary leading-tight flex items-center gap-1">
                     <span>{activeMember.name.split(' ')[0]}</span>
                     <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" title="Sessão ativa e sincronizada" />
                   </p>
-                  <p className="text-[10px] text-theme-muted font-mono font-bold leading-none truncate max-w-[130px] mt-0.5">
+                  <p className="text-[8px] sm:text-[10px] text-theme-muted font-mono font-bold leading-none truncate max-w-[85px] sm:max-w-[130px] mt-0.5">
                     {activeMember.roleBadge}
                   </p>
                 </div>
@@ -133,100 +128,22 @@ export default function Header({ activeTab, setActiveTab }) {
                 type="button"
                 onClick={handleLogoutClick}
                 title="Sair da sessão / Encerrar conta para alternar de perfil"
-                className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-mono font-bold text-theme-muted hover:text-theme-red bg-theme-card hover:bg-theme-container border-2 border-theme-border shadow-[2px_2px_0px_var(--shadow-color)] transition-transform hover:-translate-x-0.5 hover:-translate-y-0.5 active:translate-x-0.5 active:translate-y-0.5"
+                className="flex items-center gap-1 px-2 py-1 sm:px-3 sm:py-2 rounded-xl text-[9px] sm:text-xs font-mono font-bold text-theme-muted hover:text-theme-red bg-theme-card hover:bg-theme-container border-2 border-theme-border shadow-[2px_2px_0px_var(--shadow-color)] transition-transform hover:-translate-x-0.5 hover:-translate-y-0.5 active:translate-x-0.5 active:translate-y-0.5 shrink-0"
               >
-                <LogOut className="w-4 h-4 text-theme-red" />
-                <span>Sair</span>
+                <LogOut className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-theme-red" />
+                <span className="whitespace-nowrap">Sair</span>
               </button>
             </div>
           ) : (
             <button
               type="button"
               onClick={() => openAuthModal('Faça login com sua conta para votar, debater e registrar presenças no comitê!', 'login')}
-              className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-theme-red hover:opacity-90 text-white font-bold border-2 border-theme-border shadow-[3px_3px_0px_var(--shadow-color)] text-xs font-headline font-black uppercase tracking-wider transition-transform hover:-translate-x-0.5 hover:-translate-y-0.5 active:translate-x-0.5 active:translate-y-0.5"
+              className="flex items-center gap-1.5 px-2.5 py-1 sm:px-3.5 sm:py-2 rounded-xl bg-theme-red hover:opacity-90 text-white font-bold border-2 border-theme-border shadow-[2px_2px_0px_var(--shadow-color)] text-[9px] sm:text-xs font-headline font-black uppercase tracking-wider transition-transform hover:-translate-x-0.5 hover:-translate-y-0.5 active:translate-x-0.5 active:translate-y-0.5 shrink-0"
             >
-              <LogIn className="w-4 h-4 text-[#FEF08A]" />
+              <LogIn className="w-3.5 h-3.5 text-[#FEF08A]" />
               <span>Acesso das Camaradas ★</span>
             </button>
           )}
-        </div>
-
-        {/* LAYOUT MOBILE (< sm / 320px a 639px): 2 Linhas Limpas e 100% Fluídas */}
-        <div className="flex sm:hidden flex-col gap-2.5 py-2.5 w-full">
-          {/* Linha 1: Card da usuária logada (compacto), seletor de tema e botão "Sair" alinhados no topo */}
-          <div className="w-full flex items-center justify-between gap-2">
-            {isAuthenticated ? (
-              <>
-                <div 
-                  className="flex items-center gap-2 p-1 pr-2.5 rounded-xl bg-theme-card border-2 border-theme-border shadow-[2px_2px_0px_var(--shadow-color)] select-none min-w-0"
-                  title={`Conectada como ${activeMember.name}`}
-                >
-                  <img
-                    src={activeMember.avatar}
-                    alt={activeMember.name}
-                    className="w-7 h-7 rounded-lg object-cover border border-theme-border shrink-0"
-                  />
-                  <div className="min-w-0 text-left">
-                    <p className="text-xs font-black text-theme-primary leading-tight truncate">
-                      {activeMember.name.split(' ')[0]}
-                    </p>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-1.5 shrink-0">
-                  <button
-                    type="button"
-                    onClick={() => setShowThemeSelector(!showThemeSelector)}
-                    title={`Modo Ideológico: ${currentThemeInfo.name}`}
-                    className="flex items-center gap-1 px-2.5 py-1.5 text-xs font-mono font-black bg-theme-card hover:bg-theme-container text-theme-primary border-2 border-theme-border shadow-[2px_2px_0px_var(--shadow-color)] rounded-xl"
-                  >
-                    <span>{currentThemeInfo.icon}</span>
-                    <Palette className="w-3.5 h-3.5 text-theme-red" />
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={handleLogoutClick}
-                    title="Sair da sessão"
-                    className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-xs font-mono font-bold text-theme-muted hover:text-theme-red bg-theme-card hover:bg-theme-container border-2 border-theme-border shadow-[2px_2px_0px_var(--shadow-color)]"
-                  >
-                    <LogOut className="w-3.5 h-3.5 text-theme-red" />
-                    <span>Sair</span>
-                  </button>
-                </div>
-              </>
-            ) : (
-              <div className="w-full flex items-center justify-between gap-2">
-                <button
-                  type="button"
-                  onClick={() => setShowThemeSelector(!showThemeSelector)}
-                  title={`Modo: ${currentThemeInfo.name}`}
-                  className="flex items-center gap-1 px-2.5 py-1.5 text-xs font-mono font-black bg-theme-card border-2 border-theme-border shadow-[2px_2px_0px_var(--shadow-color)] rounded-xl text-theme-primary"
-                >
-                  <span>{currentThemeInfo.icon}</span>
-                  <Palette className="w-3.5 h-3.5 text-theme-red" />
-                </button>
-                <button
-                  type="button"
-                  onClick={() => openAuthModal('Faça login com sua conta para votar e debater!', 'login')}
-                  className="flex-1 py-1.5 px-3 rounded-xl bg-theme-red text-white font-bold border-2 border-theme-border shadow-[2px_2px_0px_var(--shadow-color)] text-xs font-headline font-black uppercase tracking-wider text-center"
-                >
-                  Acesso das Camaradas ★
-                </button>
-              </div>
-            )}
-          </div>
-
-          {/* Linha 2: O Gato Camarada ao lado do balão de fala */}
-          <div className="w-full flex items-center gap-2">
-            <ComradeCat 
-              pose="grumpy" 
-              size="sm" 
-              showBubble={true}
-              bubblePosition="right"
-              className="w-full"
-            />
-          </div>
         </div>
 
         {/* POPOVER / DROPDOWN DE TEMAS COMPARTILHADO */}
@@ -286,9 +203,9 @@ export default function Header({ activeTab, setActiveTab }) {
 
       </div>
 
-      {/* Barra de Navegação das 4 Abas (Navbar Esticada de Ponta a Ponta) */}
-      <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 border-t-2 border-theme-border bg-theme-page transition-colors duration-300">
-        <nav className="grid grid-cols-2 md:grid-cols-4 gap-3 w-full py-3" aria-label="Tabs">
+      {/* Barra de Navegação das 4 Abas (Compacta no Celular e Esticada de Ponta a Ponta) */}
+      <div className="w-full max-w-7xl mx-auto px-2.5 sm:px-6 border-t-2 border-theme-border bg-theme-page transition-colors duration-300">
+        <nav className="grid grid-cols-2 md:grid-cols-4 gap-1.5 sm:gap-3 w-full py-1.5 sm:py-3" aria-label="Tabs">
           {tabs.map((tab) => {
             const Icon = tab.icon;
             const isActive = activeTab === tab.id;
@@ -296,16 +213,16 @@ export default function Header({ activeTab, setActiveTab }) {
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className={`w-full justify-center whitespace-nowrap py-3 px-4 flex items-center gap-2 text-center rounded-xl text-xs sm:text-sm font-extrabold transition-all border-2 border-theme-border ${
+                className={`w-full justify-center whitespace-nowrap py-1.5 px-2 text-[11px] sm:text-sm sm:py-3 sm:px-4 flex items-center gap-1.5 sm:gap-2 text-center rounded-xl font-extrabold transition-all border-2 border-theme-border ${
                   isActive
-                    ? 'bg-theme-red text-white font-bold shadow-[3px_3px_0px_var(--shadow-color)] -translate-y-0.5'
+                    ? 'bg-theme-red text-white font-bold shadow-[2px_2px_0px_var(--shadow-color)] sm:shadow-[3px_3px_0px_var(--shadow-color)] -translate-y-0.5'
                     : 'bg-theme-card text-theme-primary hover:bg-theme-container shadow-[2px_2px_0px_var(--shadow-color)] hover:-translate-y-0.5'
                 }`}
               >
-                <Icon className={`w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0 ${isActive ? 'text-[#FEF08A]' : 'text-theme-red'}`} />
+                <Icon className={`w-3 h-3 sm:w-4 sm:h-4 shrink-0 ${isActive ? 'text-[#FEF08A]' : 'text-theme-red'}`} />
                 <span className="whitespace-nowrap">{tab.label}</span>
                 {tab.badge && (
-                  <span className={`text-[8px] sm:text-[9px] uppercase font-mono font-black tracking-wider px-1.5 py-0.5 rounded shrink-0 ${
+                  <span className={`text-[8px] px-1 py-0.5 uppercase font-mono font-black tracking-wider rounded shrink-0 ${
                     isActive ? 'bg-[#FEF08A] text-[#111111] font-bold' : 'bg-theme-red text-white font-bold'
                   }`}>
                     {tab.badge}

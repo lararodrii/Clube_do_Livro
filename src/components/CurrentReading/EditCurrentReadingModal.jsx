@@ -45,12 +45,12 @@ export default function EditCurrentReadingModal({ isOpen, onClose }) {
 
   // Ao selecionar uma sugestão do autocomplete Multi-API, autopreenche todos os campos
   const handleSelectBook = (book) => {
-    setTitle(book.title);
-    setAuthor(book.author);
-    setPages(book.pages || 280);
+    setTitle(book.title || '');
+    setAuthor(book.author || '');
+    setPages(book.pages || 250);
     setGenre(book.genre || 'Literatura');
-    setCoverUrl(book.coverUrl);
-    setSynopsis(book.synopsis);
+    setCoverUrl(book.cover || book.coverUrl || '');
+    setSynopsis(book.synopsis || '');
   };
 
   if (!isOpen) return null;

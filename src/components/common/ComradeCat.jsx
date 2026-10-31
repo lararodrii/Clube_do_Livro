@@ -81,10 +81,10 @@ export default function ComradeCat({
 
   // Dimensões do container SVG com responsividade Mobile-First
   const sizeMap = {
-    sm: { sizeClass: "w-14 h-14 sm:w-20 sm:h-20", viewBox: "0 0 160 160" },
-    md: { sizeClass: "w-24 h-24 sm:w-32 sm:h-32", viewBox: "0 0 160 160" },
-    lg: { sizeClass: "w-36 h-36 sm:w-48 sm:h-48", viewBox: "0 0 160 160" },
-    xl: { sizeClass: "w-48 h-48 sm:w-60 sm:h-60", viewBox: "0 0 160 160" },
+    sm: { sizeClass: "w-11 h-11 sm:w-16 sm:h-16 shrink-0", viewBox: "0 0 160 160" },
+    md: { sizeClass: "w-24 h-24 sm:w-32 sm:h-32 shrink-0", viewBox: "0 0 160 160" },
+    lg: { sizeClass: "w-36 h-36 sm:w-48 sm:h-48 shrink-0", viewBox: "0 0 160 160" },
+    xl: { sizeClass: "w-48 h-48 sm:w-60 sm:h-60 shrink-0", viewBox: "0 0 160 160" },
   };
 
   const { sizeClass, viewBox } = sizeMap[size] || sizeMap.md;
@@ -483,7 +483,7 @@ export default function ComradeCat({
               : 'ml-2 sm:ml-4'
           }`}
         >
-          <div className="relative bg-theme-card text-theme-primary border-2 border-theme-border shadow-[3px_3px_0px_var(--shadow-color)] px-2.5 sm:px-3.5 py-1.5 sm:py-2 rounded-xl w-full max-w-full sm:max-w-sm cursor-pointer select-none">
+          <div className="relative bg-theme-card text-theme-primary border-2 border-theme-border shadow-[3px_3px_0px_var(--shadow-color)] px-2.5 py-1.5 sm:px-4 sm:py-2.5 rounded-xl w-full max-w-full sm:max-w-sm cursor-pointer select-none">
             {/* Ponta da fala do balão */}
             {bubblePosition === 'right' && (
               <div className="absolute top-1/2 -left-2 -translate-y-1/2 w-0 h-0 border-t-[6px] border-t-transparent border-b-[6px] border-b-transparent border-r-[8px] border-r-theme-border" />
@@ -492,12 +492,12 @@ export default function ComradeCat({
             <div className="flex items-start gap-1.5 sm:gap-2">
               <span className="text-theme-red text-xs font-black shrink-0 mt-0.5">★</span>
               <div className="min-w-0 flex-1">
-                <p className="font-serif italic font-extrabold text-xs sm:text-sm text-theme-primary leading-snug whitespace-normal break-words min-h-[1.8rem] sm:min-h-[2.2rem]">
+                <p className="font-serif italic font-extrabold text-xs sm:text-base leading-tight break-words text-theme-primary min-h-[1.8rem] sm:min-h-[2.2rem]">
                   "{displayedText}"
                   {isTyping && <span className="inline-block text-theme-red font-mono animate-pulse ml-0.5">▌</span>}
                 </p>
-                <span className="text-[8px] sm:text-[9px] uppercase font-mono font-black text-theme-red tracking-wider block mt-1 hover:underline flex items-center gap-1 truncate">
-                  <span>★</span> O Gato Camarada • CLIQUE P/ OUTRO CONSELHO
+                <span className="text-[8px] sm:text-[10px] uppercase font-mono font-black text-theme-red tracking-wider block mt-1 hover:underline leading-tight whitespace-normal break-words">
+                  ★ O GATO CAMARADA • CLIQUE P/ OUTRO CONSELHO
                 </span>
               </div>
             </div>

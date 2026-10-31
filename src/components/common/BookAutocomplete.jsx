@@ -1,10 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { searchBooksAutocomplete } from '../../services/bookSearch';
+import { searchBooks } from '../../services/bookSearch';
 import { Search, Loader2, X, BookOpen, Sparkles } from 'lucide-react';
 
 /**
  * Componente Reutilizável de Autocomplete Inteligente Multi-API de Livros
- * Busca com debounce de 350ms em Apple Books, Google Books e Open Library.
+ * Busca com debounce de 300ms em Open Library, Google Books e Apple Books JSONP.
  */
 export default function BookAutocomplete({
   value = '',
@@ -41,7 +41,7 @@ export default function BookAutocomplete({
   }, []);
 
   const executeSearch = async (searchTerm) => {
-    if (!searchTerm || searchTerm.trim().length < 3) {
+    if (!searchTerm || searchTerm.trim().length < 2) {
       setResults([]);
       setIsSearching(false);
       setIsOpen(false);
@@ -51,7 +51,7 @@ export default function BookAutocomplete({
     setIsSearching(true);
     setHasSearched(true);
     try {
-      const items = await searchBooksAutocomplete(searchTerm);
+      const items = await searchBooks(searchTerm);
       setResults(items);
       setIsOpen(items.length > 0);
     } catch {
@@ -72,11 +72,11 @@ export default function BookAutocomplete({
       clearTimeout(debounceTimerRef.current);
     }
 
-    if (text.trim().length >= 3) {
+    if (text.trim().length >= 2) {
       setIsSearching(true);
       debounceTimerRef.current = setTimeout(() => {
         executeSearch(text);
-      }, 350);
+      }, 300);
     } else {
       setResults([]);
       setIsOpen(false);

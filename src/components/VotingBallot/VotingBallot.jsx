@@ -96,7 +96,7 @@ export default function VotingBallot() {
     <div className="space-y-6">
       
       {/* Cabeçalho do Módulo de Votação com o Mascote Fiscalizando a Urna */}
-      <div className="retro-card rounded-2xl p-6 sm:p-8 bg-theme-container border-2 border-theme-border shadow-[6px_6px_0px_var(--shadow-color)] relative transition-colors duration-300">
+      <div className="retro-card rounded-2xl p-3.5 sm:p-8 bg-theme-container border-2 border-theme-border shadow-[6px_6px_0px_var(--shadow-color)] relative transition-colors duration-300">
         
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 pb-6 border-b-2 border-theme-border">
           

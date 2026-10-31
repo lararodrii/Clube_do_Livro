@@ -24,7 +24,7 @@ export default function MembersSection() {
     <div className="space-y-8">
       
       {/* PAINEL DE ESTATÍSTICAS GERAIS DO CLUBE NO TOPO */}
-      <div className="retro-card rounded-2xl p-6 sm:p-8 bg-theme-container border-2 border-theme-border shadow-[6px_6px_0px_var(--shadow-color)]">
+      <div className="retro-card rounded-2xl p-3.5 sm:p-8 bg-theme-container border-2 border-theme-border shadow-[6px_6px_0px_var(--shadow-color)]">
         
         <div className="pb-6 border-b-2 border-theme-border mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>

@@ -35,7 +35,7 @@ export default function ArchiveSection() {
     <div className="space-y-6">
       
       {/* Cabeçalho do Acervo */}
-      <div className="retro-card rounded-2xl p-6 sm:p-8 bg-theme-container border-2 border-theme-border shadow-[6px_6px_0px_var(--shadow-color)]">
+      <div className="retro-card rounded-2xl p-3.5 sm:p-8 bg-theme-container border-2 border-theme-border shadow-[6px_6px_0px_var(--shadow-color)]">
         
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-6 border-b-2 border-theme-border">
           <div>
