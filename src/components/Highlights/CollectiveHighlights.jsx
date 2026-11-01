@@ -95,6 +95,9 @@ export default function CollectiveHighlights({ isArchiveView = false, customHigh
           total: progress.total || 100,
           message: progress.message || 'Processando documento...'
         });
+      }, {
+        currentBookTitle: bookInfo?.title,
+        currentBookAuthor: bookInfo?.author
       });
 
       if (!results || results.length === 0) {

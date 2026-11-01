@@ -7,7 +7,14 @@ import {
   extractHighlightsFromFile,
   mergeCrossPageHighlights,
   deduplicateHighlights,
-  wordOverlapsBox
+  wordOverlapsBox,
+  matchHighlighterColor,
+  parseAnnotationColor,
+  isBlacklistedText,
+  parseKindleClippings,
+  getWordHighlighterOnCanvas,
+  HIGHLIGHT_PALETTE,
+  KINDLE_COLOR_INFO
 } from '../src/services/pdfHighlightExtractor.js';
 const palette={gray:{name:'Cinza'},yellow:{name:'Amarelo Revolucionário',hex:'#FDE047'}};
 const word=(text,x,y)=>({text,box:{x,y,width:text.length*6,height:12},color:palette.gray});
@@ -338,3 +345,140 @@ test('detector de amarelo no canvas suporta tons pastéis e amarelo claro sem co
   }
   assert.equal(isWordYellowOnCanvas(box, grayData, 50, 20), false);
 });
+
+test('matchHighlighterColor aceita paleta de marca-texto permitida e rejeita azuis de links, pretos e cinzas', () => {
+  // Amarelo (#fef08a)
+  assert.equal(matchHighlighterColor(254, 240, 138)?.id, 'yellow');
+  // Laranja (#fdba74)
+  assert.equal(matchHighlighterColor(253, 186, 116)?.id, 'orange');
+  // Rosa / Magenta (#f472b6 e #fbcfe8)
+  assert.equal(matchHighlighterColor(244, 114, 182)?.id, 'pink');
+  assert.equal(matchHighlighterColor(251, 207, 232)?.id, 'pink');
+  // Verde (#86efac e #bbf7d0)
+  assert.equal(matchHighlighterColor(134, 239, 172)?.id, 'green');
+  assert.equal(matchHighlighterColor(187, 247, 208)?.id, 'green');
+  // Roxo / Lilás (#d8b4fe)
+  assert.equal(matchHighlighterColor(216, 180, 254)?.id, 'purple');
+
+  // REJEIÇÕES ESTRITAS:
+  // 1. Azul escuro padrão de links (#1a0dab)
+  assert.equal(matchHighlighterColor(26, 13, 171), null);
+  // 2. Azul puro (#0000ff)
+  assert.equal(matchHighlighterColor(0, 0, 255), null);
+  // 3. Azul de link comum (#0066cc)
+  assert.equal(matchHighlighterColor(0, 102, 204), null);
+  // 4. Preto de texto comum
+  assert.equal(matchHighlighterColor(20, 20, 20), null);
+  // 5. Cinza escuro
+  assert.equal(matchHighlighterColor(80, 80, 80), null);
+  // 6. Cinza médio
+  assert.equal(matchHighlighterColor(160, 160, 160), null);
+  // 7. Branco do papel
+  assert.equal(matchHighlighterColor(255, 255, 255), null);
+});
+
+test('parseAnnotationColor descarta anotações azuis de links, pretas ou cinzas e mapeia paleta de destaque', () => {
+  // Anotação azul (links do Le Livros ou rodapé) deve ser completamente descartada
+  assert.equal(parseAnnotationColor([0, 0, 1], 'Underline'), null);
+  assert.equal(parseAnnotationColor([0.1, 0.1, 0.8], 'Highlight'), null);
+
+  // Anotação preta ou cinza deve ser descartada
+  assert.equal(parseAnnotationColor([0, 0, 0], 'Highlight'), null);
+  assert.equal(parseAnnotationColor([0.5, 0.5, 0.5], 'Underline'), null);
+
+  // Anotações da paleta de marca-texto devem ser aceitas com seus objetos de cor
+  assert.equal(parseAnnotationColor([1, 1, 0], 'Highlight')?.id, 'yellow');
+  assert.equal(parseAnnotationColor([0.96, 0.45, 0.71], 'Highlight')?.id, 'pink');
+  assert.equal(parseAnnotationColor([0.53, 0.94, 0.67], 'Highlight')?.id, 'green');
+  assert.equal(parseAnnotationColor([0.99, 0.73, 0.45], 'Highlight')?.id, 'orange');
+  assert.equal(parseAnnotationColor([0.85, 0.71, 1.0], 'Highlight')?.id, 'purple');
+
+  // Highlight sem cor especificada assume Amarelo padrão
+  assert.equal(parseAnnotationColor(null, 'Highlight')?.id, 'yellow');
+  // Underline sem cor especificada é descartado (evita falsos links)
+  assert.equal(parseAnnotationColor(null, 'Underline'), null);
+});
+
+test('isBlacklistedText descarta avisos de direitos autorais, prefácios piratas (Le Livros), URLs e sumários', () => {
+  // Termos de pirataria e marcas dágua de distribuidores
+  assert.equal(isBlacklistedText('Le Livros'), true);
+  assert.equal(isBlacklistedText('Visite lelivros.love para baixar mais livros'), true);
+  assert.equal(isBlacklistedText('www.lelivros.site'), true);
+  assert.equal(isBlacklistedText('https://lelivros.love/livro/como-as-democracias-morrem/'), true);
+
+  // Avisos editoriais e direitos autorais
+  assert.equal(isBlacklistedText('Sobre a obra: Este livro discute a erosão institucional...'), true);
+  assert.equal(isBlacklistedText('Todos os direitos reservados à Editora Zahar.'), true);
+  assert.equal(isBlacklistedText('All rights reserved. No part of this publication...'), true);
+  assert.equal(isBlacklistedText('Copyright © 2018 by Steven Levitsky and Daniel Ziblatt'), true);
+  assert.equal(isBlacklistedText('Ficha catalográfica elaborada pela editora'), true);
+  assert.equal(isBlacklistedText('CIP-BRASIL. CATALOGAÇÃO NA PUBLICAÇÃO'), true);
+  assert.equal(isBlacklistedText('Conversão para ePub realizada por Digital Books'), true);
+  assert.equal(isBlacklistedText('Distribuição gratuita - Venda proibida'), true);
+
+  // Sumários e índices
+  assert.equal(isBlacklistedText('Sumário: 1. Alianças Fatais, 2. Guardiões da América...'), true);
+  assert.equal(isBlacklistedText('Índice Remissivo'), true);
+
+  // Grifos legítimos do conteúdo NÃO devem ser descartados
+  assert.equal(
+    isBlacklistedText('Os homens da organização não eram propriamente representativos da sociedade norte-americana.'),
+    false
+  );
+  assert.equal(
+    isBlacklistedText('Por outro lado, o sistema de convenções era um guardião eficiente, pois filtrava de maneira sistemática candidatos perigosos.'),
+    false
+  );
+});
+
+test('parseKindleClippings extrai grifos do My Clippings.txt, limpa aspas, associa notas e filtra por livro', () => {
+  const sampleClippings = `
+Como as democracias morrem (Steven Levitsky; Daniel Ziblatt)
+- Seu destaque na página 38 | posição 578-579 | Adicionado: domingo, 29 de janeiro de 2023 15:45:00
+
+"Por outro lado, o sistema de convenções era um guardião eficiente, pois filtrava de maneira sistemática candidatos perigosos."
+==========
+Como as democracias morrem (Steven Levitsky; Daniel Ziblatt)
+- Sua nota na página 38 | posição 580 | Adicionado: domingo, 29 de janeiro de 2023 15:46:00
+
+Ponto central para debater sobre filtragem partidária e gatekeepers.
+==========
+Como as democracias morrem (Steven Levitsky; Daniel Ziblatt)
+- Seu destaque na página 12 | posição 150 | Adicionado: domingo, 29 de janeiro de 2023 15:20:00
+
+Le Livros - baixe livros gratuitamente em www.lelivros.love
+==========
+A Revolução dos Bichos (George Orwell)
+- Seu destaque na página 50 | posição 700 | Adicionado: sábado, 10 de fevereiro de 2023 10:00:00
+
+Todos os animais são iguais, mas alguns animais são mais iguais do que os outros.
+==========
+`;
+
+  // 1. Extração geral associando ao livro atual do clube
+  const resultsForCurrentBook = parseKindleClippings(sampleClippings, {
+    currentBookTitle: 'Como as democracias morrem'
+  });
+
+  // Deve extrair apenas o grifo de "Como as democracias morrem", excluindo o grifo do outro livro e o aviso pirata do Le Livros
+  assert.equal(resultsForCurrentBook.length, 1);
+  assert.equal(
+    resultsForCurrentBook[0].text,
+    'Por outro lado, o sistema de convenções era um guardião eficiente, pois filtrava de maneira sistemática candidatos perigosos.'
+  );
+  assert.equal(resultsForCurrentBook[0].page, 38);
+  assert.equal(resultsForCurrentBook[0].color.name, 'Destaque Kindle');
+  assert.equal(resultsForCurrentBook[0].source, 'kindle_clippings');
+  // Nota associada automaticamente pelo pareamento de livro e página:
+  assert.equal(
+    resultsForCurrentBook[0].note,
+    'Ponto central para debater sobre filtragem partidária e gatekeepers.'
+  );
+
+  // 2. Extração sem filtro de livro deve retornar ambos os livros válidos e filtrar o bloco com Le Livros
+  const allResults = parseKindleClippings(sampleClippings);
+  assert.equal(allResults.length, 2);
+  assert.equal(allResults.some(r => r.text.includes('animais são mais iguais')), true);
+  assert.equal(allResults.some(r => r.text.includes('Le Livros')), false);
+});
+
