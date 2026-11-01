@@ -124,33 +124,6 @@ export const INITIAL_MEETING = {
   confirmedMembers: ['m1']
 };
 
-// Mural de Citações Inicial Limpo (Pronto para receber as postagens reais)
-export const INITIAL_QUOTES = [];
-
-// Urna Mensal Inicial Limpa (Qualquer pessoa pode indicar quantos livros quiser!)
-export const INITIAL_BALLOT = {
-  status: 'open',
-  title: 'Urna Popular do Exército da Paty ★',
-  maxVotesPerMember: 3,
-  books: []
-};
-
-// Acervo Histórico Inicial Limpo
-export const INITIAL_ARCHIVE = [];
-
-// Notificações Iniciais do Coletivo
-export const INITIAL_NOTIFICATIONS = [
-  {
-    id: 'notif-welcome-1',
-    type: 'welcome',
-    title: 'Comitê em Sessão Plenária! ★',
-    message: 'Bem-vinda ao Exército da Paty! Aqui você recebe alertas de quem curtiu suas citações, metas batidas e novidades na urna.',
-    linkTab: 'current',
-    createdAt: new Date().toISOString(),
-    readBy: []
-  }
-];
-
 // Dossiê Coletivo de Grifos Inicial
 export const INITIAL_HIGHLIGHTS = [
   {
@@ -215,6 +188,79 @@ export const INITIAL_HIGHLIGHTS = [
     comments: [],
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString()
+  }
+];
+
+// Mural de Citações Inicial: Contém EXCLUSIVAMENTE os Consensos do Comitê (2+ camaradas)
+export const INITIAL_QUOTES = [
+  {
+    id: 'q-consensus-hl-sample-1',
+    highlightId: 'hl-sample-1',
+    bookId: 'current-democracias',
+    bookTitle: 'Como as democracias morrem',
+    debateCycle: 'Novembro / 2026',
+    assemblyDate: 'quarta-feira, 20:00',
+    isBookSpecific: true,
+    page: 'p. 24',
+    text: 'A trágica ironia da via eleitoral para o autoritarismo é que os assassinos da democracia usam as próprias instituições da democracia — gradual, sutil e até legalmente — para matá-la.',
+    isConsensus: true,
+    isSpoiler: false,
+    highlightedBy: INITIAL_HIGHLIGHTS[0].highlightedBy,
+    authorName: 'Consenso: Lara & Stephany',
+    authorAvatar: '/avatars/gato2.jpg',
+    authorRole: '★ Consenso do Comitê (2 camaradas)',
+    memberId: 'm1',
+    comments: INITIAL_HIGHLIGHTS[0].comments,
+    likes: ['m1'],
+    likedBy: ['m1'],
+    date: '31/10/2026',
+    createdAt: new Date().toISOString()
+  }
+];
+
+// Urna Mensal Inicial Limpa (Qualquer pessoa pode indicar quantos livros quiser!)
+export const INITIAL_BALLOT = {
+  status: 'open',
+  title: 'Urna Popular do Exército da Paty ★',
+  maxVotesPerMember: 3,
+  books: []
+};
+
+// Acervo Histórico Consolidado com o Livro e o Ciclo de Debate Atual
+export const INITIAL_ARCHIVE = [
+  {
+    id: 'archived-current-democracias',
+    title: 'Como as democracias morrem',
+    author: 'Steven Levitsky & Daniel Ziblatt',
+    pages: 272,
+    genre: 'Ciência Política & Sociedade',
+    coverUrl: 'https://images-na.ssl-images-amazon.com/images/S/compressed.photo.goodreads.com/books/1531742911i/40847957.jpg',
+    readMonth: 'Novembro / 2026',
+    cycle: 'Novembro / 2026',
+    debateCycle: 'Novembro / 2026',
+    assemblyDate: 'quarta-feira, 20:00',
+    status: 'Ciclo Atual / Em Debate',
+    synopsis: 'Democracias tradicionais não terminam mais com um estrondo militar, mas com um gemido lento. Os autores analisam como a subversão gradual das regras e normas institucionais corroem governos democráticos por dentro, trazendo lições cruciais da história moderna.',
+    reviews: [],
+    quotes: INITIAL_QUOTES,
+    consensusQuotes: INITIAL_QUOTES,
+    highlights: INITIAL_HIGHLIGHTS,
+    averageRating: '5.0',
+    archivedAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString()
+  }
+];
+
+// Notificações Iniciais do Coletivo
+export const INITIAL_NOTIFICATIONS = [
+  {
+    id: 'notif-welcome-1',
+    type: 'welcome',
+    title: 'Comitê em Sessão Plenária! ★',
+    message: 'Bem-vinda ao Exército da Paty! Aqui você recebe alertas de quem curtiu suas citações, metas batidas e novidades na urna.',
+    linkTab: 'current',
+    createdAt: new Date().toISOString(),
+    readBy: []
   }
 ];
 

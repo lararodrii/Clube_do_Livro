@@ -15,7 +15,8 @@ import {
   Pencil,
   ShieldAlert,
   Lock,
-  Quote
+  Quote,
+  Flame
 } from 'lucide-react';
 import ConfidentialSpoiler from '../common/ConfidentialSpoiler';
 import { formatTextWithBold } from '../../utils/textFormat';
@@ -375,26 +376,27 @@ export default function BookDetailsModal({ book, isOpen, onClose }) {
           <div className="flex items-center justify-between gap-2 mb-4">
             <h4 className="font-headline text-lg font-black text-theme-primary flex items-center gap-2">
               <Quote className="w-5 h-5 text-theme-red" />
-              <span>Passagens & Citações da Obra ({bookQuotes.length})</span>
+              <span>Consensos & Citações da Obra ({bookQuotes.length})</span>
             </h4>
-            <span className="text-[10px] font-mono text-theme-muted font-bold">
-              ★ Acervo Coletivo
+            <span className="text-[10px] font-mono text-theme-muted font-bold flex items-center gap-1">
+              <span className="text-theme-red">★</span>
+              <span>Acervo Histórico Consolidado</span>
             </span>
           </div>
 
           {bookQuotes.length === 0 ? (
             <div className="p-4 rounded-xl bg-theme-card border-2 border-theme-border text-center">
               <p className="text-xs font-reading italic text-theme-muted">
-                Nenhuma citação foi vinculada diretamente a este livro ainda. As citações marcadas no Mural durante a leitura são arquivadas aqui automaticamente!
+                Nenhum consenso de citação foi registrado para este livro ainda. As passagens com consenso do comitê formadas durante o ciclo de debate são arquivadas aqui automaticamente para consulta posterior das camaradas!
               </p>
             </div>
           ) : (
             <div className="space-y-3">
               {bookQuotes.map((q) => {
-                const author = members.find(m => m.id === q.memberId) || {
-                  name: q.authorName || 'Camarada',
-                  avatar: q.authorAvatar || ''
-                };
+                const highlighters = Array.isArray(q.highlightedBy) && q.highlightedBy.length > 0 
+                  ? q.highlightedBy 
+                  : [{ name: q.authorName || 'Camarada', avatar: q.authorAvatar || '' }];
+                const isConsensus = q.isConsensus || highlighters.length >= 2;
                 const likerIds = q.likedBy || q.likes || [];
                 const likerMembers = likerIds.map(id => members.find(m => m.id === id)).filter(Boolean);
 
@@ -403,35 +405,65 @@ export default function BookDetailsModal({ book, isOpen, onClose }) {
                     key={q.id}
                     className="p-3.5 sm:p-4 rounded-xl bg-theme-card border-2 border-theme-border shadow-[3px_3px_0px_var(--shadow-color)]"
                   >
-                    <div className="flex items-center justify-between gap-2 mb-2">
+                    <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
                       <div className="flex items-center gap-2">
-                        <img
-                          src={author.avatar || q.authorAvatar}
-                          alt={author.name}
-                          className="w-7 h-7 rounded-lg object-cover border border-theme-border"
-                        />
+                        {/* Avatares dos camaradas do consenso */}
+                        <div className="flex items-center -space-x-1.5 shrink-0">
+                          {highlighters.map((m, idx) => (
+                            <img
+                              key={m.id || idx}
+                              src={m.avatar}
+                              alt={m.name}
+                              title={m.name}
+                              className="w-7 h-7 rounded-full object-cover border border-theme-border ring-1 ring-theme-container shadow-xs"
+                            />
+                          ))}
+                        </div>
                         <div>
                           <span className="text-xs font-headline font-bold text-theme-primary block leading-tight">
-                            {author.name}
+                            {highlighters.length > 1
+                              ? `Consenso: ${highlighters.map(m => m.name.split(' ')[0]).join(' & ')}`
+                              : highlighters[0]?.name || q.authorName || 'Camarada'}
                           </span>
                           <span className="text-[9.5px] font-mono text-theme-muted">
-                            {q.date || 'Leitura Coletiva'}
+                            Ciclo: {q.debateCycle || book.readMonth || 'Ciclo de Debate'}
                           </span>
                         </div>
                       </div>
 
-                      {q.page && (
-                        <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded bg-theme-container text-theme-red border border-theme-border">
-                          {q.page}
-                        </span>
-                      )}
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        {isConsensus && (
+                          <span className="text-[9.5px] font-mono font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-gradient-to-r from-yellow-300 via-amber-300 to-yellow-400 text-yellow-950 border border-yellow-600 shadow-xs flex items-center gap-1">
+                            <Flame className="w-2.5 h-2.5 text-theme-red fill-current" />
+                            <span>★ CONSENSO DO COMITÊ</span>
+                          </span>
+                        )}
+
+                        {q.page && (
+                          <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded bg-theme-container text-theme-red border border-theme-border">
+                            {q.page}
+                          </span>
+                        )}
+                      </div>
                     </div>
 
                     <ConfidentialSpoiler isSpoiler={q.isSpoiler}>
-                      <div className="text-xs sm:text-sm text-theme-secondary leading-relaxed font-reading italic pl-3 border-l-2 border-theme-red my-2 whitespace-pre-line">
+                      <div className="text-xs sm:text-sm text-theme-secondary leading-relaxed font-reading italic pl-3 border-l-4 border-theme-red bg-theme-container/40 p-2 rounded-r-lg my-2 whitespace-pre-line">
                         "{formatTextWithBold(q.text)}"
                       </div>
                     </ConfidentialSpoiler>
+
+                    {/* Notas registradas pelas camaradas na passagem */}
+                    {highlighters.some(m => m.note) && (
+                      <div className="mt-2 space-y-1">
+                        {highlighters.filter(m => m.note).map((m, idx) => (
+                          <div key={idx} className="text-[10.5px] font-reading bg-theme-container/80 p-1.5 rounded border border-theme-border/50 flex items-start gap-1.5">
+                            <span className="font-headline font-bold text-theme-primary shrink-0">{m.name}:</span>
+                            <span className="text-theme-secondary italic">"{m.note}"</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
 
                     {likerMembers.length > 0 && (
                       <div className="flex items-center gap-1.5 pt-2 border-t border-theme-border/30 mt-2">

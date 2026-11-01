@@ -19,6 +19,11 @@ import {
   deduplicateBallotBooks
 } from '../utils/bookDuplicateCheck';
 import { mergeHighlightsIntoDossier } from '../utils/highlightMatcher';
+import {
+  syncConsensusState,
+  isConsensusHighlight,
+  filterConsensusHighlights
+} from '../utils/consensusSync';
 
 const ClubContext = createContext(null);
 
@@ -147,16 +152,28 @@ export function ClubProvider({ children }) {
               }
             }
 
+            const cloudHighlights = cloud.highlights || prev.highlights || INITIAL_HIGHLIGHTS;
+            const cloudReading = cloud.currentReading || prev.currentReading || INITIAL_CURRENT_READING;
+            const cloudMeeting = cloud.meeting || prev.meeting || INITIAL_MEETING;
+            const cloudArchive = cloud.archive || prev.archive || INITIAL_ARCHIVE;
+
+            const { consensusQuotes, updatedArchive } = syncConsensusState({
+              highlights: cloudHighlights,
+              currentReading: cloudReading,
+              meeting: cloudMeeting,
+              archive: cloudArchive
+            });
+
             setData(prev => ({
               ...prev,
               members: cloud.members || prev.members || INITIAL_MEMBERS,
-              currentReading: cloud.currentReading || prev.currentReading || INITIAL_CURRENT_READING,
-              meeting: cloud.meeting || prev.meeting || INITIAL_MEETING,
+              currentReading: cloudReading,
+              meeting: cloudMeeting,
               ballot: cleanBallot,
-              archive: cloud.archive || prev.archive || INITIAL_ARCHIVE,
-              quotes: cloud.quotes || prev.quotes || INITIAL_QUOTES,
+              archive: updatedArchive,
+              quotes: consensusQuotes,
               notifications: cloud.notifications || prev.notifications || INITIAL_NOTIFICATIONS,
-              highlights: cloud.highlights || prev.highlights || INITIAL_HIGHLIGHTS
+              highlights: cloudHighlights
             }));
           } else {
             // Se o documento no Firestore ainda estiver vazio no primeiro acesso,
@@ -432,99 +449,69 @@ export function ClubProvider({ children }) {
     syncToCloud({ meeting: updatedMeeting });
   };
 
-  // === MURAL DE CITAÇÕES ===
+  // === MURAL DE CITAÇÕES (ESTRITO PARA CONSENSOS DO COMITÊ) ===
   const addQuote = ({ page, text, isSpoiler = false, isBookSpecific = true }) => {
     if (!currentUser || !isAuthenticated || !userProfile?.memberId) {
-      openAuthModal('Faça login para pregar citações no Mural Revolucionário!', 'login');
+      openAuthModal('Faça login para sugerir passagens para o Mural Revolucionário!', 'login');
       return;
     }
 
     if (!text || !text.trim()) return;
 
-    const authorMember = data.members.find(m => m.id === userProfile.memberId) || activeMember;
-    const formattedPage = page 
-      ? (String(page).trim().startsWith('p.') ? String(page).trim() : `p. ${String(page).trim()}`)
-      : null;
+    // Converte a submissão no Dossiê Coletivo, acionando a detecção automática de consenso
+    const parsedPage = page 
+      ? (String(page).trim().startsWith('p.') ? parseInt(String(page).replace(/\D+/g, ''), 10) || 1 : parseInt(page, 10) || 1)
+      : 1;
 
-    const newQuote = {
-      id: `q-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
-      bookId: isBookSpecific ? (data.currentReading?.id || 'current') : null,
-      bookTitle: isBookSpecific ? (data.currentReading?.title || 'Leitura Coletiva') : null,
-      isBookSpecific: !!isBookSpecific,
-      page: formattedPage,
+    return addManualHighlight({
+      page: parsedPage,
       text: text.trim(),
-      isSpoiler: !!isSpoiler,
-      memberId: userProfile.memberId,
-      authorName: authorMember.name,
-      authorAvatar: authorMember.avatar,
-      authorRole: authorMember.roleBadge || authorMember.nickname || 'Membro do Coletivo',
-      date: new Date().toLocaleDateString('pt-BR'),
-      createdAt: new Date().toISOString(),
-      likes: [],
-      likedBy: []
-    };
-
-    const updatedQuotes = [newQuote, ...(data.quotes || [])];
-
-    // Cria notificação de nova publicação para os camaradas
-    const quoteNotification = {
-      id: `notif-quote-${Date.now()}`,
-      type: 'new_quote',
-      title: `${authorMember.name} pregou no Mural! ★`,
-      message: isBookSpecific 
-        ? `"${text.trim().substring(0, 50)}${text.length > 50 ? '...' : ''}" sobre ${data.currentReading?.title || 'o livro atual'}`
-        : `"${text.trim().substring(0, 50)}${text.length > 50 ? '...' : ''}" (Comentário Geral)`,
-      linkTab: 'current',
-      actorId: userProfile.memberId,
-      actorName: authorMember.name,
-      actorAvatar: authorMember.avatar,
-      createdAt: new Date().toISOString(),
-      readBy: [userProfile.memberId]
-    };
-
-    const updatedNotifications = [quoteNotification, ...(data.notifications || [])].slice(0, 40);
-
-    setData(prev => ({
-      ...prev,
-      quotes: updatedQuotes,
-      notifications: updatedNotifications
-    }));
-    syncToCloud({ quotes: updatedQuotes, notifications: updatedNotifications });
-
-    triggerComradeConfetti(40);
-    showToast(isBookSpecific ? 'Citação vinculada à leitura pregada no mural! ★📖' : 'Comentário geral pregado no mural! ★💬', 'success');
+      note: '',
+      isSpoiler: !!isSpoiler
+    });
   };
 
-  const updateQuote = (quoteId, { text, page, isSpoiler, isBookSpecific }) => {
+  const updateQuote = (quoteId, { text, page, isSpoiler }) => {
     if (!currentUser || !isAuthenticated || !userProfile?.memberId) {
       openAuthModal('Faça login para editar sua citação!', 'login');
       return;
     }
 
     const targetQuote = (data.quotes || []).find(q => q.id === quoteId);
-    if (targetQuote && targetQuote.memberId !== userProfile.memberId) {
-      showToast('Você só pode alterar citações publicadas por você!', 'error');
-      return;
-    }
+    const targetHlId = targetQuote?.highlightId || quoteId.replace('q-consensus-', '');
 
-    const updatedQuotes = (data.quotes || []).map(q => {
-      if (q.id === quoteId) {
-        const nextIsBookSpecific = isBookSpecific !== undefined ? !!isBookSpecific : (q.isBookSpecific !== false);
+    const updatedHighlights = (data.highlights || []).map(h => {
+      if (h.id === targetHlId) {
         return {
-          ...q,
-          text: text.trim(),
-          page: page ? (String(page).trim().startsWith('p.') ? String(page).trim() : `p. ${String(page).trim()}`) : null,
-          ...(isSpoiler !== undefined ? { isSpoiler: !!isSpoiler } : {}),
-          isBookSpecific: nextIsBookSpecific,
-          bookId: nextIsBookSpecific ? (q.bookId || data.currentReading?.id || 'current') : null,
-          bookTitle: nextIsBookSpecific ? (q.bookTitle || data.currentReading?.title || 'Leitura Coletiva') : null
+          ...h,
+          text: text ? text.trim() : h.text,
+          page: page ? (parseInt(String(page).replace(/\D+/g, ''), 10) || h.page) : h.page,
+          ...(isSpoiler !== undefined ? { isSpoiler: !!isSpoiler } : {})
         };
       }
-      return q;
+      return h;
     });
 
-    setData(prev => ({ ...prev, quotes: updatedQuotes }));
-    syncToCloud({ quotes: updatedQuotes });
+    const { consensusQuotes, updatedArchive } = syncConsensusState({
+      highlights: updatedHighlights,
+      currentReading: data.currentReading,
+      meeting: data.meeting,
+      archive: data.archive
+    });
+
+    setData(prev => ({
+      ...prev,
+      highlights: updatedHighlights,
+      quotes: consensusQuotes,
+      archive: updatedArchive
+    }));
+
+    syncToCloud({
+      highlights: updatedHighlights,
+      quotes: consensusQuotes,
+      archive: updatedArchive
+    });
+
     showToast('Citação atualizada com sucesso! 📝★', 'success');
   };
 
@@ -534,40 +521,51 @@ export function ClubProvider({ children }) {
       return;
     }
 
+    const targetQuote = (data.quotes || []).find(q => q.id === quoteId);
+    const targetHlId = targetQuote?.highlightId || quoteId.replace('q-consensus-', '');
     let isNowSpoiler = false;
-    const updatedQuotes = (data.quotes || []).map(q => {
-      if (q.id === quoteId) {
-        isNowSpoiler = !q.isSpoiler;
-        return {
-          ...q,
-          isSpoiler: isNowSpoiler
-        };
+
+    const updatedHighlights = (data.highlights || []).map(h => {
+      if (h.id === targetHlId || h.id === quoteId) {
+        isNowSpoiler = !h.isSpoiler;
+        return { ...h, isSpoiler: isNowSpoiler };
       }
-      return q;
+      return h;
     });
 
-    setData(prev => ({ ...prev, quotes: updatedQuotes }));
-    syncToCloud({ quotes: updatedQuotes });
+    const { consensusQuotes, updatedArchive } = syncConsensusState({
+      highlights: updatedHighlights,
+      currentReading: data.currentReading,
+      meeting: data.meeting,
+      archive: data.archive
+    });
+
+    setData(prev => ({
+      ...prev,
+      highlights: updatedHighlights,
+      quotes: consensusQuotes,
+      archive: updatedArchive
+    }));
+
+    syncToCloud({
+      highlights: updatedHighlights,
+      quotes: consensusQuotes,
+      archive: updatedArchive
+    });
+
     showToast(isNowSpoiler ? 'Tarja confidencial ativada! 🔒★' : 'Tarja confidencial desativada! 📖★', 'info');
   };
 
   const deleteQuote = (quoteId) => {
     if (!currentUser || !isAuthenticated || !userProfile?.memberId) {
-      openAuthModal('Faça login para remover sua citação!', 'login');
+      openAuthModal('Faça login para gerenciar suas citações!', 'login');
       return;
     }
 
     const targetQuote = (data.quotes || []).find(q => q.id === quoteId);
-    if (targetQuote && targetQuote.memberId !== userProfile.memberId) {
-      showToast('Você só pode excluir citações publicadas por você!', 'error');
-      return;
-    }
+    const targetHlId = targetQuote?.highlightId || quoteId.replace('q-consensus-', '');
 
-    const updatedQuotes = (data.quotes || []).filter(q => q.id !== quoteId);
-
-    setData(prev => ({ ...prev, quotes: updatedQuotes }));
-    syncToCloud({ quotes: updatedQuotes });
-    showToast('Citação removida do mural.', 'info');
+    deleteHighlight(targetHlId);
   };
 
   const toggleQuoteLike = (quoteId) => {
@@ -577,48 +575,40 @@ export function ClubProvider({ children }) {
     }
 
     const likerId = userProfile.memberId;
-    const likerMember = data.members.find(m => m.id === likerId) || activeMember;
-    let targetQuoteAuthor = null;
-    let isNowLiked = false;
-    let quoteSnippet = '';
+    const targetQuote = (data.quotes || []).find(q => q.id === quoteId);
+    const targetHlId = targetQuote?.highlightId || quoteId.replace('q-consensus-', '');
 
-    const updatedQuotes = (data.quotes || []).map(q => {
-      if (q.id === quoteId) {
-        const currentLikes = q.likedBy || q.likes || [];
+    const updatedHighlights = (data.highlights || []).map(h => {
+      if (h.id === targetHlId || h.id === quoteId) {
+        const currentLikes = h.likedBy || h.likes || [];
         const hasLiked = currentLikes.includes(likerId);
-        isNowLiked = !hasLiked;
         const newLikes = hasLiked
           ? currentLikes.filter(id => id !== likerId)
           : [...currentLikes, likerId];
-        targetQuoteAuthor = q.memberId;
-        quoteSnippet = q.text ? (q.text.substring(0, 45) + (q.text.length > 45 ? '...' : '')) : 'sua citação';
-        return { ...q, likes: newLikes, likedBy: newLikes };
+        return { ...h, likes: newLikes, likedBy: newLikes };
       }
-      return q;
+      return h;
     });
 
-    let updatedNotifications = data.notifications || [];
+    const { consensusQuotes, updatedArchive } = syncConsensusState({
+      highlights: updatedHighlights,
+      currentReading: data.currentReading,
+      meeting: data.meeting,
+      archive: data.archive
+    });
 
-    // Se curtiu e não é a própria citação, envia notificação de curtida:
-    if (isNowLiked && targetQuoteAuthor && targetQuoteAuthor !== likerId) {
-      const likeNotif = {
-        id: `notif-like-${Date.now()}`,
-        type: 'quote_like',
-        title: `${likerMember.name} curtiu seu comentário! ❤️`,
-        message: `"${quoteSnippet}"`,
-        linkTab: 'current',
-        actorId: likerId,
-        actorName: likerMember.name,
-        actorAvatar: likerMember.avatar,
-        targetMemberId: targetQuoteAuthor,
-        createdAt: new Date().toISOString(),
-        readBy: [likerId]
-      };
-      updatedNotifications = [likeNotif, ...updatedNotifications].slice(0, 40);
-    }
+    setData(prev => ({
+      ...prev,
+      highlights: updatedHighlights,
+      quotes: consensusQuotes,
+      archive: updatedArchive
+    }));
 
-    setData(prev => ({ ...prev, quotes: updatedQuotes, notifications: updatedNotifications }));
-    syncToCloud({ quotes: updatedQuotes, notifications: updatedNotifications });
+    syncToCloud({
+      highlights: updatedHighlights,
+      quotes: consensusQuotes,
+      archive: updatedArchive
+    });
   };
 
   // === URNA DE VOTAÇÃO ===
@@ -967,14 +957,9 @@ export function ClubProvider({ children }) {
     const current = data.currentReading;
     if (!current) return;
 
-    // Verifica se já está arquivado no acervo para não duplicar
-    const alreadyInArchive = (data.archive || []).some(
-      b => b.title === current.title || b.id === `archived-${current.id}`
-    );
-
-    if (current.isArchived || alreadyInArchive) {
+    if (current.isArchived) {
       if (manual) {
-        showToast(`"${current.title}" já se encontra arquivado no Acervo Coletivo! ★`, 'info');
+        showToast(`"${current.title}" já se encontra com leitura concluída no Acervo Coletivo! ★`, 'info');
       }
       return;
     }
@@ -990,53 +975,56 @@ export function ClubProvider({ children }) {
           month: '2-digit',
           year: 'numeric'
         })
-      : new Date().toLocaleDateString('pt-BR');
+      : (data.meeting?.formattedDate || new Date().toLocaleDateString('pt-BR'));
 
-    // Citações associadas a este livro são anexadas ao acervo
-    const bookQuotes = (data.quotes || []).filter(q => 
-      q.isBookSpecific !== false && (q.bookId === current.id || q.bookTitle === current.title)
-    );
-
-    const archivedBook = {
-      id: `archived-${current.id || Date.now()}`,
-      title: current.title,
-      author: current.author,
-      pages: current.pages,
-      genre: current.genre || 'Ciência Política & Sociedade',
-      coverUrl: current.coverUrl,
-      readMonth: current.monthYear || 'Novembro / 2026',
-      assemblyDate: assemblyDateStr,
-      status: 'Concluído',
-      synopsis: current.synopsis,
-      reviews: reviews,
-      quotes: bookQuotes,
+    const { consensusQuotes, updatedArchive: syncedArchive } = syncConsensusState({
       highlights: data.highlights || [],
-      averageRating: avgRating,
-      archivedAt: new Date().toISOString()
-    };
+      currentReading: current,
+      meeting: data.meeting,
+      archive: data.archive || []
+    });
+
+    const finalArchive = syncedArchive.map(b => {
+      if (b.title === current.title || b.id === current.id || b.id === `archived-${current.id}`) {
+        return {
+          ...b,
+          status: 'Concluído',
+          averageRating: avgRating,
+          assemblyDate: assemblyDateStr,
+          reviews: reviews,
+          quotes: consensusQuotes,
+          consensusQuotes: consensusQuotes,
+          highlights: data.highlights || [],
+          archivedAt: b.archivedAt || new Date().toISOString(),
+          updatedAt: new Date().toISOString()
+        };
+      }
+      return b;
+    });
 
     const updatedReading = {
       ...current,
       isArchived: true
     };
-    const updatedArchive = [archivedBook, ...(data.archive || [])];
 
     setData(prev => ({
       ...prev,
       currentReading: updatedReading,
-      archive: updatedArchive
+      archive: finalArchive,
+      quotes: consensusQuotes
     }));
 
     syncToCloud({
       currentReading: updatedReading,
-      archive: updatedArchive
+      archive: finalArchive,
+      quotes: consensusQuotes
     });
 
     if (manual) {
       triggerComradeConfetti(90);
-      showToast(`"${current.title}" arquivado no Acervo Coletivo com suas citações salvas! 📚★`, 'pink');
+      showToast(`"${current.title}" arquivado no Acervo Coletivo como Concluído com seus consensos salvos! 📚★`, 'pink');
     } else {
-      showToast(`Prazo encerrado! "${current.title}" arquivado automaticamente no Acervo com suas citações! 🏛️★`, 'pink');
+      showToast(`Prazo encerrado! "${current.title}" arquivado automaticamente no Acervo com seus consensos! 🏛️★`, 'pink');
     }
   };
 
@@ -1106,12 +1094,12 @@ export function ClubProvider({ children }) {
 
     if (newConsensusCount > 0) {
       triggerComradeConfetti(110);
-      showToast(`🔥 ${newConsensusCount} trecho(s) atingiram CONSENSO REVOLUCIONÁRIO no Dossiê!`, 'pink');
+      showToast(`🔥 ${newConsensusCount} trecho(s) atingiram CONSENSO DO COMITÊ! Vinculados ao Mural e ao Acervo! ★`, 'pink');
 
       const consensusNotif = {
         id: `notif-consensus-${Date.now()}`,
         type: 'highlight_consensus',
-        title: `🔥 Consenso Revolucionário Detectado!`,
+        title: `🔥 Consenso do Comitê Detectado!`,
         message: `${activeMember.name} e outras camaradas grifaram as mesmas passagens em "${data.currentReading?.title}"!`,
         linkTab: 'current',
         actorId: userProfile.memberId,
@@ -1123,7 +1111,7 @@ export function ClubProvider({ children }) {
       updatedNotifications = [consensusNotif, ...updatedNotifications].slice(0, 40);
     } else {
       triggerComradeConfetti(45);
-      showToast(`${newCount} grifo(s) adicionados ao Dossiê Coletivo com sucesso! 📄★`, 'success');
+      showToast(`${newCount} grifo(s) adicionados ao Dossiê Coletivo! Destaques individuais ficam no Dossiê e subirão ao Mural quando atingirem consenso. 📄★`, 'success');
 
       const highlightNotif = {
         id: `notif-hl-${Date.now()}`,
@@ -1140,14 +1128,25 @@ export function ClubProvider({ children }) {
       updatedNotifications = [highlightNotif, ...updatedNotifications].slice(0, 40);
     }
 
+    const { consensusQuotes, updatedArchive } = syncConsensusState({
+      highlights: updatedDossier,
+      currentReading: data.currentReading,
+      meeting: data.meeting,
+      archive: data.archive
+    });
+
     setData(prev => ({
       ...prev,
       highlights: updatedDossier,
+      archive: updatedArchive,
+      quotes: consensusQuotes,
       notifications: updatedNotifications
     }));
 
     syncToCloud({
       highlights: updatedDossier,
+      archive: updatedArchive,
+      quotes: consensusQuotes,
       notifications: updatedNotifications
     });
 
@@ -1171,6 +1170,97 @@ export function ClubProvider({ children }) {
     }]);
   };
 
+  const joinHighlightAsComrade = (highlightId, comradeNote = '') => {
+    if (!currentUser || !isAuthenticated || !userProfile?.memberId) {
+      openAuthModal('Faça login para registrar que você também grifou este trecho!', 'login');
+      return { success: false };
+    }
+
+    const currentMemberId = userProfile.memberId;
+    const authorMember = data.members.find(m => m.id === currentMemberId) || activeMember;
+    const target = (data.highlights || []).find(h => h.id === highlightId);
+    if (!target) return { success: false };
+
+    const alreadyJoined = (target.highlightedBy || []).some(m => m.id === currentMemberId);
+    let updatedHighlights;
+    let isNowConsensus = false;
+
+    if (alreadyJoined) {
+      const remaining = (target.highlightedBy || []).filter(m => m.id !== currentMemberId);
+      if (remaining.length === 0) {
+        deleteHighlight(highlightId);
+        return { success: true, removed: true };
+      }
+      const isStillConsensus = new Set(remaining.map(m => m.id)).size >= 2;
+      updatedHighlights = (data.highlights || []).map(h => {
+        if (h.id === highlightId) {
+          return {
+            ...h,
+            highlightedBy: remaining,
+            isConsensus: isStillConsensus,
+            updatedAt: new Date().toISOString()
+          };
+        }
+        return h;
+      });
+      showToast('Sua marcação neste trecho foi desfeita.', 'info');
+    } else {
+      const newMemberEntry = {
+        id: currentMemberId,
+        name: authorMember.name,
+        avatar: authorMember.avatar,
+        roleBadge: authorMember.roleBadge || '★ Camarada',
+        note: comradeNote || '',
+        color: authorMember.color ? { name: authorMember.name, hex: authorMember.color, bgClass: 'bg-yellow-300/40 border-yellow-400 text-yellow-950' } : undefined,
+        date: new Date().toLocaleDateString('pt-BR')
+      };
+
+      const newHighlighters = [...(target.highlightedBy || []), newMemberEntry];
+      isNowConsensus = new Set(newHighlighters.map(m => m.id)).size >= 2;
+
+      updatedHighlights = (data.highlights || []).map(h => {
+        if (h.id === highlightId) {
+          return {
+            ...h,
+            highlightedBy: newHighlighters,
+            isConsensus: isNowConsensus,
+            updatedAt: new Date().toISOString()
+          };
+        }
+        return h;
+      });
+
+      if (isNowConsensus) {
+        triggerComradeConfetti(110);
+        showToast('🔥 CONSENSO DO COMITÊ! Você e outra(s) camarada(s) grifaram este trecho! Registrado no Mural e no Acervo!', 'pink');
+      } else {
+        showToast('Grifo registrado com sucesso!', 'success');
+      }
+    }
+
+    const { consensusQuotes, updatedArchive } = syncConsensusState({
+      highlights: updatedHighlights,
+      currentReading: data.currentReading,
+      meeting: data.meeting,
+      archive: data.archive
+    });
+
+    setData(prev => ({
+      ...prev,
+      highlights: updatedHighlights,
+      archive: updatedArchive,
+      quotes: consensusQuotes
+    }));
+
+    syncToCloud({
+      highlights: updatedHighlights,
+      archive: updatedArchive,
+      quotes: consensusQuotes
+    });
+
+    return { success: true, becameConsensus: isNowConsensus };
+  };
+
   const toggleHighlightSpoiler = (highlightId) => {
     if (!currentUser || !isAuthenticated || !userProfile?.memberId) {
       openAuthModal('Faça login para alterar a tarja confidencial deste grifo!', 'login');
@@ -1186,8 +1276,24 @@ export function ClubProvider({ children }) {
       return h;
     });
 
-    setData(prev => ({ ...prev, highlights: updatedHighlights }));
-    syncToCloud({ highlights: updatedHighlights });
+    const { consensusQuotes, updatedArchive } = syncConsensusState({
+      highlights: updatedHighlights,
+      currentReading: data.currentReading,
+      meeting: data.meeting,
+      archive: data.archive
+    });
+
+    setData(prev => ({
+      ...prev,
+      highlights: updatedHighlights,
+      archive: updatedArchive,
+      quotes: consensusQuotes
+    }));
+    syncToCloud({
+      highlights: updatedHighlights,
+      archive: updatedArchive,
+      quotes: consensusQuotes
+    });
     showToast(isNowSpoiler ? 'Tarja confidencial ativada no grifo! 🔒' : 'Tarja confidencial desativada! 📖', 'info');
   };
 
@@ -1225,8 +1331,24 @@ export function ClubProvider({ children }) {
       showToast('Grifo removido do dossiê coletivo.', 'info');
     }
 
-    setData(prev => ({ ...prev, highlights: updatedHighlights }));
-    syncToCloud({ highlights: updatedHighlights });
+    const { consensusQuotes, updatedArchive } = syncConsensusState({
+      highlights: updatedHighlights,
+      currentReading: data.currentReading,
+      meeting: data.meeting,
+      archive: data.archive
+    });
+
+    setData(prev => ({
+      ...prev,
+      highlights: updatedHighlights,
+      archive: updatedArchive,
+      quotes: consensusQuotes
+    }));
+    syncToCloud({
+      highlights: updatedHighlights,
+      archive: updatedArchive,
+      quotes: consensusQuotes
+    });
   };
 
   const deleteMultipleHighlights = (highlightIds = []) => {
@@ -1241,8 +1363,24 @@ export function ClubProvider({ children }) {
     const updatedHighlights = (data.highlights || []).filter(h => !idsSet.has(h.id));
     const count = (data.highlights || []).length - updatedHighlights.length;
 
-    setData(prev => ({ ...prev, highlights: updatedHighlights }));
-    syncToCloud({ highlights: updatedHighlights });
+    const { consensusQuotes, updatedArchive } = syncConsensusState({
+      highlights: updatedHighlights,
+      currentReading: data.currentReading,
+      meeting: data.meeting,
+      archive: data.archive
+    });
+
+    setData(prev => ({
+      ...prev,
+      highlights: updatedHighlights,
+      archive: updatedArchive,
+      quotes: consensusQuotes
+    }));
+    syncToCloud({
+      highlights: updatedHighlights,
+      archive: updatedArchive,
+      quotes: consensusQuotes
+    });
     showToast(`${count} ${count === 1 ? 'grifo removido' : 'grifos removidos'} do dossiê coletivo.`, 'info');
   };
 
@@ -1495,6 +1633,7 @@ export function ClubProvider({ children }) {
         highlights: data.highlights || [],
         addHighlightsToDossier,
         addManualHighlight,
+        joinHighlightAsComrade,
         toggleHighlightSpoiler,
         deleteHighlight,
         deleteMultipleHighlights,

@@ -43,6 +43,7 @@ export default function CollectiveHighlights({ isArchiveView = false, customHigh
     toggleHighlightSpoiler, 
     deleteHighlight, 
     deleteMultipleHighlights,
+    joinHighlightAsComrade,
     addHighlightComment, 
     deleteHighlightComment,
     currentReading,
@@ -638,10 +639,20 @@ export default function CollectiveHighlights({ isArchiveView = false, customHigh
                           Pág. {hl.page || '—'}
                         </span>
 
-                        {hl.isConsensus && (
-                          <span className="text-[10px] font-mono font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-gradient-to-r from-yellow-300 via-amber-300 to-yellow-400 text-yellow-950 border border-yellow-600 shadow-[1px_1px_0px_rgba(0,0,0,0.2)] flex items-center gap-1 animate-pulse">
+                        {hl.isConsensus ? (
+                          <span 
+                            title="Em exibição no Mural e registrado no Acervo!"
+                            className="text-[10px] font-mono font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-gradient-to-r from-yellow-300 via-amber-300 to-yellow-400 text-yellow-950 border border-yellow-600 shadow-[1px_1px_0px_rgba(0,0,0,0.2)] flex items-center gap-1 animate-pulse"
+                          >
                             <Flame className="w-3 h-3 text-theme-red fill-current" />
-                            <span>★ CONSENSO REVOLUCIONÁRIO</span>
+                            <span>★ CONSENSO DO COMITÊ</span>
+                          </span>
+                        ) : (
+                          <span 
+                            title="Destaque individual: visível no Dossiê Coletivo. Subirá para o Mural e Acervo assim que outra camarada também grifar este trecho!"
+                            className="text-[9.5px] font-mono font-bold px-2 py-0.5 rounded bg-theme-container text-theme-muted border border-theme-border/60 flex items-center gap-1"
+                          >
+                            <span>Destaque Individual</span>
                           </span>
                         )}
                       </div>
@@ -735,6 +746,32 @@ export default function CollectiveHighlights({ isArchiveView = false, customHigh
                         ? highlighters[0]?.name 
                         : `${highlighters.length} camaradas grifaram`}
                     </span>
+
+                    {/* Botão de Também Grifei! para formar consenso */}
+                    {!isArchiveView && (
+                      <div className="flex items-center gap-1 ml-1 shrink-0">
+                        {isMyHighlight ? (
+                          <button
+                            type="button"
+                            onClick={() => joinHighlightAsComrade(hl.id)}
+                            title="Você já grifou este trecho. Clique se desejar remover sua participação."
+                            className="text-[9.5px] font-mono font-bold px-2 py-0.5 rounded bg-[#FEF08A] text-[#111111] border border-theme-border shadow-xs hover:bg-theme-red hover:text-white transition-colors cursor-pointer"
+                          >
+                            ✓ Você grifou
+                          </button>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={() => joinHighlightAsComrade(hl.id)}
+                            title="Clique para confirmar que você também grifou este trecho e transformá-lo em Consenso do Comitê!"
+                            className="text-[9.5px] font-mono font-black px-2 py-0.5 rounded bg-theme-red hover:brightness-110 text-white border border-theme-border shadow-xs transition-transform hover:scale-105 active:scale-95 cursor-pointer flex items-center gap-1"
+                          >
+                            <Sparkles className="w-3 h-3 text-[#FEF08A]" />
+                            <span>Também grifei!</span>
+                          </button>
+                        )}
+                      </div>
+                    )}
                   </div>
 
                   {/* Botão de Debate / Anotação Coletiva */}
