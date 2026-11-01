@@ -482,3 +482,55 @@ Todos os animais são iguais, mas alguns animais são mais iguais do que os outr
   assert.equal(allResults.some(r => r.text.includes('Le Livros')), false);
 });
 
+test('linhas separadas por espaçamento de parágrafo geram citações independentes e não se fundem', () => {
+  // Simula dois parágrafos distintos com espaçamento vertical entre eles (y=10..22 e y=45..57)
+  const p1Words = [
+    { text: 'Primeiro', box: { x: 50, y: 10, width: 50, height: 12 }, lineY: 10 },
+    { text: 'parágrafo', box: { x: 105, y: 10, width: 60, height: 12 }, lineY: 10 },
+    { text: 'concluído.', box: { x: 170, y: 10, width: 65, height: 12 }, lineY: 10 }
+  ];
+  // Parágrafo 2 começa em y=40 (distância vertical de 18px da base de p1)
+  const p2Words = [
+    { text: 'Segundo', box: { x: 50, y: 40, width: 50, height: 12 }, lineY: 40 },
+    { text: 'parágrafo', box: { x: 105, y: 40, width: 60, height: 12 }, lineY: 40 },
+    { text: 'iniciado.', box: { x: 170, y: 40, width: 60, height: 12 }, lineY: 40 }
+  ];
+
+  const groups = groupConsecutiveWords([...p1Words, ...p2Words], 1, palette.yellow, 'pdf_verified_scan');
+
+  // Devem gerar 2 grupos estritamente separados, jamais fundidos
+  assert.equal(groups.length, 2);
+  assert.equal(groups[0].text, 'Primeiro parágrafo concluído.');
+  assert.equal(groups[1].text, 'Segundo parágrafo iniciado.');
+});
+
+test('linhas consecutivas do mesmo parágrafo com delta Y < 14px e continuidade horizontal se unem normalmente', () => {
+  const line1 = [
+    { text: 'O', box: { x: 50, y: 100, width: 10, height: 12 }, lineY: 100 },
+    { text: 'autor', box: { x: 65, y: 100, width: 35, height: 12 }, lineY: 100 },
+    { text: 'argumenta', box: { x: 105, y: 100, width: 70, height: 12 }, lineY: 100 }
+  ];
+  // Linha 2 em y=116 (deltaY = 16px, verticalGap = 4px, continuidade na margem esquerda x=50)
+  const line2 = [
+    { text: 'que', box: { x: 50, y: 116, width: 25, height: 12 }, lineY: 116 },
+    { text: 'a', box: { x: 80, y: 116, width: 10, height: 12 }, lineY: 116 },
+    { text: 'instituição', box: { x: 95, y: 116, width: 75, height: 12 }, lineY: 116 },
+    { text: 'resiste.', box: { x: 175, y: 116, width: 55, height: 12 }, lineY: 116 }
+  ];
+
+  const groups = groupConsecutiveWords([...line1, ...line2], 1, palette.yellow, 'pdf_verified_scan');
+  assert.equal(groups.length, 1);
+  assert.equal(groups[0].text, 'O autor argumenta que a instituição resiste.');
+});
+
+test('linhas na mesma faixa horizontal com salto desproporcional não se unem', () => {
+  const wordLeft = { text: 'Início', box: { x: 50, y: 100, width: 40, height: 12 }, lineY: 100 };
+  const wordFarRight = { text: 'Término', box: { x: 350, y: 100, width: 50, height: 12 }, lineY: 100 };
+
+  const groups = groupConsecutiveWords([wordLeft, wordFarRight], 1, palette.yellow, 'pdf_verified_scan');
+  assert.equal(groups.length, 2);
+  assert.equal(groups[0].text, 'Início');
+  assert.equal(groups[1].text, 'Término');
+});
+
+

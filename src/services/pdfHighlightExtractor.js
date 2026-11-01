@@ -486,7 +486,7 @@ function filterLineWordsWithContinuity(lineWords, data, canvasW, canvasH) {
           const nextWord = lineWords[nextIdx];
           const gap = nextWord.box.x - (prevWord.box.x + prevWord.box.width);
 
-          if (gap < Math.max(prevWord.box.height, 14) * 5.0 && (nextIdx - prevIdx) <= 3) {
+          if (gap < Math.max(prevWord.box.height, 14) * 2.2 && (nextIdx - prevIdx) <= 2 && lineWords[i].text.length <= 3) {
             finalConfirmed.push({
               ...lineWords[i],
               color: prevRes.color
@@ -549,21 +549,45 @@ export function groupConsecutiveWords(words, pageNum, defaultColor, source) {
 
     const prev = currentGroup.lastWord;
     const isSameColor = !word.color?.id || !currentGroup.color?.id || word.color.id === currentGroup.color.id;
-    const isSameLine = Math.abs(word.box.y - prev.box.y) <= 7;
-    const isNextLine = !isSameLine && (word.box.y > prev.box.y) && ((word.box.y - prev.box.y) < Math.max(prev.box.height, word.box.height) * 2.2);
+
+    // Altura da linha de texto padrão
+    const lineHeight = Math.max(prev.box.height, word.box.height, 12);
+    // Delta Y vertical entre o topo de prev e o topo de word
+    const deltaY = word.box.y - prev.box.y;
+    // Espaçamento vertical entre a base da linha anterior e o topo da linha atual
+    const verticalGap = word.box.y - (prev.box.y + prev.box.height);
+
+    // 1. Mesma linha física (faixa de altura menor ou igual a 6px)
+    const isSameLine = Math.abs(deltaY) <= 6;
+
+    // 2. Linha consecutiva direta:
+    // delta Y estrito menor que a altura de uma linha de texto padrão (< 14px de espaçamento vertical)
+    // NUNCA junta se verticalGap >= 10px ou deltaY >= 21px (que caracterizam espaçamento ou quebra de parágrafo)
+    const isConsecutiveLine = !isSameLine && deltaY > 0 && verticalGap >= -8 && verticalGap < 10 && deltaY <= (lineHeight + 8);
 
     let shouldJoin = false;
 
     if (isSameColor) {
       if (isSameLine) {
         const gapX = word.box.x - (prev.box.x + prev.box.width);
-        if (gapX >= -6 && gapX < Math.max(prev.box.height, 14) * 3.5) {
+        if (gapX >= -6 && gapX < Math.max(lineHeight, 14) * 1.6) {
           shouldJoin = true;
         }
-      } else if (isNextLine) {
-        const lineGap = word.box.y - prev.box.y;
-        if (lineGap < Math.max(prev.box.height, 14) * 2.2) {
-          shouldJoin = true;
+      } else if (isConsecutiveLine) {
+        // Se a linha anterior encerrou com pontuação terminal (. ! ?) e há respiro vertical (>= 5px), não funde
+        const prevTextTrimmed = currentGroup.text.trim();
+        const endsWithTerminal = /[.!?…]["'”’»)]*$/.test(prevTextTrimmed);
+
+        if (endsWithTerminal && verticalGap >= 5) {
+          shouldJoin = false;
+        } else {
+          // Continuidade horizontal entre linhas: início próximo à margem ou marcação contínua nativa
+          const isAtLeftMargin = word.box.x <= Math.max(prev.box.x, 180);
+          const isNativeAnnot = source === 'pdf_annotation';
+
+          if (isNativeAnnot || isAtLeftMargin) {
+            shouldJoin = true;
+          }
         }
       }
     }
@@ -707,25 +731,30 @@ async function extractFromPdf(file, onProgress = () => {}, options = {}) {
         // Captura todas as palavras contidas nas áreas da anotação (rigor contra sangria vertical)
         const words = allWords.filter(w => areas.some(area => wordOverlapsBox(w.box, area, 0.40)));
         const parts = groupConsecutiveWords(words, pageNum, annotColor, 'pdf_annotation');
-        const text = parts.map(p => p.text).join(' ').trim();
 
-        if (text && !isBlacklistedText(text)) {
-          const minY = words.length ? Math.min(...words.map(w => w.box.y)) : (areas.length ? Math.min(...areas.map(a => a.y)) : 0);
-          const maxY = words.length ? Math.max(...words.map(w => w.box.y + w.box.height)) : (areas.length ? Math.max(...areas.map(a => a.y + a.height)) : 0);
+        for (let pIdx = 0; pIdx < parts.length; pIdx++) {
+          const part = parts[pIdx];
+          const text = part.text.trim();
 
-          pageHighlights.push({
-            id: `native-${pageNum}-${annot.id || pageHighlights.length}`,
-            page: pageNum,
-            text,
-            note: annot.contentsObj?.str || (typeof annot.contents === 'string' ? annot.contents : ''),
-            color: annotColor,
-            source: 'pdf_annotation',
-            confidence: words.length ? 0.95 : 0.3,
-            createdAt: new Date().toISOString(),
-            annotDate: annot.modificationDate || annot.date || null,
-            box: { minY, maxY },
-            viewportHeight: viewport.height
-          });
+          if (text && !isBlacklistedText(text)) {
+            const partWords = part.words || [];
+            const minY = partWords.length ? Math.min(...partWords.map(w => w.box.y)) : (areas.length ? Math.min(...areas.map(a => a.y)) : 0);
+            const maxY = partWords.length ? Math.max(...partWords.map(w => w.box.y + w.box.height)) : (areas.length ? Math.max(...areas.map(a => a.y + a.height)) : 0);
+
+            pageHighlights.push({
+              id: `native-${pageNum}-${annot.id || pageHighlights.length}${parts.length > 1 ? `-${pIdx + 1}` : ''}`,
+              page: pageNum,
+              text,
+              note: annot.contentsObj?.str || (typeof annot.contents === 'string' ? annot.contents : ''),
+              color: annotColor,
+              source: 'pdf_annotation',
+              confidence: partWords.length ? 0.95 : 0.3,
+              createdAt: new Date().toISOString(),
+              annotDate: annot.modificationDate || annot.date || null,
+              box: { minY, maxY },
+              viewportHeight: viewport.height
+            });
+          }
         }
       }
 
