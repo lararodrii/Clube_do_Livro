@@ -23,7 +23,9 @@ import {
   CheckCircle2, 
   AlertCircle,
   Loader2,
-  Calendar
+  Calendar,
+  CheckSquare,
+  Square
 } from 'lucide-react';
 import ComradeCat from '../common/ComradeCat';
 import ConfidentialSpoiler from '../common/ConfidentialSpoiler';
@@ -40,6 +42,7 @@ export default function CollectiveHighlights({ isArchiveView = false, customHigh
     addManualHighlight, 
     toggleHighlightSpoiler, 
     deleteHighlight, 
+    deleteMultipleHighlights,
     addHighlightComment, 
     deleteHighlightComment,
     currentReading,
@@ -72,6 +75,10 @@ export default function CollectiveHighlights({ isArchiveView = false, customHigh
   // Estados de expansão de comentários por grifo
   const [expandedComments, setExpandedComments] = useState({});
   const [commentInputs, setCommentInputs] = useState({});
+
+  // Estados de seleção múltipla para apagar em lote
+  const [isSelectMode, setIsSelectMode] = useState(false);
+  const [selectedHighlightIds, setSelectedHighlightIds] = useState(new Set());
 
   // Manipulador de upload de arquivo (.pdf, .txt, .html)
   const handleFileSelect = async (e) => {
@@ -163,7 +170,7 @@ export default function CollectiveHighlights({ isArchiveView = false, customHigh
     toggleHighlightSpoiler(id);
   };
 
-  // Excluir grifo
+  // Excluir grifo individual
   const handleDeleteHighlight = (id) => {
     if (!isAuthenticated) {
       openAuthModal('Faça login para gerenciar grifos.', 'login');
@@ -172,6 +179,46 @@ export default function CollectiveHighlights({ isArchiveView = false, customHigh
     if (window.confirm('Deseja realmente remover este grifo do Dossiê Coletivo?')) {
       deleteHighlight(id);
       showToast('Grifo removido do dossiê.', 'info');
+    }
+  };
+
+  // Manipuladores de Seleção e Exclusão em Lote
+  const toggleSelectHighlight = (id) => {
+    setSelectedHighlightIds(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        next.add(id);
+      }
+      return next;
+    });
+  };
+
+  const handleToggleSelectAll = () => {
+    const allFilteredIds = filteredHighlights.map(h => h.id);
+    const allSelected = allFilteredIds.length > 0 && allFilteredIds.every(id => selectedHighlightIds.has(id));
+
+    if (allSelected) {
+      setSelectedHighlightIds(new Set());
+    } else {
+      setSelectedHighlightIds(new Set(allFilteredIds));
+    }
+  };
+
+  const handleDeleteSelected = () => {
+    if (!isAuthenticated) {
+      openAuthModal('Faça login para gerenciar grifos.', 'login');
+      return;
+    }
+
+    const count = selectedHighlightIds.size;
+    if (count === 0) return;
+
+    if (window.confirm(`Deseja realmente apagar os ${count} ${count === 1 ? 'grifo selecionado' : 'grifos selecionados'} de uma vez do Dossiê Coletivo?`)) {
+      deleteMultipleHighlights(Array.from(selectedHighlightIds));
+      setSelectedHighlightIds(new Set());
+      setIsSelectMode(false);
     }
   };
 
@@ -323,6 +370,29 @@ export default function CollectiveHighlights({ isArchiveView = false, customHigh
               <Download className="w-4 h-4 text-theme-red" />
               <span className="hidden sm:inline">Baixar Relatório</span>
             </button>
+
+            {highlights.length > 0 && (
+              <button
+                type="button"
+                onClick={() => {
+                  if (!isAuthenticated) {
+                    openAuthModal('Faça login para gerenciar os grifos.', 'login');
+                    return;
+                  }
+                  setIsSelectMode(!isSelectMode);
+                  if (isSelectMode) setSelectedHighlightIds(new Set());
+                }}
+                className={`flex items-center justify-center gap-1.5 px-3 py-2.5 font-mono font-bold text-xs rounded-xl border-2 border-theme-border shadow-[2px_2px_0px_var(--shadow-color)] transition-colors cursor-pointer ${
+                  isSelectMode
+                    ? 'bg-theme-red text-white shadow-[2px_2px_0px_var(--shadow-color)]'
+                    : 'bg-theme-container hover:bg-theme-card text-theme-primary'
+                }`}
+                title="Selecionar múltiplos grifos para apagar em lote"
+              >
+                <CheckSquare className="w-4 h-4 text-theme-red" />
+                <span>{isSelectMode ? 'Sair da Seleção' : 'Selecionar Grifos'}</span>
+              </button>
+            )}
           </div>
         )}
 
@@ -463,40 +533,118 @@ export default function CollectiveHighlights({ isArchiveView = false, customHigh
           )}
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6 my-4">
-          {filteredHighlights.map((hl) => {
-            const highlighters = Array.isArray(hl.highlightedBy) ? hl.highlightedBy : [];
-            const isMyHighlight = highlighters.some(m => m.id === activeMember.id);
-            const commentsCount = hl.comments?.length || 0;
-            const isCommentsOpen = !!expandedComments[hl.id];
+        <>
+          {/* Barra de Ações em Lote quando o modo de seleção estiver ativo */}
+          {isSelectMode && !isArchiveView && (
+            <div className="my-4 p-3.5 bg-theme-container rounded-xl border-2 border-theme-border shadow-[4px_4px_0px_var(--shadow-color)] flex flex-wrap items-center justify-between gap-3 animate-fade-in">
+              <div className="flex items-center gap-2">
+                <span className="text-theme-red font-black text-sm">★</span>
+                <span className="text-xs font-mono font-bold text-theme-primary">
+                  {selectedHighlightIds.size} de {filteredHighlights.length} grifos selecionados
+                </span>
+              </div>
 
-            // Cores do marca-texto
-            const colorBg = hl.color?.bgClass || 'bg-yellow-200/50 border-yellow-400 text-yellow-950';
+              <div className="flex flex-wrap items-center gap-2">
+                <button
+                  type="button"
+                  onClick={handleToggleSelectAll}
+                  className="px-3 py-1.5 text-xs font-mono font-bold rounded-lg border-2 border-theme-border bg-theme-card hover:bg-theme-container text-theme-primary flex items-center gap-1.5 transition-colors cursor-pointer shadow-xs"
+                >
+                  {selectedHighlightIds.size === filteredHighlights.length && filteredHighlights.length > 0 ? (
+                    <>
+                      <CheckSquare className="w-4 h-4 text-theme-red" />
+                      <span>Desmarcar Todos</span>
+                    </>
+                  ) : (
+                    <>
+                      <Square className="w-4 h-4 text-theme-muted" />
+                      <span>Selecionar Todos ({filteredHighlights.length})</span>
+                    </>
+                  )}
+                </button>
 
-            return (
-              <div
-                key={hl.id}
-                className={`flex flex-col justify-between rounded-xl border-2 border-theme-border p-4 transition-all duration-200 bg-theme-card shadow-[4px_4px_0px_var(--shadow-color)] ${
-                  hl.isConsensus 
-                    ? 'ring-2 ring-yellow-400/80 bg-gradient-to-br from-theme-card via-theme-card to-amber-500/5' 
-                    : ''
-                }`}
-              >
-                <div>
-                  {/* Topo do Card: Página, Selo de Consenso e Ações */}
-                  <div className="flex items-center justify-between gap-2 mb-3">
-                    <div className="flex items-center gap-1.5 flex-wrap">
-                      <span className="text-[11px] font-mono font-black px-2.5 py-0.5 rounded bg-theme-container text-theme-red border border-theme-border shadow-[1px_1px_0px_var(--shadow-color)]">
-                        Pág. {hl.page || '—'}
-                      </span>
+                <button
+                  type="button"
+                  disabled={selectedHighlightIds.size === 0}
+                  onClick={handleDeleteSelected}
+                  className="px-3.5 py-1.5 bg-theme-red hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed text-white text-xs font-mono font-black uppercase tracking-wider rounded-lg border-2 border-theme-border shadow-[2px_2px_0px_var(--shadow-color)] flex items-center gap-1.5 transition-transform hover:-translate-x-0.5 hover:-translate-y-0.5 active:translate-x-0.5 active:translate-y-0.5 cursor-pointer"
+                >
+                  <Trash2 className="w-4 h-4" />
+                  <span>Apagar Todos Selecionados ({selectedHighlightIds.size})</span>
+                </button>
 
-                      {hl.isConsensus && (
-                        <span className="text-[10px] font-mono font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-gradient-to-r from-yellow-300 via-amber-300 to-yellow-400 text-yellow-950 border border-yellow-600 shadow-[1px_1px_0px_rgba(0,0,0,0.2)] flex items-center gap-1 animate-pulse">
-                          <Flame className="w-3 h-3 text-theme-red fill-current" />
-                          <span>★ CONSENSO REVOLUCIONÁRIO</span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsSelectMode(false);
+                    setSelectedHighlightIds(new Set());
+                  }}
+                  className="px-3 py-1.5 text-xs font-mono font-bold rounded-lg border border-theme-border hover:bg-theme-card text-theme-muted hover:text-theme-primary transition-colors cursor-pointer"
+                >
+                  Cancelar
+                </button>
+              </div>
+            </div>
+          )}
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6 my-4">
+            {filteredHighlights.map((hl) => {
+              const highlighters = Array.isArray(hl.highlightedBy) ? hl.highlightedBy : [];
+              const isMyHighlight = highlighters.some(m => m.id === activeMember.id);
+              const commentsCount = hl.comments?.length || 0;
+              const isCommentsOpen = !!expandedComments[hl.id];
+              const isSelected = selectedHighlightIds.has(hl.id);
+
+              // Cores do marca-texto
+              const colorBg = hl.color?.bgClass || 'bg-yellow-200/50 border-yellow-400 text-yellow-950';
+
+              return (
+                <div
+                  key={hl.id}
+                  onClick={isSelectMode ? () => toggleSelectHighlight(hl.id) : undefined}
+                  className={`flex flex-col justify-between rounded-xl border-2 transition-all duration-200 bg-theme-card p-4 shadow-[4px_4px_0px_var(--shadow-color)] ${
+                    isSelectMode ? 'cursor-pointer hover:border-theme-red' : ''
+                  } ${
+                    isSelected
+                      ? 'ring-4 ring-theme-red border-theme-red bg-theme-red/5 shadow-[4px_4px_0px_var(--theme-red)]'
+                      : hl.isConsensus 
+                        ? 'ring-2 ring-yellow-400/80 bg-gradient-to-br from-theme-card via-theme-card to-amber-500/5 border-theme-border' 
+                        : 'border-theme-border'
+                  }`}
+                >
+                  <div>
+                    {/* Topo do Card: Página, Selo de Consenso e Ações */}
+                    <div className="flex items-center justify-between gap-2 mb-3">
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        {isSelectMode && (
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              toggleSelectHighlight(hl.id);
+                            }}
+                            className="p-0.5 text-theme-red hover:scale-110 transition-transform cursor-pointer mr-1"
+                            title={isSelected ? "Desmarcar este grifo" : "Selecionar este grifo"}
+                          >
+                            {isSelected ? (
+                              <CheckSquare className="w-5 h-5 text-theme-red" />
+                            ) : (
+                              <Square className="w-5 h-5 text-theme-muted hover:text-theme-primary" />
+                            )}
+                          </button>
+                        )}
+
+                        <span className="text-[11px] font-mono font-black px-2.5 py-0.5 rounded bg-theme-container text-theme-red border border-theme-border shadow-[1px_1px_0px_var(--shadow-color)]">
+                          Pág. {hl.page || '—'}
                         </span>
-                      )}
-                    </div>
+
+                        {hl.isConsensus && (
+                          <span className="text-[10px] font-mono font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-gradient-to-r from-yellow-300 via-amber-300 to-yellow-400 text-yellow-950 border border-yellow-600 shadow-[1px_1px_0px_rgba(0,0,0,0.2)] flex items-center gap-1 animate-pulse">
+                            <Flame className="w-3 h-3 text-theme-red fill-current" />
+                            <span>★ CONSENSO REVOLUCIONÁRIO</span>
+                          </span>
+                        )}
+                      </div>
 
                     {/* Botões de Ação do Card */}
                     <div className="flex items-center gap-1">
@@ -688,7 +836,8 @@ export default function CollectiveHighlights({ isArchiveView = false, customHigh
             );
           })}
         </div>
-      )}
+      </>
+    )}
 
       {/* Modal de Revisão dos Grifos Extraídos do PDF / Kindle */}
       <ReviewHighlightsModal

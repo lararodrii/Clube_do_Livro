@@ -1229,6 +1229,23 @@ export function ClubProvider({ children }) {
     syncToCloud({ highlights: updatedHighlights });
   };
 
+  const deleteMultipleHighlights = (highlightIds = []) => {
+    if (!currentUser || !isAuthenticated) {
+      openAuthModal('Faça login para gerenciar grifos!', 'login');
+      return;
+    }
+
+    if (!Array.isArray(highlightIds) || highlightIds.length === 0) return;
+
+    const idsSet = new Set(highlightIds);
+    const updatedHighlights = (data.highlights || []).filter(h => !idsSet.has(h.id));
+    const count = (data.highlights || []).length - updatedHighlights.length;
+
+    setData(prev => ({ ...prev, highlights: updatedHighlights }));
+    syncToCloud({ highlights: updatedHighlights });
+    showToast(`${count} ${count === 1 ? 'grifo removido' : 'grifos removidos'} do dossiê coletivo.`, 'info');
+  };
+
   const addHighlightComment = (highlightId, commentText) => {
     if (!currentUser || !isAuthenticated || !userProfile?.memberId) {
       openAuthModal('Faça login para debater e comentar neste grifo coletivo!', 'login');
@@ -1480,6 +1497,7 @@ export function ClubProvider({ children }) {
         addManualHighlight,
         toggleHighlightSpoiler,
         deleteHighlight,
+        deleteMultipleHighlights,
         addHighlightComment,
         deleteHighlightComment,
         notifications: data.notifications || [],
