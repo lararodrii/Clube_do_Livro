@@ -7,6 +7,7 @@ import {
   extractHighlightsFromFile,
   mergeCrossPageHighlights,
   deduplicateHighlights,
+  areHighlightsSamePhysicalMark,
   wordOverlapsBox,
   matchHighlighterColor,
   parseAnnotationColor,
@@ -531,6 +532,61 @@ test('linhas na mesma faixa horizontal com salto desproporcional não se unem', 
   assert.equal(groups.length, 2);
   assert.equal(groups[0].text, 'Início');
   assert.equal(groups[1].text, 'Término');
+});
+
+test('preserva destaque curto isolado (pergunta) e parágrafo maior na mesma página com coordenadas distintas', () => {
+  // Destaque 1: Pergunta curta isolada grifada pelo usuário
+  const hShort = {
+    id: 'native-p10-question',
+    page: 10,
+    text: 'Como as instituições democráticas resistem ao autoritarismo?',
+    color: palette.yellow,
+    source: 'pdf_annotation',
+    box: { minY: 150, maxY: 165, minX: 50, maxX: 380 } // altura: 15px
+  };
+
+  // Destaque 2: Parágrafo maior grifado na mesma página, que começa com a mesma pergunta
+  const hParagraph = {
+    id: 'native-p10-paragraph',
+    page: 10,
+    text: 'Como as instituições democráticas resistem ao autoritarismo? A resposta exige compreender a separação de poderes e a vigilância constante da sociedade civil.',
+    color: palette.yellow,
+    source: 'pdf_annotation',
+    box: { minY: 150, maxY: 240, minX: 50, maxX: 480 } // altura: 90px (coordenadas físicas distintas)
+  };
+
+  // As duas marcações físicas distintas NÃO devem ser fundidas nem a menor descartada
+  const result = deduplicateHighlights([hShort, hParagraph]);
+  assert.equal(result.length, 2);
+  assert.equal(result[0].text, 'Como as instituições democráticas resistem ao autoritarismo?');
+  assert.equal(result[1].text, 'Como as instituições democráticas resistem ao autoritarismo? A resposta exige compreender a separação de poderes e a vigilância constante da sociedade civil.');
+});
+
+test('preserva frases idênticas grifadas em posições retangulares diferentes na mesma página', () => {
+  // Destaque 1: Frase no cabeçalho ou início da página
+  const hTop = {
+    id: 'native-1',
+    page: 15,
+    text: 'A democracia não é um dado adquirido.',
+    color: palette.yellow,
+    source: 'pdf_annotation',
+    box: { minY: 80, maxY: 94 }
+  };
+
+  // Destaque 2: Mesma frase repetida em outra seção mais abaixo na mesma página
+  const hBottom = {
+    id: 'native-2',
+    page: 15,
+    text: 'A democracia não é um dado adquirido.',
+    color: palette.yellow,
+    source: 'pdf_annotation',
+    box: { minY: 420, maxY: 434 }
+  };
+
+  const result = deduplicateHighlights([hTop, hBottom]);
+  assert.equal(result.length, 2);
+  assert.equal(result[0].box.minY, 80);
+  assert.equal(result[1].box.minY, 420);
 });
 
 
