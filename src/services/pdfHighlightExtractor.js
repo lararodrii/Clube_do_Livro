@@ -83,12 +83,15 @@ export const KINDLE_COLOR_INFO = {
 };
 
 /**
- * Detecta se um pixel do Canvas é Marca-Texto Amarelo.
+ * Detecta se um pixel do Canvas é Marca-Texto Amarelo (incluindo tons pastéis e mais claros).
  */
 function isYellowHighlighterPixel(r, g, b) {
-  if (r < 155 || g < 145) return false;
-  if ((r - b) < 45 || (g - b) < 35) return false;
-  if (b > 155) return false;
+  if (r < 155 || g < 140) return false;
+  // Exige predominância cromática de amarelo sobre azul (rejeita branco/cinza onde r==g==b)
+  if ((r - b) < 28 || (g - b) < 20) return false;
+  // Permite azuis mais altos característicos de amarelo pastel/claro (com 40-50% de opacidade)
+  if (b > 218) return false;
+  // Vermelho e verde devem estar equilibrados (característica do amarelo)
   if (Math.abs(r - g) > 55) return false;
   return true;
 }
@@ -191,13 +194,28 @@ function splitItemIntoWords(item) {
 
 /**
  * Verifica sobreposição de uma palavra com uma caixa delimitadora.
+ * 
+ * Regras estritas contra sangria vertical (descenders) e invasão horizontal:
+ * 1. O centro vertical da palavra deve estar contido na altura da caixa (com margem milimétrica).
+ * 2. A sobreposição vertical deve ser de pelo menos 40% da altura da palavra (evita que 1-2px
+ *    de padding da linha acima atinjam palavras da linha abaixo).
+ * 3. A sobreposição horizontal deve ser de pelo menos 20% da largura da palavra (evita que
+ *    palavras não grifadas na mesma linha após o ponto final entrem).
  */
-export function wordOverlapsBox(wBox, bBox, tolerance = 0.15) {
+export function wordOverlapsBox(wBox, bBox, tolerance = 0.40) {
   const overlapX = Math.max(0, Math.min(wBox.x + wBox.width, bBox.x + bBox.width) - Math.max(wBox.x, bBox.x));
   const overlapY = Math.max(0, Math.min(wBox.y + wBox.height, bBox.y + bBox.height) - Math.max(wBox.y, bBox.y));
 
   if (overlapX <= 0 || overlapY <= 0) return false;
-  return (overlapX / wBox.width) > tolerance && (overlapY / wBox.height) > tolerance;
+
+  const wordCenterY = wBox.y + wBox.height / 2;
+  const marginY = Math.min(2.5, wBox.height * 0.2);
+  const isCenterInsideY = wordCenterY >= (bBox.y - marginY) && wordCenterY <= (bBox.y + bBox.height + marginY);
+
+  const overlapYRatio = overlapY / wBox.height;
+  const overlapXRatio = overlapX / wBox.width;
+
+  return isCenterInsideY && overlapYRatio >= tolerance && overlapXRatio > 0.20;
 }
 
 /**
@@ -463,8 +481,8 @@ async function extractFromPdf(file, onProgress = () => {}) {
         const areas = annotationAreas(annot, viewport);
         nativeAreas.push(...areas);
 
-        // Captura todas as palavras contidas nas áreas da anotação
-        const words = allWords.filter(w => areas.some(area => wordOverlapsBox(w.box, area, 0.15)));
+        // Captura todas as palavras contidas nas áreas da anotação (rigor contra sangria vertical)
+        const words = allWords.filter(w => areas.some(area => wordOverlapsBox(w.box, area, 0.40)));
         const parts = groupConsecutiveWords(words, pageNum, YELLOW_COLOR_INFO, 'pdf_annotation');
         const text = parts.map(p => p.text).join(' ').trim();
 
@@ -491,7 +509,7 @@ async function extractFromPdf(file, onProgress = () => {}) {
       // 4. Verificação visual via Canvas para trechos desenhados diretamente (StarNote / tablets)
       if (canvasData && ctx) {
         // Filtra palavras que já foram cobertas pelas anotações nativas
-        const remainingWords = allWords.filter(w => !nativeAreas.some(area => wordOverlapsBox(w.box, area, 0.05)));
+        const remainingWords = allWords.filter(w => !nativeAreas.some(area => wordOverlapsBox(w.box, area, 0.40)));
 
         if (remainingWords.length > 0) {
           const linesMap = new Map();

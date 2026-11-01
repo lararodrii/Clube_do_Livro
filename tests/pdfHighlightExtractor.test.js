@@ -6,7 +6,8 @@ import {
   groupConsecutiveWords,
   extractHighlightsFromFile,
   mergeCrossPageHighlights,
-  deduplicateHighlights
+  deduplicateHighlights,
+  wordOverlapsBox
 } from '../src/services/pdfHighlightExtractor.js';
 const palette={gray:{name:'Cinza'},yellow:{name:'Amarelo Revolucionário',hex:'#FDE047'}};
 const word=(text,x,y)=>({text,box:{x,y,width:text.length*6,height:12},color:palette.gray});
@@ -163,6 +164,177 @@ test('diferencia pausa na marcação e frase com ponto final de mudança contín
   assert.equal(merged[1].text, 'os sombrios anos 1930 na Europa, os repressivos anos 1970 na América Latina.');
 });
 
+test('wordOverlapsBox rejeita sangria vertical de descenders e invasão de linhas adjacentes', () => {
+  const line1Box = { x: 50, y: 100, width: 300, height: 16 };
+  const line1Word = { x: 55, y: 102, width: 40, height: 12 };
+  // Palavra da linha 1 deve sobrepor com folga
+  assert.equal(wordOverlapsBox(line1Word, line1Box, 0.40), true);
 
+  // Palavra da linha 2 cujo topo (y=114) encosta 2px na borda inferior do box da linha 1 (y=116)
+  const line2BleedingWord = { x: 55, y: 114, width: 40, height: 12 };
+  assert.equal(wordOverlapsBox(line2BleedingWord, line1Box, 0.40), false);
 
+  // Palavra da mesma linha mas fora da margem horizontal do grifo
+  const partialBox = { x: 50, y: 100, width: 150, height: 16 }; // termina em x=200
+  const afterWord = { x: 205, y: 102, width: 30, height: 12 };
+  assert.equal(wordOverlapsBox(afterWord, partialBox, 0.40), false);
+});
 
+test('elimina captura indevida da linha de baixo (caso "Os homens da organização...")', () => {
+  // Simula o caso real do usuário onde o grifo termina em "velhos amigos" no meio da linha 3
+  const areas = [
+    { x: 50, y: 100, width: 450, height: 16 }, // Linha 1 completa
+    { x: 50, y: 116, width: 450, height: 16 }, // Linha 2 completa
+    { x: 50, y: 132, width: 170, height: 16 }  // Linha 3 até "velhos amigos". (termina em x=220)
+  ];
+
+  // Palavras da página
+  const allWords = [
+    // Linha 1 (grifada)
+    { text: 'Os', box: { x: 50, y: 102, width: 20, height: 12 } },
+    { text: 'homens', box: { x: 75, y: 102, width: 50, height: 12 } },
+    { text: 'da', box: { x: 130, y: 102, width: 15, height: 12 } },
+    { text: 'organização', box: { x: 150, y: 102, width: 80, height: 12 } },
+    { text: 'não', box: { x: 235, y: 102, width: 25, height: 12 } },
+    { text: 'eram', box: { x: 265, y: 102, width: 35, height: 12 } },
+    { text: 'propriamente', box: { x: 305, y: 102, width: 90, height: 12 } },
+    { text: 'representativos', box: { x: 400, y: 102, width: 95, height: 12 } },
+    // Linha 2 (grifada)
+    { text: 'da', box: { x: 50, y: 118, width: 15, height: 12 } },
+    { text: 'sociedade', box: { x: 70, y: 118, width: 65, height: 12 } },
+    { text: 'norte-americana.', box: { x: 140, y: 118, width: 110, height: 12 } },
+    { text: 'Com', box: { x: 255, y: 118, width: 30, height: 12 } },
+    { text: 'efeito,', box: { x: 290, y: 118, width: 45, height: 12 } },
+    { text: 'eles', box: { x: 340, y: 118, width: 30, height: 12 } },
+    { text: 'seriam', box: { x: 375, y: 118, width: 45, height: 12 } },
+    { text: 'a', box: { x: 425, y: 118, width: 10, height: 12 } },
+    { text: 'própria', box: { x: 440, y: 118, width: 55, height: 12 } },
+    // Linha 3 (grifada até "amigos"., restante NÃO grifado)
+    { text: 'definição', box: { x: 50, y: 134, width: 60, height: 12 } },
+    { text: 'de', box: { x: 115, y: 134, width: 15, height: 12 } },
+    { text: 'uma', box: { x: 135, y: 134, width: 25, height: 12 } },
+    { text: 'rede', box: { x: 165, y: 134, width: 30, height: 12 } },
+    { text: 'de', box: { x: 200, y: 134, width: 15, height: 12 } },
+    // AQUI TERMINA O GRIFO REAL (x=220)
+    // Palavras não grifadas na mesma linha 3:
+    { text: 'A', box: { x: 230, y: 134, width: 10, height: 12 } },
+    { text: 'maioria', box: { x: 245, y: 134, width: 50, height: 12 } },
+    { text: 'dos', box: { x: 300, y: 134, width: 25, height: 12 } },
+    { text: 'membros', box: { x: 330, y: 134, width: 60, height: 12 } },
+    // Linha 4 (totalmente NÃO grifada, mas encosta 2px verticalmente na área 3):
+    { text: 'pobres', box: { x: 50, y: 146, width: 45, height: 12 } },
+    { text: 'e', box: { x: 100, y: 146, width: 10, height: 12 } },
+    { text: 'sem', box: { x: 115, y: 146, width: 25, height: 12 } },
+    { text: 'conexões', box: { x: 145, y: 146, width: 65, height: 12 } }
+  ];
+
+  const matchedWords = allWords.filter(w => areas.some(area => wordOverlapsBox(w.box, area, 0.40)));
+  const parts = groupConsecutiveWords(matchedWords, 38, palette.yellow, 'pdf_annotation');
+  const resultText = parts.map(p => p.text).join(' ').trim();
+
+  // Garante que o texto capturado contém APENAS a parte grifada
+  assert.equal(
+    resultText,
+    'Os homens da organização não eram propriamente representativos da sociedade norte-americana. Com efeito, eles seriam a própria definição de uma rede de'
+  );
+  // Garante categoricamente que as frases excedentes da linha 3 e linha 4 NÃO foram capturadas
+  assert.equal(resultText.includes('maioria'), false);
+  assert.equal(resultText.includes('membros'), false);
+  assert.equal(resultText.includes('pobres'), false);
+  assert.equal(resultText.includes('conexões'), false);
+});
+
+test('elimina captura indevida da linha de baixo (caso "Por outro lado, o sistema de convenções...")', () => {
+  // Simula o segundo caso real do usuário
+  const areas = [
+    { x: 50, y: 100, width: 500, height: 16 }, // Linha 1 inteira
+    { x: 50, y: 116, width: 350, height: 16 }  // Linha 2 até "candidatos perigosos." (termina em x=400)
+  ];
+
+  const allWords = [
+    // Linha 1 (grifada)
+    { text: 'Por', box: { x: 50, y: 102, width: 25, height: 12 } },
+    { text: 'outro', box: { x: 80, y: 102, width: 35, height: 12 } },
+    { text: 'lado,', box: { x: 120, y: 102, width: 35, height: 12 } },
+    { text: 'o', box: { x: 160, y: 102, width: 10, height: 12 } },
+    { text: 'sistema', box: { x: 175, y: 102, width: 50, height: 12 } },
+    { text: 'de', box: { x: 230, y: 102, width: 15, height: 12 } },
+    { text: 'convenções', box: { x: 250, y: 102, width: 75, height: 12 } },
+    { text: 'era', box: { x: 330, y: 102, width: 25, height: 12 } },
+    { text: 'um', box: { x: 360, y: 102, width: 20, height: 12 } },
+    { text: 'guardião', box: { x: 385, y: 102, width: 55, height: 12 } },
+    { text: 'eficiente,', box: { x: 445, y: 102, width: 60, height: 12 } },
+    { text: 'pois', box: { x: 510, y: 102, width: 30, height: 12 } },
+    // Linha 2 (grifada até "perigosos.")
+    { text: 'filtrava', box: { x: 50, y: 118, width: 50, height: 12 } },
+    { text: 'de', box: { x: 105, y: 118, width: 15, height: 12 } },
+    { text: 'maneira', box: { x: 125, y: 118, width: 50, height: 12 } },
+    { text: 'sistemática', box: { x: 180, y: 118, width: 75, height: 12 } },
+    { text: 'candidatos', box: { x: 260, y: 118, width: 65, height: 12 } },
+    { text: 'perigosos.', box: { x: 330, y: 118, width: 65, height: 12 } },
+    // Linha 2 (NÃO grifada após perigosos.)
+    { text: 'Os', box: { x: 410, y: 118, width: 20, height: 12 } },
+    { text: 'insiders', box: { x: 435, y: 118, width: 50, height: 12 } },
+    { text: 'partidários', box: { x: 490, y: 118, width: 65, height: 12 } },
+    // Linha 3 (NÃO grifada, topo em y=130 encosta 2px na área 2 em y=132)
+    { text: 'proviam', box: { x: 50, y: 130, width: 50, height: 12 } },
+    { text: 'o', box: { x: 105, y: 130, width: 10, height: 12 } },
+    { text: 'que', box: { x: 120, y: 130, width: 25, height: 12 } },
+    { text: 'os', box: { x: 150, y: 130, width: 15, height: 12 } },
+    { text: 'cientistas', box: { x: 170, y: 130, width: 60, height: 12 } },
+    { text: 'políticos', box: { x: 235, y: 130, width: 55, height: 12 } },
+    { text: 'chamam', box: { x: 295, y: 130, width: 50, height: 12 } },
+    { text: 'de', box: { x: 350, y: 130, width: 15, height: 12 } },
+    { text: '“revisão', box: { x: 370, y: 130, width: 55, height: 12 } }
+  ];
+
+  const matchedWords = allWords.filter(w => areas.some(area => wordOverlapsBox(w.box, area, 0.40)));
+  const parts = groupConsecutiveWords(matchedWords, 38, palette.yellow, 'pdf_annotation');
+  const resultText = parts.map(p => p.text).join(' ').trim();
+
+  assert.equal(
+    resultText,
+    'Por outro lado, o sistema de convenções era um guardião eficiente, pois filtrava de maneira sistemática candidatos perigosos.'
+  );
+  assert.equal(resultText.includes('insiders'), false);
+  assert.equal(resultText.includes('proviam'), false);
+  assert.equal(resultText.includes('revisão'), false);
+});
+
+test('detector de amarelo no canvas suporta tons pastéis e amarelo claro sem confundir com branco ou cinza', () => {
+  const box = { x: 0, y: 0, width: 50, height: 20 };
+
+  // 1. Amarelo pastel / mais claro (ex: b=180, r=255, g=248)
+  const pastelData = new Uint8ClampedArray(50 * 20 * 4);
+  for (let i = 0; i < pastelData.length; i += 4) {
+    pastelData[i] = 255;     // R
+    pastelData[i + 1] = 248; // G
+    pastelData[i + 2] = 180; // B
+    pastelData[i + 3] = 255; // A
+  }
+  assert.equal(isWordYellowOnCanvas(box, pastelData, 50, 20), true);
+
+  // 2. Fundo branco do PDF (r=255, g=255, b=255)
+  const whiteData = new Uint8ClampedArray(50 * 20 * 4).fill(255);
+  assert.equal(isWordYellowOnCanvas(box, whiteData, 50, 20), false);
+
+  // 3. Fundo papel creme/antigo (r=250, g=248, b=238)
+  const creamData = new Uint8ClampedArray(50 * 20 * 4);
+  for (let i = 0; i < creamData.length; i += 4) {
+    creamData[i] = 250;
+    creamData[i + 1] = 248;
+    creamData[i + 2] = 238;
+    creamData[i + 3] = 255;
+  }
+  assert.equal(isWordYellowOnCanvas(box, creamData, 50, 20), false);
+
+  // 4. Cinza (r=200, g=200, b=200)
+  const grayData = new Uint8ClampedArray(50 * 20 * 4);
+  for (let i = 0; i < grayData.length; i += 4) {
+    grayData[i] = 200;
+    grayData[i + 1] = 200;
+    grayData[i + 2] = 200;
+    grayData[i + 3] = 255;
+  }
+  assert.equal(isWordYellowOnCanvas(box, grayData, 50, 20), false);
+});
