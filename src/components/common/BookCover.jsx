@@ -1,5 +1,16 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import ComradeCat from './ComradeCat';
+
+// Resolve URL segura e resiliente da capa
+function resolveSafeCoverUrl(src, title) {
+  const isDemocracias = (title || '').toLowerCase().includes('democracias morrem');
+  if (isDemocracias) {
+    if (!src || src.includes('goodreads.com') || src.includes('images-amazon.com')) {
+      return '/covers/como-as-democracias-morrem.jpg';
+    }
+  }
+  return src || '';
+}
 
 export default function BookCover({
   src,
@@ -12,8 +23,18 @@ export default function BookCover({
   badge = null,
   forceRealistic3D = false
 }) {
+  const initialResolved = resolveSafeCoverUrl(src, title);
+  const [currentSrc, setCurrentSrc] = useState(initialResolved);
   const [hasError, setHasError] = useState(false);
-  const [isLoading, setIsLoading] = useState(!forceRealistic3D);
+  const [isLoading, setIsLoading] = useState(!forceRealistic3D && !!initialResolved);
+
+  // Sincroniza dinamicamente caso a prop src ou title mudem
+  useEffect(() => {
+    const resolved = resolveSafeCoverUrl(src, title);
+    setCurrentSrc(resolved);
+    setHasError(false);
+    setIsLoading(!forceRealistic3D && !!resolved);
+  }, [src, title, forceRealistic3D]);
 
   // Estados de inclinação 3D interativa (Tilt ao cursor) e brilho dinâmico
   const [tilt, setTilt] = useState({ x: 3, y: -14 });
@@ -29,7 +50,7 @@ export default function BookCover({
     xl: 'w-52 h-76 sm:w-72 sm:h-104 max-w-[240px] sm:max-w-[280px]'
   };
 
-  const show3DMockup = forceRealistic3D || hasError || !src;
+  const show3DMockup = forceRealistic3D || hasError || !currentSrc;
 
   // Cálculo da espessura física da lombada proporcional às páginas da obra
   const numericPages = Number(pages) || 250;
@@ -168,13 +189,20 @@ export default function BookCover({
 
           {/* Imagem da Capa */}
           <img
-            src={src}
+            src={currentSrc}
             alt={alt || title}
             loading="lazy"
+            referrerPolicy="no-referrer"
             onLoad={() => setIsLoading(false)}
             onError={() => {
-              setHasError(true);
-              setIsLoading(false);
+              const isDemocracias = (title || '').toLowerCase().includes('democracias morrem');
+              if (isDemocracias && currentSrc !== '/covers/como-as-democracias-morrem.jpg') {
+                setCurrentSrc('/covers/como-as-democracias-morrem.jpg');
+                setIsLoading(true);
+              } else {
+                setHasError(true);
+                setIsLoading(false);
+              }
             }}
             className={`w-full h-full object-cover transition-opacity duration-300 ${
               isLoading ? 'opacity-0' : 'opacity-100'

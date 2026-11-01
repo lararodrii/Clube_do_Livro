@@ -152,10 +152,30 @@ export function ClubProvider({ children }) {
               }
             }
 
-            const cloudHighlights = cloud.highlights || prev.highlights || INITIAL_HIGHLIGHTS;
-            const cloudReading = cloud.currentReading || prev.currentReading || INITIAL_CURRENT_READING;
+            let cloudReading = cloud.currentReading || prev.currentReading || INITIAL_CURRENT_READING;
+            const isDemocraciasReading = (cloudReading?.title || '').toLowerCase().includes('democracias morrem');
+            const isBrokenCover = !cloudReading?.coverUrl || 
+              cloudReading.coverUrl.includes('goodreads.com') || 
+              cloudReading.coverUrl.includes('images-amazon.com');
+
+            if (isDemocraciasReading && isBrokenCover) {
+              cloudReading = {
+                ...cloudReading,
+                coverUrl: '/covers/como-as-democracias-morrem.jpg'
+              };
+              setDoc(docRef, { currentReading: cloudReading, updatedAt: new Date().toISOString() }, { merge: true }).catch(() => {});
+            }
+
+            const rawArchive = cloud.archive || prev.archive || INITIAL_ARCHIVE;
+            const cloudArchive = (Array.isArray(rawArchive) ? rawArchive : []).map(b => {
+              if ((b?.title || '').toLowerCase().includes('democracias morrem') &&
+                  (!b.coverUrl || b.coverUrl.includes('goodreads.com') || b.coverUrl.includes('images-amazon.com'))) {
+                return { ...b, coverUrl: '/covers/como-as-democracias-morrem.jpg' };
+              }
+              return b;
+            });
+
             const cloudMeeting = cloud.meeting || prev.meeting || INITIAL_MEETING;
-            const cloudArchive = cloud.archive || prev.archive || INITIAL_ARCHIVE;
 
             const { consensusQuotes, updatedArchive } = syncConsensusState({
               highlights: cloudHighlights,
