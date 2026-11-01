@@ -77,6 +77,12 @@ export const HIGHLIGHT_PALETTE = {
     hex: '#FDE047',
     bgClass: 'bg-yellow-300/40 border-yellow-400 text-yellow-950'
   },
+  blue: {
+    id: 'blue',
+    name: 'Azul Céu',
+    hex: '#38BDF8',
+    bgClass: 'bg-sky-300/40 border-sky-400 text-sky-950'
+  },
   pink: {
     id: 'pink',
     name: 'Rosa Crítico',
@@ -183,10 +189,16 @@ export function matchHighlighterColor(r, g, b) {
   if (delta < 18) return null;
   if (r >= 235 && g >= 235 && b >= 235 && delta < 22) return null;
 
-  // 3. Rejeição estrita de AZUL de links e rodapés (ex: #1a0dab, #0000ff, links de Le Livros)
-  // Em links azuis, o canal vermelho é baixo (r < 135). Em roxo/lilás, o vermelho é elevado (r >= 135).
-  if (b > r + 25 && b > g + 25 && r < 135) return null;
-  if (b > 120 && r < 120) return null;
+  // 3. Rejeição estrita de AZUL escuro de links e rodapés (ex: #1a0dab, #0000ff, #0066cc, links de Le Livros):
+  // Links de páginas web e PDFs possuem baixa luminosidade (luminance < 145), canais vermelho e verde escuros (r < 90 && g < 140)
+  // ou alta dominância escura sem canais claros equilibrados ((r + g) < 210).
+  if (b > r + 20 && b > g + 10) {
+    if (luminance < 145) return null;
+    if (r < 90 && g < 140) return null;
+    if ((r + g) < 210) return null;
+  }
+  // Bloqueio de azul puro ou links escuros com canal vermelho/verde muito rebaixado
+  if (b > 120 && (r < 75 || g < 75) && luminance < 145) return null;
 
   // 4. Reconhecimento estrito da paleta de marca-texto permitida:
 
@@ -215,6 +227,13 @@ export function matchHighlighterColor(r, g, b) {
   // E) ROXO / LILÁS (#d8b4fe, #c084fc - azul e vermelho altos com verde rebaixado)
   if (b >= 150 && r >= 135 && g <= Math.min(r, b) - 20 && Math.abs(r - b) <= 65) {
     return HIGHLIGHT_PALETTE.purple;
+  }
+
+  // F) AZUL PASTEL / AZUL CÉU / CIANO CLARO (#7dd3fc, #38bdf8, #bae6fd, #a5f3fc, #67e8f9)
+  // Alta luminosidade (>= 145), azul elevado (b >= 175), verde balanceado (g >= 140 e g >= r - 25)
+  // e canais claros bem distribuídos ((r + g) >= 200). Diferencia-se de roxo porque no azul o verde é elevado.
+  if (b >= 175 && g >= 140 && luminance >= 145 && (r + g) >= 200 && (b - r) >= 20 && g >= (r - 25)) {
+    return HIGHLIGHT_PALETTE.blue;
   }
 
   return null;
@@ -267,6 +286,7 @@ export function getWordHighlighterOnCanvas(wordBox, data, canvasW, canvasH, isSh
   let totalSampled = 0;
   const colorCounts = {
     yellow: 0,
+    blue: 0,
     pink: 0,
     green: 0,
     orange: 0,
@@ -1003,6 +1023,8 @@ async function extractFromKindle(file, onProgress = () => {}, options = {}) {
       const hLower = heading.toLowerCase();
       if (hLower.includes('amarel') || hLower.includes('yellow')) {
         itemColor = HIGHLIGHT_PALETTE.yellow;
+      } else if (hLower.includes('azul') || hLower.includes('blue') || hLower.includes('cian') || hLower.includes('cyan')) {
+        itemColor = HIGHLIGHT_PALETTE.blue;
       } else if (hLower.includes('rosa') || hLower.includes('pink') || hLower.includes('magenta')) {
         itemColor = HIGHLIGHT_PALETTE.pink;
       } else if (hLower.includes('verd') || hLower.includes('green')) {
@@ -1337,7 +1359,11 @@ export function shouldMergeAcrossPages(prevHl, nextHl) {
     return false;
   }
 
-  if (prevHl.color?.name && nextHl.color?.name) {
+  if (prevHl.color?.id && nextHl.color?.id) {
+    if (prevHl.color.id !== nextHl.color.id) {
+      return false;
+    }
+  } else if (prevHl.color?.name && nextHl.color?.name) {
     const isYellow1 = prevHl.color.name.toLowerCase().includes('amarel');
     const isYellow2 = nextHl.color.name.toLowerCase().includes('amarel');
     if (isYellow1 !== isYellow2) {

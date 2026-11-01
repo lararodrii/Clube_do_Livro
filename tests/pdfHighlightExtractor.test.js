@@ -347,7 +347,7 @@ test('detector de amarelo no canvas suporta tons pastéis e amarelo claro sem co
   assert.equal(isWordYellowOnCanvas(box, grayData, 50, 20), false);
 });
 
-test('matchHighlighterColor aceita paleta de marca-texto permitida e rejeita azuis de links, pretos e cinzas', () => {
+test('matchHighlighterColor aceita paleta de marca-texto permitida (incluindo azul/ciano) e rejeita azuis de links, pretos e cinzas', () => {
   // Amarelo (#fef08a)
   assert.equal(matchHighlighterColor(254, 240, 138)?.id, 'yellow');
   // Laranja (#fdba74)
@@ -361,6 +361,13 @@ test('matchHighlighterColor aceita paleta de marca-texto permitida e rejeita azu
   // Roxo / Lilás (#d8b4fe)
   assert.equal(matchHighlighterColor(216, 180, 254)?.id, 'purple');
 
+  // Azul Pastel / Azul Céu / Ciano Claro (marca-texto digital em tablets)
+  assert.equal(matchHighlighterColor(125, 211, 252)?.id, 'blue'); // #7dd3fc
+  assert.equal(matchHighlighterColor(186, 230, 253)?.id, 'blue'); // #bae6fd
+  assert.equal(matchHighlighterColor(103, 232, 249)?.id, 'blue'); // #67e8f9
+  assert.equal(matchHighlighterColor(165, 243, 252)?.id, 'blue'); // #a5f3fc
+  assert.equal(matchHighlighterColor(56, 189, 248)?.id, 'blue');  // #38bdf8
+
   // REJEIÇÕES ESTRITAS:
   // 1. Azul escuro padrão de links (#1a0dab)
   assert.equal(matchHighlighterColor(26, 13, 171), null);
@@ -368,18 +375,20 @@ test('matchHighlighterColor aceita paleta de marca-texto permitida e rejeita azu
   assert.equal(matchHighlighterColor(0, 0, 255), null);
   // 3. Azul de link comum (#0066cc)
   assert.equal(matchHighlighterColor(0, 102, 204), null);
-  // 4. Preto de texto comum
+  // 4. Azul de link web clássico (#2563eb)
+  assert.equal(matchHighlighterColor(37, 99, 235), null);
+  // 5. Preto de texto comum
   assert.equal(matchHighlighterColor(20, 20, 20), null);
-  // 5. Cinza escuro
+  // 6. Cinza escuro
   assert.equal(matchHighlighterColor(80, 80, 80), null);
-  // 6. Cinza médio
+  // 7. Cinza médio
   assert.equal(matchHighlighterColor(160, 160, 160), null);
-  // 7. Branco do papel
+  // 8. Branco do papel
   assert.equal(matchHighlighterColor(255, 255, 255), null);
 });
 
 test('parseAnnotationColor descarta anotações azuis de links, pretas ou cinzas e mapeia paleta de destaque', () => {
-  // Anotação azul (links do Le Livros ou rodapé) deve ser completamente descartada
+  // Anotação azul escura (links do Le Livros ou rodapé) deve ser completamente descartada
   assert.equal(parseAnnotationColor([0, 0, 1], 'Underline'), null);
   assert.equal(parseAnnotationColor([0.1, 0.1, 0.8], 'Highlight'), null);
 
@@ -389,6 +398,8 @@ test('parseAnnotationColor descarta anotações azuis de links, pretas ou cinzas
 
   // Anotações da paleta de marca-texto devem ser aceitas com seus objetos de cor
   assert.equal(parseAnnotationColor([1, 1, 0], 'Highlight')?.id, 'yellow');
+  assert.equal(parseAnnotationColor([0.6, 0.8, 1.0], 'Highlight')?.id, 'blue'); // Azul Céu / Pastel
+  assert.equal(parseAnnotationColor([0.4, 0.7, 1.0], 'Highlight')?.id, 'blue'); // Azul Tablet
   assert.equal(parseAnnotationColor([0.96, 0.45, 0.71], 'Highlight')?.id, 'pink');
   assert.equal(parseAnnotationColor([0.53, 0.94, 0.67], 'Highlight')?.id, 'green');
   assert.equal(parseAnnotationColor([0.99, 0.73, 0.45], 'Highlight')?.id, 'orange');
