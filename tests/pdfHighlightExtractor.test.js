@@ -138,5 +138,31 @@ test('elimina fragmento quando o trecho completo já foi extraído na mesma pág
   assert.equal(deduped[0].text, 'Por que as mulheres e minorias étnicas são representadas em maior número em alguns países? Existe');
 });
 
+test('diferencia pausa na marcação e frase com ponto final de mudança contínua (caso pág. 8 e 9)',()=>{
+  const h1 = {
+    id: 'hl-p8',
+    page: 8,
+    text: 'Entender o modo com que regimes democráticos tradicionais e consolidados são enfraquecidos de modo "legal", por dentro, é fundamental.',
+    color: palette.yellow,
+    source: 'pdf_annotation',
+    unhighlightedWordsBelowCount: 25 // texto do prefácio abaixo antes do fim da página
+  };
+  const h2 = {
+    id: 'hl-p9',
+    page: 9,
+    text: 'os sombrios anos 1930 na Europa, os repressivos anos 1970 na América Latina.',
+    color: palette.yellow,
+    source: 'pdf_annotation',
+    unhighlightedWordsAboveCount: 30 // título Introdução e texto acima antes do início do grifo
+  };
+  const merged = mergeCrossPageHighlights([h1, h2]);
+  assert.equal(merged.length, 2);
+  assert.equal(merged[0].page, 8);
+  assert.equal(merged[0].text, 'Entender o modo com que regimes democráticos tradicionais e consolidados são enfraquecidos de modo "legal", por dentro, é fundamental.');
+  assert.equal(merged[1].page, 9);
+  assert.equal(merged[1].text, 'os sombrios anos 1930 na Europa, os repressivos anos 1970 na América Latina.');
+});
+
+
 
 

@@ -560,6 +560,25 @@ async function extractFromPdf(file, onProgress = () => {}) {
 
       // Deduplica grifos na mesma página (remove duplicatas puras e sobreposições)
       const dedupedPageHighlights = deduplicateHighlights(pageHighlights);
+
+      // Avalia se há palavras de texto não grifadas antes ou depois de cada grifo na página (detecção de pausa na marcação)
+      for (const hl of dedupedPageHighlights) {
+        if (hl.box && allWords.length) {
+          const wordsBelow = allWords.filter(w => {
+            if (w.box.y <= hl.box.maxY + 6) return false;
+            if (/^\d{1,4}$/.test(w.text.trim())) return false; // ignora número isolado de página no rodapé
+            return true;
+          });
+          const wordsAbove = allWords.filter(w => {
+            if (w.box.y + w.box.height >= hl.box.minY - 6) return false;
+            if (/^\d{1,4}$/.test(w.text.trim())) return false; // ignora número isolado de página no topo
+            return true;
+          });
+          hl.unhighlightedWordsBelowCount = wordsBelow.length;
+          hl.unhighlightedWordsAboveCount = wordsAbove.length;
+        }
+      }
+
       dedupedPageHighlights.sort((a, b) => (a.box?.minY ?? 0) - (b.box?.minY ?? 0));
       allExtractedHighlights.push(...dedupedPageHighlights);
 
@@ -850,11 +869,28 @@ export function isTextContinuousAcrossPages(textA, textB, hlA = {}, hlB = {}) {
     return true;
   }
 
-  // 2. Início de B com letra minúscula: em livros diagramados, uma nova frase nunca inicia com minúscula
-  const bWithoutLeadingQuotes = cleanB.replace(/^["'“‘«(\s]+/, '');
-  const startsWithLowerB = /^[a-záàâãéèêíïóôõöúçñ]/.test(bWithoutLeadingQuotes);
-  if (startsWithLowerB) {
-    return true;
+  // 2. Verifica se cleanA termina com pontuação terminal (. ! ?)
+  const endsWithTerminalPunct = /[.!?…]["'”’»)]*$/.test(cleanA);
+  let isAbbreviation = false;
+  if (cleanA.endsWith('.')) {
+    const wordsA = cleanA.split(/\s+/);
+    const lastWordA = wordsA[wordsA.length - 1].replace(/^[("“‘«]+|[.,;:!?)"”’»]+$/g, '').toLowerCase();
+    if (COMMON_ABBREVIATIONS.has(lastWordA)) {
+      isAbbreviation = true;
+    }
+  }
+
+  // Regra Fundamental: Se o trecho anterior termina com ponto final/interrogação/exclamação legítimo:
+  // É o término de uma sentença completa. Não deve ser fundido com o início de outro trecho da página seguinte!
+  if (endsWithTerminalPunct && !isAbbreviation) {
+    // Exceção estrita: se ambos compartilharem exatamente a mesma anotação e colarem na margem sem palavras intermediárias
+    if (hlA.annotDate && hlB.annotDate && hlA.annotDate === hlB.annotDate) {
+      const noGap = (hlA.unhighlightedWordsBelowCount ?? 0) <= 2 && (hlB.unhighlightedWordsAboveCount ?? 0) <= 2;
+      if (noGap) {
+        return true;
+      }
+    }
+    return false;
   }
 
   // 3. Pontuação não terminal no final de A (vírgula, dois pontos, ponto e vírgula, travessão)
@@ -871,26 +907,13 @@ export function isTextContinuousAcrossPages(textA, textB, hlA = {}, hlB = {}) {
   }
 
   // 5. Terminação com abreviação comum com ponto (ex: "art.", "pág.")
-  if (cleanA.endsWith('.')) {
-    const wordBeforeDot = lastWordA.replace(/\.$/, '');
-    if (COMMON_ABBREVIATIONS.has(wordBeforeDot)) {
-      return true;
-    }
-  }
-
-  // 6. Terminação sem pontuação terminal (. ! ?): a frase não terminou na página A
-  const endsWithTerminalPunct = /[.!?…]["'”’»)]*$/.test(cleanA);
-  if (!endsWithTerminalPunct) {
+  if (isAbbreviation) {
     return true;
   }
 
-  // 7. Mesmo timestamp exato de anotação no PDF (mesmo gesto contínuo de arrastar)
-  if (hlA.annotDate && hlB.annotDate && hlA.annotDate === hlB.annotDate) {
-    const isABottom = !hlA.viewportHeight || (hlA.box?.maxY / hlA.viewportHeight) > 0.60;
-    const isBTop = !hlB.viewportHeight || (hlB.box?.minY / hlB.viewportHeight) < 0.40;
-    if (isABottom && isBTop) {
-      return true;
-    }
+  // 6. Terminação sem pontuação terminal (. ! ?) - ex: "Existe" no rodapé da página 5
+  if (!endsWithTerminalPunct) {
+    return true;
   }
 
   return false;
@@ -918,6 +941,18 @@ export function shouldMergeAcrossPages(prevHl, nextHl) {
     if (isYellow1 !== isYellow2) {
       return false;
     }
+  }
+
+  // Se houver uma pausa clara na marcação antes do rodapé da página anterior:
+  // (há mais de 6 palavras de texto não grifado abaixo do grifo no fim da página)
+  if (prevHl.unhighlightedWordsBelowCount !== undefined && prevHl.unhighlightedWordsBelowCount > 6) {
+    return false;
+  }
+
+  // Se houver uma pausa clara na marcação antes do início do grifo na página seguinte:
+  // (há mais de 6 palavras de texto não grifado acima do grifo no início da página)
+  if (nextHl.unhighlightedWordsAboveCount !== undefined && nextHl.unhighlightedWordsAboveCount > 6) {
+    return false;
   }
 
   return isTextContinuousAcrossPages(prevHl.text, nextHl.text, prevHl, nextHl);
@@ -975,7 +1010,9 @@ export function mergeTwoHighlights(h1, h2) {
     box: {
       minY: h1.box?.minY ?? 0,
       maxY: h2.box?.maxY ?? h1.box?.maxY ?? 0
-    }
+    },
+    unhighlightedWordsAboveCount: h1.unhighlightedWordsAboveCount,
+    unhighlightedWordsBelowCount: h2.unhighlightedWordsBelowCount
   };
 }
 
