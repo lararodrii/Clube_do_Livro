@@ -828,10 +828,6 @@ export function ClubProvider({ children }) {
     }
 
     const nominatorId = effectiveActiveMemberId;
-    const maxVotes = data.ballot?.maxVotesPerMember || 3;
-    const totalVotesByMember = currentBooks.reduce((acc, book) => {
-      return acc + ((book.votes || []).includes(nominatorId) ? 1 : 0);
-    }, 0);
 
     const newBook = {
       id: `ballot-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
@@ -843,7 +839,7 @@ export function ClubProvider({ children }) {
       genre: genre || 'Literatura',
       nominatedBy: nominatorId,
       nominationReason: nominationReason?.trim() || 'Indicação especial para o Exército da Paty!',
-      votes: totalVotesByMember < maxVotes ? [nominatorId] : []
+      votes: []
     };
 
     // Deduplica preventivamente ao montar a nova lista
