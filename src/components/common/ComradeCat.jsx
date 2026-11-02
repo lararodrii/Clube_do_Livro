@@ -21,7 +21,8 @@ export default function ComradeCat({
   showBubble = true,
   customQuote = null,
   className = '',
-  bubblePosition = 'right' // 'right' | 'top' | 'left'
+  bubblePosition = 'right', // 'right' | 'top' | 'left'
+  compact = false
 }) {
   const [quoteIndex, setQuoteIndex] = useState(0);
   const [hasInteracted, setHasInteracted] = useState(false);
@@ -81,13 +82,14 @@ export default function ComradeCat({
 
   // Dimensões do container SVG com responsividade Mobile-First
   const sizeMap = {
-    sm: { sizeClass: "w-11 h-11 sm:w-16 sm:h-16 shrink-0", viewBox: "0 0 160 160" },
+    sm: { sizeClass: "w-10 h-10 sm:w-12 sm:h-12 xl:w-14 xl:h-14 shrink-0", viewBox: "0 0 160 160" },
     md: { sizeClass: "w-14 h-14 sm:w-20 sm:h-20 shrink-0", viewBox: "0 0 160 160" },
     lg: { sizeClass: "w-36 h-36 sm:w-48 sm:h-48 shrink-0", viewBox: "0 0 160 160" },
     xl: { sizeClass: "w-48 h-48 sm:w-60 sm:h-60 shrink-0", viewBox: "0 0 160 160" },
   };
 
   const { sizeClass, viewBox } = sizeMap[size] || sizeMap.md;
+  const isCompactBubble = compact || size === 'sm';
 
   // Renderização SVG detalhada de acordo com a pose
   const renderCatPose = () => {
@@ -454,7 +456,7 @@ export default function ComradeCat({
       bubblePosition === 'top' 
         ? 'flex flex-col-reverse items-center justify-center gap-2.5' 
         : 'inline-flex items-center'
-    } select-none z-30 pointer-events-auto max-w-full ${className}`}>
+    } select-none z-20 pointer-events-auto max-w-full min-w-0 ${className}`}>
       
       {/* Container SVG do Mascote */}
       <div 
@@ -479,31 +481,52 @@ export default function ComradeCat({
         <div 
           onClick={handleNextAdvice}
           title="Clique para outro conselho revolucionário"
-          className={`cursor-pointer select-none z-30 pointer-events-auto transition-all duration-200 hover:scale-102 shrink-0 ${
+          className={`cursor-pointer select-none z-20 pointer-events-auto transition-all duration-200 hover:scale-102 min-w-0 ${
             bubblePosition === 'top' 
               ? 'mb-1' 
               : bubblePosition === 'left'
-              ? 'mr-2 sm:mr-3'
-              : 'ml-2 sm:ml-3'
+              ? 'mr-1.5 sm:mr-2.5'
+              : 'ml-1.5 sm:ml-2.5'
           }`}
         >
-          <div className="relative bg-theme-card text-theme-primary border-2 border-theme-border shadow-[3px_3px_0px_var(--shadow-color)] px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-xl min-w-[200px] sm:min-w-[250px] max-w-[280px] sm:max-w-md cursor-pointer select-none">
+          <div className={`relative bg-theme-card text-theme-primary border-2 border-theme-border shadow-[2px_2px_0px_var(--shadow-color)] rounded-xl cursor-pointer select-none ${
+            isCompactBubble
+              ? 'px-2.5 py-1 sm:px-3 sm:py-1.5 w-[180px] sm:w-[205px] xl:w-[235px] max-w-full'
+              : 'px-3 py-1.5 sm:px-3.5 sm:py-2 min-w-[200px] sm:min-w-[240px] max-w-[260px] sm:max-w-sm'
+          }`}>
             {/* Ponta da fala do balão */}
             {bubblePosition === 'right' && (
-              <div className="absolute top-1/2 -left-2 -translate-y-1/2 w-0 h-0 border-t-[6px] border-t-transparent border-b-[6px] border-b-transparent border-r-[8px] border-r-theme-border" />
+              <div className="absolute top-1/2 -left-2 -translate-y-1/2 w-0 h-0 border-t-[5px] border-t-transparent border-b-[5px] border-b-transparent border-r-[7px] border-r-theme-border" />
             )}
             {bubblePosition === 'top' && (
               <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-0 h-0 border-l-[6px] border-l-transparent border-r-[6px] border-r-transparent border-t-[8px] border-t-theme-border" />
             )}
             
-            <div className="flex items-start gap-1.5 sm:gap-2">
-              <span className="text-theme-red text-xs font-black shrink-0 mt-0.5">★</span>
+            <div className="flex items-start gap-1 sm:gap-1.5">
+              <span className="text-theme-red text-[10px] sm:text-xs font-black shrink-0 mt-0.5">★</span>
               <div className="min-w-0 flex-1">
-                <p className="font-serif italic font-extrabold text-xs sm:text-sm leading-snug break-normal text-theme-primary">
-                  "{displayedText}"
-                  {isTyping && <span className="inline-block text-theme-red font-mono animate-pulse ml-0.5">▌</span>}
-                </p>
-                <span className="text-[8px] sm:text-[9px] uppercase font-mono font-black text-theme-red tracking-wider block mt-0.5 hover:underline whitespace-nowrap">
+                {/* Grid sobreposto: reserva o espaço exato da frase completa para não expandir gradualmente nem empurrar botões */}
+                <div className="grid">
+                  <p
+                    aria-hidden="true"
+                    className={`col-start-1 row-start-1 invisible pointer-events-none select-none font-serif italic font-extrabold break-words ${
+                      isCompactBubble ? 'text-[10px] sm:text-[11px] leading-tight' : 'text-xs sm:text-sm leading-snug'
+                    }`}
+                  >
+                    "{currentQuote}"
+                  </p>
+                  <p
+                    className={`col-start-1 row-start-1 font-serif italic font-extrabold break-words text-theme-primary ${
+                      isCompactBubble ? 'text-[10px] sm:text-[11px] leading-tight' : 'text-xs sm:text-sm leading-snug'
+                    }`}
+                  >
+                    "{displayedText}"
+                    {isTyping && <span className="inline-block text-theme-red font-mono animate-pulse ml-0.5">▌</span>}
+                  </p>
+                </div>
+                <span className={`uppercase font-mono font-black text-theme-red tracking-wider block mt-0.5 hover:underline truncate ${
+                  isCompactBubble ? 'text-[7.5px] sm:text-[8px]' : 'text-[8px] sm:text-[9px]'
+                }`}>
                   ★ CLIQUE P/ OUTRO CONSELHO 🐾
                 </span>
               </div>

@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
 import confetti from 'canvas-confetti';
 import { db } from '../services/firebase';
 import { doc, onSnapshot, setDoc } from 'firebase/firestore';
@@ -29,6 +29,23 @@ const ClubContext = createContext(null);
 
 const CLUBE_COLLECTION = 'clube';
 const CLUBE_DOC_ID = 'clube_dados';
+
+// Remove recursivamente chaves com valor undefined para evitar falhas no setDoc do Firestore
+function stripUndefined(value) {
+  if (Array.isArray(value)) {
+    return value.map(v => (v === undefined ? null : stripUndefined(v)));
+  }
+  if (value !== null && typeof value === 'object' && !(value instanceof Date)) {
+    const clean = {};
+    Object.entries(value).forEach(([k, v]) => {
+      if (v !== undefined) {
+        clean[k] = stripUndefined(v);
+      }
+    });
+    return clean;
+  }
+  return value;
+}
 
 // Chuva de estrelas vermelhas e douradas (★) com efeito de celebração revolucionária
 export const triggerComradeConfetti = (particleCount = 85) => {
@@ -118,6 +135,7 @@ export function ClubProvider({ children }) {
   }, [userProfile?.memberId]);
 
   const [toast, setToast] = useState(null);
+  const isCloudLoadedRef = useRef(false);
 
   // Helper para exibir toasts informativos
   const showToast = (message, type = 'success') => {
@@ -194,6 +212,7 @@ export function ClubProvider({ children }) {
               console.warn('Erro ao sincronizar consensos no snapshot:', syncErr);
             }
 
+            isCloudLoadedRef.current = true;
             setData(prev => ({
               ...prev,
               members: cloud.members || prev.members || INITIAL_MEMBERS,
@@ -206,6 +225,7 @@ export function ClubProvider({ children }) {
               highlights: Array.isArray(cloud.highlights) ? cloudHighlights : (prev.highlights || cloudHighlights)
             }));
           } else {
+            isCloudLoadedRef.current = true;
             // Se o documento no Firestore ainda estiver vazio no primeiro acesso,
             // preenche automaticamente com os dados padrão atuais para que a aplicação não quebre.
             const defaultInitialPayload = {
@@ -239,7 +259,8 @@ export function ClubProvider({ children }) {
   const syncToCloud = async (updatedFields) => {
     try {
       const docRef = doc(db, CLUBE_COLLECTION, CLUBE_DOC_ID);
-      await setDoc(docRef, { ...updatedFields, updatedAt: new Date().toISOString() }, { merge: true });
+      const cleanData = stripUndefined({ ...updatedFields, updatedAt: new Date().toISOString() });
+      await setDoc(docRef, cleanData, { merge: true });
       return true;
     } catch (err) {
       console.warn('Erro ao sincronizar com Firestore:', err);
@@ -278,13 +299,13 @@ export function ClubProvider({ children }) {
 
   // === EDIÇÃO DE PERFIL DO MEMBRO ===
   const updateMemberProfile = (memberId, updatedFields) => {
-    if (!currentUser || !isAuthenticated || !userProfile?.memberId) {
+    if (!currentUser || !isAuthenticated) {
       openAuthModal('Faça login com seu perfil de camarada para editar suas informações!', 'login');
       return;
     }
 
     // Só é permitido editar o próprio perfil vinculado à conta autenticada
-    const targetMemberId = userProfile.memberId;
+    const targetMemberId = effectiveActiveMemberId;
 
     const updatedMembers = data.members.map(m => {
       if (m.id === targetMemberId) {
@@ -298,6 +319,17 @@ export function ClubProvider({ children }) {
 
     setData(prev => ({ ...prev, members: updatedMembers }));
     syncToCloud({ members: updatedMembers });
+
+    // Também mantém o documento users/{uid} sincronizado quando houver alterações de nome/cargo/avatar
+    if (currentUser?.uid) {
+      const userDocUpdates = stripUndefined({
+        ...(updatedFields.name !== undefined ? { memberName: updatedFields.name } : {}),
+        ...(updatedFields.roleBadge !== undefined ? { memberRole: updatedFields.roleBadge } : {}),
+        ...(updatedFields.avatar !== undefined ? { memberAvatar: updatedFields.avatar } : {}),
+        updatedAt: new Date().toISOString()
+      });
+      setDoc(doc(db, 'users', currentUser.uid), userDocUpdates, { merge: true }).catch(() => {});
+    }
 
     triggerComradeConfetti(45);
     showToast('Seu perfil foi atualizado com sucesso! 🐾★', 'success');
@@ -315,8 +347,24 @@ export function ClubProvider({ children }) {
       ...meetingData
     };
 
-    setData(prev => ({ ...prev, meeting: updatedMeeting }));
-    syncToCloud({ meeting: updatedMeeting });
+    const { consensusQuotes, updatedArchive } = syncConsensusState({
+      highlights: data.highlights || [],
+      currentReading: data.currentReading,
+      meeting: updatedMeeting,
+      archive: data.archive || []
+    });
+
+    setData(prev => ({
+      ...prev,
+      meeting: updatedMeeting,
+      archive: updatedArchive,
+      quotes: consensusQuotes
+    }));
+    syncToCloud({
+      meeting: updatedMeeting,
+      archive: updatedArchive,
+      quotes: consensusQuotes
+    });
 
     triggerComradeConfetti(40);
     showToast('Detalhes do encontro atualizados na nuvem! 📅★', 'success');
@@ -324,12 +372,12 @@ export function ClubProvider({ children }) {
 
   // === METAS DE LEITURA (Semanais) ===
   const toggleWeeklyGoal = (goalId) => {
-    if (!currentUser || !isAuthenticated || !userProfile?.memberId) {
+    if (!currentUser || !isAuthenticated) {
       openAuthModal('Faça login para registrar o cumprimento da sua meta de leitura!', 'login');
       return;
     }
 
-    const memberId = userProfile.memberId;
+    const memberId = effectiveActiveMemberId;
     const current = data.currentReading;
     const memberGoals = current.memberProgress?.[memberId] || [];
     const hasCompleted = memberGoals.includes(goalId);
@@ -385,7 +433,7 @@ export function ClubProvider({ children }) {
 
   // === EDIÇÃO DO LIVRO ATUAL ===
   const updateCurrentReading = (updatedFields) => {
-    if (!currentUser) {
+    if (!currentUser || !isAuthenticated) {
       openAuthModal('Acesso restrito: faça login para alterar os dados da obra atual!', 'login');
       return;
     }
@@ -395,17 +443,30 @@ export function ClubProvider({ children }) {
       ...updatedFields
     };
 
+    const { consensusQuotes, updatedArchive } = syncConsensusState({
+      highlights: data.highlights || [],
+      currentReading: updatedReading,
+      meeting: data.meeting,
+      archive: data.archive || []
+    });
+
     setData(prev => ({
       ...prev,
-      currentReading: updatedReading
+      currentReading: updatedReading,
+      archive: updatedArchive,
+      quotes: consensusQuotes
     }));
-    syncToCloud({ currentReading: updatedReading });
+    syncToCloud({
+      currentReading: updatedReading,
+      archive: updatedArchive,
+      quotes: consensusQuotes
+    });
     showToast('Dados da leitura atual atualizados na nuvem! 📖★', 'success');
   };
 
   // === AVALIAÇÃO DA OBRA ATUAL (SEMANA 4) ===
   const submitCurrentBookReview = ({ rating, comment, recommendation, pacing, isSpoiler = false }) => {
-    if (!currentUser || !isAuthenticated || !userProfile?.memberId) {
+    if (!currentUser || !isAuthenticated) {
       openAuthModal('Faça login para registrar sua avaliação crítica da leitura!', 'login');
       return false;
     }
@@ -415,7 +476,7 @@ export function ClubProvider({ children }) {
       return false;
     }
 
-    const reviewerId = userProfile.memberId;
+    const reviewerId = effectiveActiveMemberId;
     const today = new Date().toLocaleDateString('pt-BR');
     const currentReviews = data.currentReading.reviews || [];
     const existingIdx = currentReviews.findIndex(r => r.memberId === reviewerId);
@@ -442,11 +503,24 @@ export function ClubProvider({ children }) {
       reviews: updatedReviews
     };
 
+    const { consensusQuotes, updatedArchive } = syncConsensusState({
+      highlights: data.highlights || [],
+      currentReading: updatedReading,
+      meeting: data.meeting,
+      archive: data.archive || []
+    });
+
     setData(prev => ({
       ...prev,
-      currentReading: updatedReading
+      currentReading: updatedReading,
+      archive: updatedArchive,
+      quotes: consensusQuotes
     }));
-    syncToCloud({ currentReading: updatedReading });
+    syncToCloud({
+      currentReading: updatedReading,
+      archive: updatedArchive,
+      quotes: consensusQuotes
+    });
 
     triggerComradeConfetti(100);
     showToast('Sua avaliação crítica foi registrada com sucesso nas métricas do clube! 🐾★', 'pink');
@@ -455,12 +529,12 @@ export function ClubProvider({ children }) {
 
   // === RSVP (Confirmação de Presença) ===
   const toggleRsvp = () => {
-    if (!currentUser || !isAuthenticated || !userProfile?.memberId) {
+    if (!currentUser || !isAuthenticated) {
       openAuthModal('Faça login para confirmar sua presença na assembleia literária!', 'login');
       return;
     }
 
-    const comradeId = userProfile.memberId;
+    const comradeId = effectiveActiveMemberId;
     const isConfirmed = data.meeting.confirmedMembers?.includes(comradeId);
     const newConfirmed = isConfirmed
       ? data.meeting.confirmedMembers.filter(id => id !== comradeId)
@@ -487,7 +561,7 @@ export function ClubProvider({ children }) {
 
   // === MURAL DE CITAÇÕES (ESTRITO PARA CONSENSOS DO COMITÊ) ===
   const addQuote = ({ page, text, isSpoiler = false, isBookSpecific = true }) => {
-    if (!currentUser || !isAuthenticated || !userProfile?.memberId) {
+    if (!currentUser || !isAuthenticated) {
       openAuthModal('Faça login para sugerir passagens para o Mural Revolucionário!', 'login');
       return;
     }
@@ -508,7 +582,7 @@ export function ClubProvider({ children }) {
   };
 
   const updateQuote = (quoteId, { text, page, isSpoiler }) => {
-    if (!currentUser || !isAuthenticated || !userProfile?.memberId) {
+    if (!currentUser || !isAuthenticated) {
       openAuthModal('Faça login para editar sua citação!', 'login');
       return;
     }
@@ -552,7 +626,7 @@ export function ClubProvider({ children }) {
   };
 
   const toggleQuoteSpoiler = (quoteId) => {
-    if (!currentUser || !isAuthenticated || !userProfile?.memberId) {
+    if (!currentUser || !isAuthenticated) {
       openAuthModal('Faça login para alterar a tarja confidencial desta citação!', 'login');
       return;
     }
@@ -593,7 +667,7 @@ export function ClubProvider({ children }) {
   };
 
   const deleteQuote = (quoteId) => {
-    if (!currentUser || !isAuthenticated || !userProfile?.memberId) {
+    if (!currentUser || !isAuthenticated) {
       openAuthModal('Faça login para gerenciar suas citações!', 'login');
       return;
     }
@@ -605,12 +679,12 @@ export function ClubProvider({ children }) {
   };
 
   const toggleQuoteLike = (quoteId) => {
-    if (!currentUser || !isAuthenticated || !userProfile?.memberId) {
+    if (!currentUser || !isAuthenticated) {
       openAuthModal('Faça login para curtir citações no mural!', 'login');
       return;
     }
 
-    const likerId = userProfile.memberId;
+    const likerId = effectiveActiveMemberId;
     const targetQuote = (data.quotes || []).find(q => q.id === quoteId);
     const targetHlId = targetQuote?.highlightId || quoteId.replace('q-consensus-', '');
 
@@ -1102,7 +1176,7 @@ export function ClubProvider({ children }) {
   };
 
   const markNotificationAsRead = (notifId) => {
-    const memberId = userProfile?.memberId || activeMemberId;
+    const memberId = effectiveActiveMemberId;
     const updatedNotifications = (data.notifications || []).map(n => {
       if (n.id === notifId) {
         const readBy = n.readBy || [];
@@ -1118,7 +1192,7 @@ export function ClubProvider({ children }) {
   };
 
   const markAllNotificationsAsRead = () => {
-    const memberId = userProfile?.memberId || activeMemberId;
+    const memberId = effectiveActiveMemberId;
     const updatedNotifications = (data.notifications || []).map(n => {
       const readBy = n.readBy || [];
       if (!readBy.includes(memberId)) {
@@ -1134,7 +1208,7 @@ export function ClubProvider({ children }) {
 
   // === DOSSIÊ COLETIVO DE GRIFOS & COMPARADOR DE PDF/KINDLE ===
   const addHighlightsToDossier = (incomingHighlights) => {
-    if (!currentUser || !isAuthenticated || !userProfile?.memberId) {
+    if (!currentUser || !isAuthenticated) {
       openAuthModal('Faça login com seu perfil para contribuir com o Dossiê de Grifos!', 'login');
       return { success: false };
     }
@@ -1144,6 +1218,7 @@ export function ClubProvider({ children }) {
       return { success: false };
     }
 
+    const actorMemberId = effectiveActiveMemberId;
     const { updatedDossier, newCount, newConsensusCount, consensusHighlights } = mergeHighlightsIntoDossier(
       data.highlights || [],
       incomingHighlights,
@@ -1162,11 +1237,11 @@ export function ClubProvider({ children }) {
         title: `🔥 Consenso do Comitê Detectado!`,
         message: `${activeMember.name} e outras camaradas grifaram as mesmas passagens em "${data.currentReading?.title}"!`,
         linkTab: 'current',
-        actorId: userProfile.memberId,
+        actorId: actorMemberId,
         actorName: activeMember.name,
         actorAvatar: activeMember.avatar,
         createdAt: new Date().toISOString(),
-        readBy: [userProfile.memberId]
+        readBy: [actorMemberId]
       };
       updatedNotifications = [consensusNotif, ...updatedNotifications].slice(0, 40);
     } else {
@@ -1179,11 +1254,11 @@ export function ClubProvider({ children }) {
         title: `${activeMember.name} adicionou grifos ao Dossiê! ★`,
         message: `${incomingHighlights.length} passagem(ns) analisada(s) em "${data.currentReading?.title}".`,
         linkTab: 'current',
-        actorId: userProfile.memberId,
+        actorId: actorMemberId,
         actorName: activeMember.name,
         actorAvatar: activeMember.avatar,
         createdAt: new Date().toISOString(),
-        readBy: [userProfile.memberId]
+        readBy: [actorMemberId]
       };
       updatedNotifications = [highlightNotif, ...updatedNotifications].slice(0, 40);
     }
@@ -1231,12 +1306,12 @@ export function ClubProvider({ children }) {
   };
 
   const joinHighlightAsComrade = (highlightId, comradeNote = '') => {
-    if (!currentUser || !isAuthenticated || !userProfile?.memberId) {
+    if (!currentUser || !isAuthenticated) {
       openAuthModal('Faça login para registrar que você também grifou este trecho!', 'login');
       return { success: false };
     }
 
-    const currentMemberId = userProfile.memberId;
+    const currentMemberId = effectiveActiveMemberId;
     const authorMember = data.members.find(m => m.id === currentMemberId) || activeMember;
     const target = (data.highlights || []).find(h => h.id === highlightId);
     if (!target) return { success: false };
@@ -1271,7 +1346,9 @@ export function ClubProvider({ children }) {
         avatar: authorMember.avatar,
         roleBadge: authorMember.roleBadge || '★ Camarada',
         note: comradeNote || '',
-        color: authorMember.color ? { name: authorMember.name, hex: authorMember.color, bgClass: 'bg-yellow-300/40 border-yellow-400 text-yellow-950' } : undefined,
+        color: authorMember.color
+          ? { name: authorMember.name, hex: authorMember.color, bgClass: 'bg-yellow-300/40 border-yellow-400 text-yellow-950' }
+          : { name: 'Amarelo Revolucionário', hex: '#FDE047', bgClass: 'bg-yellow-300/40 border-yellow-400 text-yellow-950' },
         date: new Date().toLocaleDateString('pt-BR')
       };
 
@@ -1322,7 +1399,7 @@ export function ClubProvider({ children }) {
   };
 
   const toggleHighlightSpoiler = (highlightId) => {
-    if (!currentUser || !isAuthenticated || !userProfile?.memberId) {
+    if (!currentUser || !isAuthenticated) {
       openAuthModal('Faça login para alterar a tarja confidencial deste grifo!', 'login');
       return;
     }
@@ -1358,12 +1435,12 @@ export function ClubProvider({ children }) {
   };
 
   const deleteHighlight = (highlightId) => {
-    if (!currentUser || !isAuthenticated || !userProfile?.memberId) {
+    if (!currentUser || !isAuthenticated) {
       openAuthModal('Faça login para remover este grifo!', 'login');
       return;
     }
 
-    const currentMemberId = userProfile.memberId;
+    const currentMemberId = effectiveActiveMemberId;
     const target = (data.highlights || []).find(h => h.id === highlightId);
     if (!target) return;
 
@@ -1445,16 +1522,17 @@ export function ClubProvider({ children }) {
   };
 
   const addHighlightComment = (highlightId, commentText) => {
-    if (!currentUser || !isAuthenticated || !userProfile?.memberId) {
+    if (!currentUser || !isAuthenticated) {
       openAuthModal('Faça login para debater e comentar neste grifo coletivo!', 'login');
       return;
     }
 
     if (!commentText || !commentText.trim()) return;
 
+    const commenterId = effectiveActiveMemberId;
     const newComment = {
       id: `c-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
-      memberId: userProfile.memberId,
+      memberId: commenterId,
       authorName: activeMember.name,
       authorAvatar: activeMember.avatar,
       authorRole: activeMember.roleBadge || '★ Camarada',
@@ -1473,35 +1551,69 @@ export function ClubProvider({ children }) {
       return h;
     });
 
-    setData(prev => ({ ...prev, highlights: updatedHighlights }));
-    syncToCloud({ highlights: updatedHighlights });
+    const { consensusQuotes, updatedArchive } = syncConsensusState({
+      highlights: updatedHighlights,
+      currentReading: data.currentReading,
+      meeting: data.meeting,
+      archive: data.archive
+    });
+
+    setData(prev => ({
+      ...prev,
+      highlights: updatedHighlights,
+      archive: updatedArchive,
+      quotes: consensusQuotes
+    }));
+    syncToCloud({
+      highlights: updatedHighlights,
+      archive: updatedArchive,
+      quotes: consensusQuotes
+    });
     showToast('Anotação crítica adicionada ao debate do grifo! 💬★', 'success');
   };
 
   const deleteHighlightComment = (highlightId, commentId) => {
-    if (!currentUser || !isAuthenticated || !userProfile?.memberId) {
+    if (!currentUser || !isAuthenticated) {
       openAuthModal('Faça login para remover seu comentário!', 'login');
       return;
     }
 
+    const commenterId = effectiveActiveMemberId;
     const updatedHighlights = (data.highlights || []).map(h => {
       if (h.id === highlightId) {
         return {
           ...h,
-          comments: (h.comments || []).filter(c => c.id !== commentId || c.memberId !== userProfile.memberId)
+          comments: (h.comments || []).filter(c => c.id !== commentId || c.memberId !== commenterId)
         };
       }
       return h;
     });
 
-    setData(prev => ({ ...prev, highlights: updatedHighlights }));
-    syncToCloud({ highlights: updatedHighlights });
+    const { consensusQuotes, updatedArchive } = syncConsensusState({
+      highlights: updatedHighlights,
+      currentReading: data.currentReading,
+      meeting: data.meeting,
+      archive: data.archive
+    });
+
+    setData(prev => ({
+      ...prev,
+      highlights: updatedHighlights,
+      archive: updatedArchive,
+      quotes: consensusQuotes
+    }));
+    syncToCloud({
+      highlights: updatedHighlights,
+      archive: updatedArchive,
+      quotes: consensusQuotes
+    });
     showToast('Anotação removida do debate.', 'info');
   };
 
   // Verificação de prazo da assembleia para arquivamento automático
   useEffect(() => {
     const checkArchivalDue = () => {
+      if (!isCloudLoadedRef.current) return;
       if (!data.meeting?.dateTime || !data.currentReading) return;
       const targetTime = new Date(data.meeting.dateTime).getTime();
       const now = Date.now();
@@ -1524,7 +1636,7 @@ export function ClubProvider({ children }) {
 
   // === ACERVO & RESENHAS ===
   const addOrUpdateReview = (bookId, { rating, comment, isSpoiler = false }) => {
-    if (!currentUser || !isAuthenticated || !userProfile?.memberId) {
+    if (!currentUser || !isAuthenticated) {
       openAuthModal('Faça login com seu perfil de camarada para publicar sua resenha!', 'login');
       return;
     }
@@ -1534,8 +1646,10 @@ export function ClubProvider({ children }) {
       return;
     }
 
-    const reviewerId = userProfile.memberId;
+    const reviewerId = effectiveActiveMemberId;
     const today = new Date().toLocaleDateString('pt-BR');
+    let syncedCurrentReading = data.currentReading;
+    let didUpdateCurrentReading = false;
 
     const updatedArchive = (data.archive || []).map(book => {
       if (book.id === bookId) {
@@ -1562,6 +1676,19 @@ export function ClubProvider({ children }) {
           ];
         }
 
+        if (
+          data.currentReading &&
+          (book.title === data.currentReading.title ||
+            book.id === data.currentReading.id ||
+            book.id === `archived-${data.currentReading.id}`)
+        ) {
+          syncedCurrentReading = {
+            ...data.currentReading,
+            reviews: newReviews
+          };
+          didUpdateCurrentReading = true;
+        }
+
         return { ...book, reviews: newReviews };
       }
       return book;
@@ -1569,9 +1696,13 @@ export function ClubProvider({ children }) {
 
     setData(prev => ({
       ...prev,
-      archive: updatedArchive
+      archive: updatedArchive,
+      ...(didUpdateCurrentReading ? { currentReading: syncedCurrentReading } : {})
     }));
-    syncToCloud({ archive: updatedArchive });
+    syncToCloud({
+      archive: updatedArchive,
+      ...(didUpdateCurrentReading ? { currentReading: syncedCurrentReading } : {})
+    });
 
     triggerComradeConfetti(50);
     showToast('Sua resenha crítica foi salva com sucesso! 🐾★', 'success');
@@ -1579,17 +1710,33 @@ export function ClubProvider({ children }) {
 
   // Excluir resenha do membro autenticado
   const deleteReview = (bookId) => {
-    if (!currentUser || !isAuthenticated || !userProfile?.memberId) {
+    if (!currentUser || !isAuthenticated) {
       openAuthModal('Faça login com seu perfil para remover sua resenha!', 'login');
       return;
     }
 
-    const reviewerId = userProfile.memberId;
+    const reviewerId = effectiveActiveMemberId;
+    let syncedCurrentReading = data.currentReading;
+    let didUpdateCurrentReading = false;
+
     const updatedArchive = (data.archive || []).map(book => {
       if (book.id === bookId) {
+        const newReviews = (book.reviews || []).filter(r => r.memberId !== reviewerId);
+        if (
+          data.currentReading &&
+          (book.title === data.currentReading.title ||
+            book.id === data.currentReading.id ||
+            book.id === `archived-${data.currentReading.id}`)
+        ) {
+          syncedCurrentReading = {
+            ...data.currentReading,
+            reviews: newReviews
+          };
+          didUpdateCurrentReading = true;
+        }
         return {
           ...book,
-          reviews: (book.reviews || []).filter(r => r.memberId !== reviewerId)
+          reviews: newReviews
         };
       }
       return book;
@@ -1597,9 +1744,13 @@ export function ClubProvider({ children }) {
 
     setData(prev => ({
       ...prev,
-      archive: updatedArchive
+      archive: updatedArchive,
+      ...(didUpdateCurrentReading ? { currentReading: syncedCurrentReading } : {})
     }));
-    syncToCloud({ archive: updatedArchive });
+    syncToCloud({
+      archive: updatedArchive,
+      ...(didUpdateCurrentReading ? { currentReading: syncedCurrentReading } : {})
+    });
 
     showToast('Sua resenha foi removida do acervo.', 'info');
   };

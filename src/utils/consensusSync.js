@@ -49,7 +49,7 @@ export function buildConsensusQuotes(highlights = [], currentReading = null, mee
       assemblyDate: meetingDateStr,
       page: formattedPage,
       text: h.text,
-      color: h.color,
+      color: h.color || { name: 'Amarelo Revolucionário', hex: '#FDE047', bgClass: 'bg-yellow-300/40 border-yellow-400 text-yellow-950' },
       isConsensus: true,
       isSpoiler: !!h.isSpoiler,
       isBookSpecific: true,
@@ -82,6 +82,15 @@ export function syncConsensusToArchive(currentArchive = [], consensusQuotes = []
 
   if (bookIdx >= 0) {
     const existing = archiveList[bookIdx];
+    const existingReviews = Array.isArray(existing.reviews) ? existing.reviews : [];
+    const currentReviews = Array.isArray(currentReading.reviews) ? currentReading.reviews : [];
+    const mergedReviewsMap = new Map();
+    existingReviews.forEach(r => { if (r?.memberId) mergedReviewsMap.set(r.memberId, r); });
+    currentReviews.forEach(r => { if (r?.memberId) mergedReviewsMap.set(r.memberId, r); });
+    const mergedReviews = mergedReviewsMap.size > 0
+      ? Array.from(mergedReviewsMap.values())
+      : (existingReviews.length > 0 ? existingReviews : currentReviews);
+
     archiveList[bookIdx] = {
       ...existing,
       title: currentReading.title,
@@ -95,7 +104,7 @@ export function syncConsensusToArchive(currentArchive = [], consensusQuotes = []
       assemblyDate: meetingDateStr || existing.assemblyDate,
       status: existing.status || (currentReading.isArchived ? 'Concluído' : 'Ciclo Atual / Em Debate'),
       synopsis: currentReading.synopsis || existing.synopsis,
-      reviews: existing.reviews || currentReading.reviews || [],
+      reviews: mergedReviews,
       quotes: consensusQuotes,
       consensusQuotes: consensusQuotes,
       highlights: highlights || [],

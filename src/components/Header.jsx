@@ -74,17 +74,18 @@ export default function Header({ activeTab, setActiveTab, onOpenTour }) {
         </div>
 
         {/* Bloco 2: Bloco do Gato Camarada + Balão de Fala Horizontal */}
-        <div className="w-full lg:w-auto flex items-center justify-center shrink-0 order-3 lg:order-2">
+        <div className="w-full lg:w-auto lg:flex-1 flex items-center justify-center min-w-0 overflow-hidden order-3 lg:order-2 px-1">
           <ComradeCat 
             pose="grumpy" 
             size="sm" 
+            compact={true}
             showBubble={true}
             bubblePosition="right"
           />
         </div>
 
         {/* Bloco 3: Barra de Controles (Tema + Guia + Perfil Logado + Sair) */}
-        <div className="flex items-center justify-between sm:justify-end gap-1.5 sm:gap-2.5 w-full sm:w-auto order-1 lg:order-3 min-w-0 pr-1 sm:pr-0">
+        <div className="flex items-center justify-between sm:justify-end gap-1.5 sm:gap-2.5 w-full sm:w-auto order-1 lg:order-3 min-w-0 shrink-0 pr-1 sm:pr-0">
           {/* GRUPO ESQUERDA: TEMA + GUIA */}
           <div className="flex items-center gap-1 sm:gap-1.5 shrink-0">
             {/* SELETOR DE TEMAS */}
