@@ -152,7 +152,9 @@ export function ClubProvider({ children }) {
               }
             }
 
-            let cloudReading = cloud.currentReading || prev.currentReading || INITIAL_CURRENT_READING;
+            const cloudHighlights = Array.isArray(cloud.highlights) ? cloud.highlights : INITIAL_HIGHLIGHTS;
+
+            let cloudReading = cloud.currentReading || INITIAL_CURRENT_READING;
             const isDemocraciasReading = (cloudReading?.title || '').toLowerCase().includes('democracias morrem');
             const isBrokenCover = !cloudReading?.coverUrl || 
               cloudReading.coverUrl.includes('goodreads.com') || 
@@ -166,7 +168,7 @@ export function ClubProvider({ children }) {
               setDoc(docRef, { currentReading: cloudReading, updatedAt: new Date().toISOString() }, { merge: true }).catch(() => {});
             }
 
-            const rawArchive = cloud.archive || prev.archive || INITIAL_ARCHIVE;
+            const rawArchive = cloud.archive || INITIAL_ARCHIVE;
             const cloudArchive = (Array.isArray(rawArchive) ? rawArchive : []).map(b => {
               if ((b?.title || '').toLowerCase().includes('democracias morrem') &&
                   (!b.coverUrl || b.coverUrl.includes('goodreads.com') || b.coverUrl.includes('images-amazon.com'))) {
@@ -175,25 +177,33 @@ export function ClubProvider({ children }) {
               return b;
             });
 
-            const cloudMeeting = cloud.meeting || prev.meeting || INITIAL_MEETING;
+            const cloudMeeting = cloud.meeting || INITIAL_MEETING;
 
-            const { consensusQuotes, updatedArchive } = syncConsensusState({
-              highlights: cloudHighlights,
-              currentReading: cloudReading,
-              meeting: cloudMeeting,
-              archive: cloudArchive
-            });
+            let consensusQuotes = cloud.quotes || INITIAL_QUOTES;
+            let updatedArchive = cloudArchive;
+            try {
+              const synced = syncConsensusState({
+                highlights: cloudHighlights,
+                currentReading: cloudReading,
+                meeting: cloudMeeting,
+                archive: cloudArchive
+              });
+              consensusQuotes = synced.consensusQuotes;
+              updatedArchive = synced.updatedArchive;
+            } catch (syncErr) {
+              console.warn('Erro ao sincronizar consensos no snapshot:', syncErr);
+            }
 
             setData(prev => ({
               ...prev,
               members: cloud.members || prev.members || INITIAL_MEMBERS,
-              currentReading: cloudReading,
-              meeting: cloudMeeting,
+              currentReading: cloud.currentReading ? cloudReading : (prev.currentReading || cloudReading),
+              meeting: cloud.meeting || prev.meeting || INITIAL_MEETING,
               ballot: cleanBallot,
               archive: updatedArchive,
               quotes: consensusQuotes,
               notifications: cloud.notifications || prev.notifications || INITIAL_NOTIFICATIONS,
-              highlights: cloudHighlights
+              highlights: Array.isArray(cloud.highlights) ? cloudHighlights : (prev.highlights || cloudHighlights)
             }));
           } else {
             // Se o documento no Firestore ainda estiver vazio no primeiro acesso,
@@ -230,14 +240,20 @@ export function ClubProvider({ children }) {
     try {
       const docRef = doc(db, CLUBE_COLLECTION, CLUBE_DOC_ID);
       await setDoc(docRef, { ...updatedFields, updatedAt: new Date().toISOString() }, { merge: true });
+      return true;
     } catch (err) {
       console.warn('Erro ao sincronizar com Firestore:', err);
+      showToast('Erro ao salvar alterações na nuvem. Verifique sua conexão.', 'error');
+      return false;
     }
   };
 
-  // Membro ativo: quando autenticada, é SEMPRE e RIGOROSAMENTE o membro vinculado à conta no Firebase Auth
-  const effectiveActiveMemberId = (isAuthenticated && userProfile?.memberId) 
-    ? userProfile.memberId 
+  // Membro ativo: quando autenticada, prioriza o membro vinculado à conta no Firebase Auth
+  const matchedMemberByAuth = currentUser
+    ? data.members.find(m => m.uid === currentUser.uid || (m.email && m.email === currentUser.email))
+    : null;
+  const effectiveActiveMemberId = (isAuthenticated && (userProfile?.memberId || matchedMemberByAuth?.id))
+    ? (userProfile?.memberId || matchedMemberByAuth?.id)
     : activeMemberId;
 
   const activeMember = data.members.find(m => m.id === effectiveActiveMemberId) || data.members[0] || INITIAL_MEMBERS[0];
@@ -649,21 +665,21 @@ export function ClubProvider({ children }) {
   };
 
   // Votar em um livro (Limite rigoroso de no máximo 3 votos por membro ativo autenticado)
-  const toggleVote = (bookId) => {
-    if (!currentUser || !isAuthenticated || !userProfile?.memberId) {
+  const toggleVote = async (bookId) => {
+    if (!currentUser || !isAuthenticated) {
       openAuthModal('Faça login com seu perfil para votar na Urna Popular!', 'login');
-      return;
+      return false;
     }
 
     if (data.ballot?.status !== 'open') {
       showToast('A votação está encerrada no momento.', 'error');
-      return;
+      return false;
     }
 
     const currentBook = data.ballot?.books?.find(b => b.id === bookId);
-    if (!currentBook) return;
+    if (!currentBook) return false;
 
-    const voterId = userProfile.memberId;
+    const voterId = effectiveActiveMemberId;
     const alreadyVotedThis = (currentBook.votes || []).includes(voterId);
     const maxVotes = data.ballot?.maxVotesPerMember || 3;
 
@@ -674,7 +690,7 @@ export function ClubProvider({ children }) {
 
     if (!alreadyVotedThis && totalVotesByMember >= maxVotes) {
       showToast(`Votos esgotados nesta rodada! Você já utilizou seus ${maxVotes} votos permitidos.`, 'error');
-      return;
+      return false;
     }
 
     const updatedBooks = (data.ballot?.books || []).map(b => {
@@ -697,7 +713,8 @@ export function ClubProvider({ children }) {
       ...prev,
       ballot: updatedBallot
     }));
-    syncToCloud({ ballot: updatedBallot });
+    const saved = await syncToCloud({ ballot: updatedBallot });
+    if (!saved) return false;
 
     if (!alreadyVotedThis) {
       triggerComradeConfetti(45);
@@ -705,11 +722,12 @@ export function ClubProvider({ children }) {
     } else {
       showToast(`Voto retirado de "${currentBook.title}".`, 'info');
     }
+    return true;
   };
 
   // Indicar livro para a urna (SEM DUPLICIDADE!)
-  const nominateBook = ({ title, author, pages, coverUrl, synopsis, genre, nominationReason }) => {
-    if (!currentUser || !isAuthenticated || !userProfile?.memberId) {
+  const nominateBook = async ({ title, author, pages, coverUrl, synopsis, genre, nominationReason }) => {
+    if (!currentUser || !isAuthenticated) {
       openAuthModal('Faça login com seu perfil para indicar um livro para a urna popular!', 'login');
       return false;
     }
@@ -735,7 +753,12 @@ export function ClubProvider({ children }) {
       return false;
     }
 
-    const nominatorId = userProfile.memberId;
+    const nominatorId = effectiveActiveMemberId;
+    const maxVotes = data.ballot?.maxVotesPerMember || 3;
+    const totalVotesByMember = currentBooks.reduce((acc, book) => {
+      return acc + ((book.votes || []).includes(nominatorId) ? 1 : 0);
+    }, 0);
+
     const newBook = {
       id: `ballot-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
       title: title.trim(),
@@ -746,7 +769,7 @@ export function ClubProvider({ children }) {
       genre: genre || 'Literatura',
       nominatedBy: nominatorId,
       nominationReason: nominationReason?.trim() || 'Indicação especial para o Exército da Paty!',
-      votes: [nominatorId] // Quem indica já vota automaticamente com seu ID autenticado
+      votes: totalVotesByMember < maxVotes ? [nominatorId] : []
     };
 
     // Deduplica preventivamente ao montar a nova lista
@@ -777,7 +800,8 @@ export function ClubProvider({ children }) {
       ballot: updatedBallot,
       notifications: updatedNotifications
     }));
-    syncToCloud({ ballot: updatedBallot, notifications: updatedNotifications });
+    const saved = await syncToCloud({ ballot: updatedBallot, notifications: updatedNotifications });
+    if (!saved) return false;
 
     triggerComradeConfetti(65);
     showToast(`"${newBook.title}" foi adicionado à urna popular! 📚★`, 'pink');
@@ -785,37 +809,55 @@ export function ClubProvider({ children }) {
   };
 
   // Editar indicação existente
-  const updateNomination = (bookId, updatedFields) => {
-    if (!currentUser || !isAuthenticated || !userProfile?.memberId) {
-      openAuthModal('Faça login para editar sua indicação!', 'login');
-      return;
+  const updateNomination = async (bookId, updatedFields) => {
+    if (!currentUser || !isAuthenticated) {
+      openAuthModal('Faça login para editar esta indicação!', 'login');
+      return false;
     }
 
-    const targetBook = (data.ballot.books || []).find(b => b.id === bookId);
-    if (targetBook && targetBook.nominatedBy !== userProfile.memberId) {
-      showToast('Você só pode editar indicações feitas por você!', 'error');
-      return;
+    const currentBooks = data.ballot?.books || [];
+    const targetBook = currentBooks.find(b => b.id === bookId);
+    if (!targetBook) {
+      showToast('Obra não encontrada na urna.', 'error');
+      return false;
     }
 
     // Se estiver alterando o título, valida contra duplicidades na urna
-    if (updatedFields.title) {
-      const duplicateCheck = findDuplicateBookInBallot(updatedFields.title, data.ballot?.books || [], bookId);
+    const newTitle = updatedFields.title !== undefined ? String(updatedFields.title).trim() : targetBook.title;
+    const titleChanged = newTitle.toLowerCase() !== (targetBook.title || '').trim().toLowerCase();
+
+    if (newTitle && titleChanged) {
+      const duplicateCheck = findDuplicateBookInBallot(newTitle, currentBooks, bookId);
       if (duplicateCheck.isDuplicate) {
-        showToast(`Conflito: a obra "${duplicateCheck.matchedBook?.title || updatedFields.title}" já existe na urna!`, 'error');
-        return;
+        showToast(`Conflito: a obra "${duplicateCheck.matchedBook?.title || newTitle}" já existe na urna!`, 'error');
+        return false;
       }
-      if (isCurrentReadingBook(updatedFields.title, data.currentReading)) {
-        showToast(`"${updatedFields.title.trim()}" já é a Leitura Atual do comitê!`, 'error');
-        return;
+      if (isCurrentReadingBook(newTitle, data.currentReading)) {
+        showToast(`"${newTitle}" já é a Leitura Atual do comitê!`, 'error');
+        return false;
       }
     }
 
-    const updatedBooks = data.ballot.books.map(b => {
+    // Sanitiza os campos para evitar valores undefined no Firestore
+    const sanitizedFields = {};
+    Object.entries(updatedFields || {}).forEach(([key, val]) => {
+      if (val !== undefined) {
+        sanitizedFields[key] = val;
+      }
+    });
+
+    const updatedBooks = currentBooks.map(b => {
       if (b.id === bookId) {
         return {
           ...b,
-          ...updatedFields,
-          pages: parseInt(updatedFields.pages, 10) || b.pages
+          ...sanitizedFields,
+          title: newTitle || b.title,
+          author: sanitizedFields.author !== undefined ? String(sanitizedFields.author).trim() || b.author : b.author,
+          pages: sanitizedFields.pages !== undefined ? (parseInt(sanitizedFields.pages, 10) || b.pages || 250) : (b.pages || 250),
+          genre: sanitizedFields.genre !== undefined ? String(sanitizedFields.genre).trim() || 'Literatura' : (b.genre || 'Literatura'),
+          coverUrl: sanitizedFields.coverUrl !== undefined ? String(sanitizedFields.coverUrl).trim() : (b.coverUrl || ''),
+          synopsis: sanitizedFields.synopsis !== undefined ? String(sanitizedFields.synopsis).trim() : (b.synopsis || ''),
+          nominationReason: sanitizedFields.nominationReason !== undefined ? String(sanitizedFields.nominationReason).trim() : (b.nominationReason || '')
         };
       }
       return b;
@@ -830,36 +872,34 @@ export function ClubProvider({ children }) {
       ...prev,
       ballot: updatedBallot
     }));
-    syncToCloud({ ballot: updatedBallot });
+    const saved = await syncToCloud({ ballot: updatedBallot });
+    if (!saved) return false;
 
-    showToast('Indicação atualizada com sucesso! ★', 'success');
+    showToast('Indicação atualizada com sucesso na nuvem! ★', 'success');
+    return true;
   };
 
-  // Excluir indicação própria da urna
-  const deleteNomination = (bookId) => {
-    if (!currentUser || !isAuthenticated || !userProfile?.memberId) {
+  // Excluir indicação da urna
+  const deleteNomination = async (bookId) => {
+    if (!currentUser || !isAuthenticated) {
       openAuthModal('Faça login para remover uma indicação da urna!', 'login');
-      return;
-    }
-
-    const targetBook = (data.ballot.books || []).find(b => b.id === bookId);
-    if (targetBook && targetBook.nominatedBy !== userProfile.memberId) {
-      showToast('Você só pode remover indicações feitas por você!', 'error');
-      return;
+      return false;
     }
 
     const updatedBallot = {
       ...data.ballot,
-      books: data.ballot.books.filter(b => b.id !== bookId)
+      books: (data.ballot?.books || []).filter(b => b.id !== bookId)
     };
 
     setData(prev => ({
       ...prev,
       ballot: updatedBallot
     }));
-    syncToCloud({ ballot: updatedBallot });
+    const saved = await syncToCloud({ ballot: updatedBallot });
+    if (!saved) return false;
 
     showToast('Recomendação removida da urna.', 'info');
+    return true;
   };
 
   // Promover livro da urna para Livro do Mês

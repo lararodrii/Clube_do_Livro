@@ -111,6 +111,14 @@ export default function VotingBallot() {
     promoteToCurrentBook(bookId);
   };
 
+  const handleEditNominationClick = (book) => {
+    if (!isAuthenticated) {
+      openAuthModal('Faça login para editar uma indicação na Urna Popular!', 'login');
+      return;
+    }
+    setEditingBook(book);
+  };
+
   return (
     <div className="space-y-6">
       
@@ -343,17 +351,15 @@ export default function VotingBallot() {
                         {book.pages} págs
                       </span>
 
-                      {/* BOTÃO DE EDITAR / EXCLUIR PRÓPRIA RECOMENDAÇÃO */}
-                      {isMyNomination && (
-                        <button
-                          type="button"
-                          onClick={() => setEditingBook(book)}
-                          title="Editar ou excluir sua recomendação"
-                          className="p-1 hover:bg-[#FEF08A] hover:text-[#111111] text-theme-primary rounded border border-theme-border transition-colors cursor-pointer"
-                        >
-                          <Pencil className="w-3.5 h-3.5" />
-                        </button>
-                      )}
+                      {/* BOTÃO DE EDITAR / EXCLUIR RECOMENDAÇÃO */}
+                      <button
+                        type="button"
+                        onClick={() => handleEditNominationClick(book)}
+                        title="Editar ou excluir esta indicação"
+                        className="p-1 hover:bg-[#FEF08A] hover:text-[#111111] text-theme-primary rounded border border-theme-border transition-colors cursor-pointer"
+                      >
+                        <Pencil className="w-3.5 h-3.5" />
+                      </button>
                     </div>
                   </div>
 
@@ -536,7 +542,7 @@ export default function VotingBallot() {
       />
 
       <EditNominationModal
-        book={editingBook}
+        book={editingBook ? (books.find(b => b.id === editingBook.id) || editingBook) : null}
         isOpen={!!editingBook}
         onClose={() => setEditingBook(null)}
       />
@@ -559,7 +565,7 @@ export default function VotingBallot() {
           remainingVotes={remainingVotes}
           maxVotes={maxVotes}
           onVoteToggle={handleVoteToggle}
-          onEdit={(b) => setEditingBook(b)}
+          onEdit={(b) => handleEditNominationClick(b)}
         />
       )}
 

@@ -1,10 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useClub } from '../../context/ClubContext';
-import { X, Save, BookOpen, Trash2, AlertCircle } from 'lucide-react';
+import BookAutocomplete from '../common/BookAutocomplete';
+import { X, Save, Trash2, AlertCircle, Upload, Image as ImageIcon, Link as LinkIcon } from 'lucide-react';
 import { findDuplicateBookInBallot, isCurrentReadingBook } from '../../utils/bookDuplicateCheck';
 
 export default function EditNominationModal({ book, isOpen, onClose }) {
-  const { updateNomination, deleteNomination, activeMember, ballot, currentReading, showToast } = useClub();
+  const { updateNomination, deleteNomination, ballot, currentReading, showToast } = useClub();
 
   const [title, setTitle] = useState('');
   const [author, setAuthor] = useState('');
@@ -14,6 +15,12 @@ export default function EditNominationModal({ book, isOpen, onClose }) {
   const [synopsis, setSynopsis] = useState('');
   const [nominationReason, setNominationReason] = useState('');
   const [showConfirmDelete, setShowConfirmDelete] = useState(false);
+  const [showUrlInput, setShowUrlInput] = useState(false);
+  const [uploadError, setUploadError] = useState('');
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+
+  const fileInputRef = useRef(null);
 
   useEffect(() => {
     if (book && isOpen) {
@@ -25,21 +32,97 @@ export default function EditNominationModal({ book, isOpen, onClose }) {
       setSynopsis(book.synopsis || '');
       setNominationReason(book.nominationReason || '');
       setShowConfirmDelete(false);
+      setUploadError('');
+      setShowUrlInput(false);
+      setIsSaving(false);
     }
-  }, [book, isOpen]);
+  }, [book?.id, isOpen]);
 
   if (!isOpen || !book) return null;
 
+  const handleSelectBook = (selected) => {
+    setTitle(selected.title || '');
+    setAuthor(selected.author || '');
+    setPages(selected.pages || book.pages || 250);
+    setGenre(selected.genre || book.genre || 'Literatura');
+    setCoverUrl(selected.cover || selected.coverUrl || book.coverUrl || '');
+    if (selected.synopsis) {
+      setSynopsis(selected.synopsis);
+    }
+  };
+
+  // Upload local de imagem via FileReader + compressão Canvas (Base64)
+  const handleFileChange = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      setUploadError('Por favor, selecione um arquivo de imagem válido (JPG, PNG, WebP).');
+      return;
+    }
+
+    setUploadError('');
+    setIsProcessing(true);
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const rawDataUrl = event.target.result;
+      const img = new Image();
+      img.onload = () => {
+        try {
+          const maxDim = 800;
+          let width = img.width;
+          let height = img.height;
+          if (width > maxDim || height > maxDim) {
+            if (width > height) {
+              height = Math.round((height * maxDim) / width);
+              width = maxDim;
+            } else {
+              width = Math.round((width * maxDim) / height);
+              height = maxDim;
+            }
+          }
+          const canvas = document.createElement('canvas');
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0, width, height);
+          const optimized = canvas.toDataURL('image/jpeg', 0.85);
+          setCoverUrl(optimized);
+          setIsProcessing(false);
+        } catch {
+          setCoverUrl(rawDataUrl);
+          setIsProcessing(false);
+        }
+      };
+      img.onerror = () => {
+        setUploadError('Erro ao processar imagem.');
+        setIsProcessing(false);
+      };
+      img.src = rawDataUrl;
+    };
+    reader.onerror = () => {
+      setUploadError('Falha ao ler o arquivo.');
+      setIsProcessing(false);
+    };
+    reader.readAsDataURL(file);
+    e.target.value = '';
+  };
+
+  const titleChanged = title.trim().toLowerCase() !== (book.title || '').trim().toLowerCase();
+
   // Validação anti-duplicidade ao editar título (ignora a si mesmo via book.id)
-  const duplicateCheck = findDuplicateBookInBallot(title, ballot?.books || [], book.id);
+  const duplicateCheck = titleChanged
+    ? findDuplicateBookInBallot(title, ballot?.books || [], book.id)
+    : { isDuplicate: false, matchedBook: null };
   const duplicateInBallot = duplicateCheck.isDuplicate;
   const duplicateMatchedBook = duplicateCheck.matchedBook;
 
-  const isCurrentReading = isCurrentReadingBook(title, currentReading);
+  const isCurrentReading = titleChanged && isCurrentReadingBook(title, currentReading);
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!title.trim()) return;
+    if (!title.trim() || isSaving || isProcessing) return;
 
     if (duplicateInBallot) {
       if (showToast) {
@@ -55,22 +138,36 @@ export default function EditNominationModal({ book, isOpen, onClose }) {
       return;
     }
 
-    updateNomination(book.id, {
-      title: title.trim(),
-      author: author.trim(),
-      pages: parseInt(pages, 10) || book.pages,
-      genre: genre.trim(),
-      coverUrl: coverUrl.trim(),
-      synopsis: synopsis.trim(),
-      nominationReason: nominationReason.trim()
-    });
+    setIsSaving(true);
+    try {
+      const success = await updateNomination(book.id, {
+        title: title.trim(),
+        author: author.trim(),
+        pages: parseInt(pages, 10) || book.pages || 250,
+        genre: genre.trim() || 'Literatura',
+        coverUrl: coverUrl.trim(),
+        synopsis: synopsis.trim(),
+        nominationReason: nominationReason.trim()
+      });
 
-    onClose();
+      if (success) {
+        onClose();
+      }
+    } finally {
+      setIsSaving(false);
+    }
   };
 
-  const handleDelete = () => {
-    deleteNomination(book.id);
-    onClose();
+  const handleDelete = async () => {
+    setIsSaving(true);
+    try {
+      const success = await deleteNomination(book.id);
+      if (success) {
+        onClose();
+      }
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   return (
@@ -135,15 +232,13 @@ export default function EditNominationModal({ book, isOpen, onClose }) {
           
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs font-mono font-bold text-theme-primary uppercase tracking-wider mb-1">
-                Título do Livro *
-              </label>
-              <input
-                type="text"
-                required
+              <BookAutocomplete
                 value={title}
-                onChange={(e) => setTitle(e.target.value)}
-                className="w-full text-sm bg-theme-input border-2 border-theme-border rounded-lg px-3.5 py-2.5 text-theme-primary placeholder:text-theme-muted focus:outline-none focus:ring-2 focus:ring-theme-red"
+                onChange={setTitle}
+                onSelectBook={handleSelectBook}
+                placeholder="Título da obra..."
+                label="Título do Livro *"
+                required={true}
               />
             </div>
 
@@ -188,17 +283,94 @@ export default function EditNominationModal({ book, isOpen, onClose }) {
             </div>
           </div>
 
-          <div>
-            <label className="block text-xs font-mono font-bold text-theme-primary uppercase tracking-wider mb-1">
-              URL da Imagem de Capa
-            </label>
+          {/* ÁREA DE CAPA: UPLOAD LOCAL (BASE64) + URL */}
+          <div className="bg-theme-card p-3.5 rounded-xl border-2 border-theme-border shadow-[3px_3px_0px_var(--shadow-color)]">
+            <div className="flex items-center justify-between mb-2">
+              <label className="block text-xs font-mono font-bold text-theme-primary uppercase tracking-wider">
+                Capa do Livro (Upload ou URL)
+              </label>
+              <button
+                type="button"
+                onClick={() => setShowUrlInput(!showUrlInput)}
+                className="text-[11px] font-mono font-bold text-theme-red hover:underline flex items-center gap-1"
+              >
+                <LinkIcon className="w-3 h-3" />
+                <span>{showUrlInput ? 'Ocultar link' : 'Digitar URL'}</span>
+              </button>
+            </div>
+
             <input
-              type="url"
-              value={coverUrl}
-              onChange={(e) => setCoverUrl(e.target.value)}
-              placeholder="https://..."
-              className="w-full text-xs bg-theme-input border-2 border-theme-border rounded-lg px-3.5 py-2 text-theme-primary placeholder:text-theme-muted focus:outline-none focus:ring-2 focus:ring-theme-red font-mono"
+              type="file"
+              ref={fileInputRef}
+              accept="image/*"
+              onChange={handleFileChange}
+              className="hidden"
             />
+
+            <div className="flex flex-col sm:flex-row items-center gap-3.5">
+              <div className="relative shrink-0 w-14 h-20 bg-theme-container rounded-lg border-2 border-theme-border shadow-[2px_2px_0px_var(--shadow-color)] overflow-hidden flex items-center justify-center">
+                {coverUrl ? (
+                  <img
+                    src={coverUrl}
+                    alt={title || 'Capa'}
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <div className="text-center p-1">
+                    <ImageIcon className="w-5 h-5 text-theme-muted mx-auto mb-0.5" />
+                    <span className="text-[8px] font-mono text-theme-muted block leading-tight">Sem Capa</span>
+                  </div>
+                )}
+                {isProcessing && (
+                  <div className="absolute inset-0 bg-black/70 flex items-center justify-center text-white text-[9px] font-mono font-bold">
+                    ...
+                  </div>
+                )}
+              </div>
+
+              <div className="flex-1 space-y-2 text-center sm:text-left w-full">
+                <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2">
+                  <button
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    className="px-3 py-1.5 bg-theme-container hover:bg-[#FEF08A] hover:text-[#111111] text-theme-primary text-xs font-mono font-black uppercase tracking-wider rounded-lg border-2 border-theme-border shadow-[2px_2px_0px_var(--shadow-color)] transition-transform hover:-translate-x-0.5 hover:-translate-y-0.5 flex items-center gap-1.5"
+                  >
+                    <Upload className="w-3.5 h-3.5 text-theme-red" />
+                    <span>Upload do Dispositivo</span>
+                  </button>
+
+                  {coverUrl && (
+                    <button
+                      type="button"
+                      onClick={() => setCoverUrl('')}
+                      className="px-2.5 py-1.5 text-xs font-mono font-bold text-theme-red hover:bg-theme-red/10 rounded-lg border border-theme-red flex items-center gap-1"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                      <span>Limpar Capa</span>
+                    </button>
+                  )}
+                </div>
+
+                {uploadError && (
+                  <p className="text-xs text-theme-red font-mono font-bold flex items-center gap-1 justify-center sm:justify-start">
+                    <AlertCircle className="w-3.5 h-3.5" />
+                    <span>{uploadError}</span>
+                  </p>
+                )}
+              </div>
+            </div>
+
+            {showUrlInput && (
+              <div className="mt-2.5 pt-2.5 border-t border-theme-border/20">
+                <input
+                  type="text"
+                  value={coverUrl}
+                  onChange={(e) => setCoverUrl(e.target.value)}
+                  placeholder="Cole aqui a URL direta da capa (https://...)"
+                  className="w-full text-xs font-mono bg-theme-input border-2 border-theme-border rounded-lg px-3 py-2 text-theme-primary placeholder:text-theme-muted focus:outline-none focus:ring-2 focus:ring-theme-red"
+                />
+              </div>
+            )}
           </div>
 
           <div>
@@ -206,7 +378,7 @@ export default function EditNominationModal({ book, isOpen, onClose }) {
               Sinopse
             </label>
             <textarea
-              rows={2}
+              rows={3}
               value={synopsis}
               onChange={(e) => setSynopsis(e.target.value)}
               className="w-full text-sm bg-theme-input border-2 border-theme-border rounded-lg p-3 text-theme-primary placeholder:text-theme-muted focus:outline-none focus:ring-2 focus:ring-theme-red leading-relaxed font-reading"
@@ -275,11 +447,11 @@ export default function EditNominationModal({ book, isOpen, onClose }) {
               </button>
               <button
                 type="submit"
-                disabled={!title.trim() || duplicateInBallot || isCurrentReading}
+                disabled={!title.trim() || duplicateInBallot || isCurrentReading || isSaving || isProcessing}
                 className="flex-1 sm:flex-initial justify-center px-5 py-2 bg-theme-red hover:brightness-110 disabled:opacity-50 text-white text-xs font-headline font-black uppercase tracking-wider rounded-lg border-2 border-theme-border shadow-[3px_3px_0px_var(--shadow-color)] transition-transform hover:-translate-x-0.5 hover:-translate-y-0.5 active:translate-x-0.5 active:translate-y-0.5 flex items-center gap-1.5 cursor-pointer disabled:cursor-not-allowed"
               >
                 <Save className="w-3.5 h-3.5 text-[#FEF08A]" />
-                <span>Salvar Alterações</span>
+                <span>{isSaving ? 'Salvando...' : 'Salvar Alterações'}</span>
               </button>
             </div>
           </div>

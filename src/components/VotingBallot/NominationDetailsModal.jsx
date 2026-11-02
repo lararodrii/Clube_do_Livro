@@ -50,8 +50,10 @@ export default function NominationDetailsModal({
       if (results && results.length > 0) {
         const match = results.find(r => r.synopsis && r.synopsis.length > 30) || results[0];
         if (match?.synopsis) {
-          updateNomination(book.id, { synopsis: match.synopsis });
-          showToast(`Sinopse de "${book.title}" carregada com sucesso! 📚★`, 'success');
+          const updated = await updateNomination(book.id, { synopsis: match.synopsis });
+          if (updated) {
+            showToast(`Sinopse de "${book.title}" carregada com sucesso! 📚★`, 'success');
+          }
         } else {
           showToast('Nenhuma sinopse encontrada nos registros públicos para este título.', 'info');
         }
@@ -289,19 +291,17 @@ export default function NominationDetailsModal({
         {/* RODAPÉ DE AÇÕES */}
         <div className="flex flex-wrap items-center justify-between gap-3 pt-3 border-t-2 border-theme-border">
           <div className="flex items-center gap-2">
-            {isMyNomination && (
-              <button
-                type="button"
-                onClick={() => {
-                  onClose();
-                  onEdit(book);
-                }}
-                className="flex items-center gap-1.5 px-3 py-2 text-xs font-mono font-bold bg-theme-card hover:bg-theme-container text-theme-primary border-2 border-theme-border rounded-xl shadow-[2px_2px_0px_var(--shadow-color)] transition-transform hover:-translate-x-0.5 hover:-translate-y-0.5 active:translate-x-0.5 active:translate-y-0.5"
-              >
-                <Pencil className="w-3.5 h-3.5 text-theme-gold" />
-                <span>Editar Indicação</span>
-              </button>
-            )}
+            <button
+              type="button"
+              onClick={() => {
+                onClose();
+                onEdit(book);
+              }}
+              className="flex items-center gap-1.5 px-3 py-2 text-xs font-mono font-bold bg-theme-card hover:bg-theme-container text-theme-primary border-2 border-theme-border rounded-xl shadow-[2px_2px_0px_var(--shadow-color)] transition-transform hover:-translate-x-0.5 hover:-translate-y-0.5 active:translate-x-0.5 active:translate-y-0.5"
+            >
+              <Pencil className="w-3.5 h-3.5 text-theme-gold" />
+              <span>Editar Indicação</span>
+            </button>
 
             <button
               type="button"
